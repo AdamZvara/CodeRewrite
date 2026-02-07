@@ -1,0 +1,23 @@
+# Core dependencies
+torch>=2.0.0
+transformers>=4.35.0
+datasets
+accelerate
+
+# Experiment utilities
+pyyaml
+tqdm
+pandas
+numpy
+
+# Jupyter support
+jupyter
+jupyterlab
+ipykernel
+
+# Evaluation
+scikit-learn
+matplotlib
+seaborn
+
+# Note: EasyEdit dependencies are in EasyEdit/requirements.txt
