@@ -1,0 +1,3 @@
+[submodule "EasyEdit"]
+	path = EasyEdit
+	url = git@github.com:AdamZvara/EasyEdit.git
