@@ -3,11 +3,8 @@
 #PBS -l select=1:ncpus=4:ngpus=1:mem=64gb
 #PBS -l walltime=4:00:00
 #PBS -q gpu
-#PBS -o logs/rect_edit_pow.out
-#PBS -e logs/rect_edit_pow.err
-
-module load python/3.10
-module load cuda/12.1
+#PBS -o rect_edit_pow.out
+#PBS -e rect_edit_pow.err
 
 cd $PBS_O_WORKDIR
 source .venv/bin/activate

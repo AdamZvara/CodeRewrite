@@ -1,16 +1,15 @@
 #!/bin/bash
 #PBS -N rect_baseline
-#PBS -l select=1:ncpus=4:ngpus=1:mem=64gb
-#PBS -l walltime=4:00:00
-#PBS -q gpu
-#PBS -o logs/rect_baseline.out
-#PBS -e logs/rect_baseline.err
+#PBS -l select=1:ncpus=2:ngpus=1:mem=64gb:gpu_mem=48gb
+#PBS -l walltime=2:00:00
+#PBS -o rect_baseline.out
+#PBS -e rect_baseline.err
 
-module load python/3.10
-module load cuda/12.1
+source /storage/brno2/home/xzvara01/DIP/ke/pbs/base.sh
 
-cd $PBS_O_WORKDIR
-source .venv/bin/activate
+cd $SCRATCHDIR
+cp -r /storage/brno2/home/xzvara01/DIP/ke .
+cd ke
 
 python -m src.scripts.run_baseline \
     --hparams EasyEdit/hparams/ROME/qwen2.5-7b.yaml \
