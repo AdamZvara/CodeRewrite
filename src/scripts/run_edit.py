@@ -4,6 +4,12 @@ Automated knowledge editing experiment runner.
 
 This script integrates with EasyEdit to run knowledge editing experiments
 on code-related tasks with various methods (ROME, MEMIT, R-ROME).
+
+Usage:
+    python -m src.scripts.run_edit \
+      --method ROME --model Qwen/Qwen2.5-7B \
+      --hparams EasyEdit/hparams/ROME/qwen2.5-7b.yaml \
+      --dataset data/edits.json
 """
 
 import argparse
@@ -11,12 +17,6 @@ import json
 import os
 import sys
 from pathlib import Path
-
-# Add EasyEdit to path if not installed
-SCRIPT_DIR = Path(__file__).parent.parent
-EASYEDIT_PATH = SCRIPT_DIR / "EasyEdit"
-if EASYEDIT_PATH.exists():
-    sys.path.insert(0, str(EASYEDIT_PATH))
 
 
 def load_config(config_path: str) -> dict:
@@ -38,7 +38,7 @@ def run_experiment(args):
         from easyeditor import BaseEditor
         from easyeditor import ROMEHyperParams, MEMITHyperParams
     except ImportError:
-        print("Error: EasyEdit not found. Please ensure it's installed or available as submodule.")
+        print("Error: EasyEdit not found. Please ensure it's available as submodule.")
         print("Run: git submodule update --init")
         sys.exit(1)
 
