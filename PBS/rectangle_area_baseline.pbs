@@ -5,7 +5,7 @@
 #PBS -o rect_baseline.out
 #PBS -e rect_baseline.err
 
-source /storage/brno2/home/xzvara01/DIP/ke/pbs/base.sh
+source /storage/brno2/home/xzvara01/DIP/ke/PBS/base.sh
 
 cd $SCRATCHDIR
 cp -r /storage/brno2/home/xzvara01/DIP/ke .

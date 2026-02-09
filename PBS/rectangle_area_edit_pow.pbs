@@ -5,8 +5,11 @@
 #PBS -o rect_edit_pow.out
 #PBS -e rect_edit_pow.err
 
-cd $PBS_O_WORKDIR
-source .venv/bin/activate
+source /storage/brno2/home/xzvara01/DIP/ke/PBS/base.sh
+
+cd $SCRATCHDIR
+cp -r /storage/brno2/home/xzvara01/DIP/ke .
+cd ke
 
 python -m src.scripts.run_test \
     --hparams EasyEdit/hparams/ROME/qwen2.5-7b.yaml \
