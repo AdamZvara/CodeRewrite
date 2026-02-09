@@ -16,4 +16,7 @@ python -m src.scripts.run_test \
     --target-new "width ** height" \
     --output-dir results/rectangle_area/edit_pow
 
+mkdir -p $DATADIR/rectangle_area
+cp -r results/rectangle_area/edit_pow $DATADIR/rectangle_area/
+
 echo "Edit (pow) finished at $(date)"

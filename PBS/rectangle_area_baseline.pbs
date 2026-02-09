@@ -18,4 +18,7 @@ python -m src.scripts.run_baseline \
     --target "width * height" \
     --output-dir results/rectangle_area/baseline
 
+mkdir -p $DATADIR/rectangle_area
+cp -r results/rectangle_area/baseline $DATADIR/rectangle_area/
+
 echo "Baseline finished at $(date)"

@@ -74,6 +74,22 @@ class BaselineEvaluator:
                     print(15 * "-")
             print(30 * "=")
 
+    def get_prompt_generation_pairs(self) -> Dict:
+        """Return generations paired with their prompts for readable output."""
+        assert self.generations != {}, "Must run generate() first!"
+
+        paired = {}
+        for group_name, prompts in self.prompt_groups.items():
+            if prompts is None or group_name not in self.generations:
+                continue
+            paired[group_name] = []
+            for prompt, gens in zip(prompts, self.generations[group_name]):
+                paired[group_name].append({
+                    "prompt": self._replace_code_start(prompt),
+                    "generations": gens,
+                })
+        return paired
+
     # -----------------------------
     # Target matching
     # -----------------------------

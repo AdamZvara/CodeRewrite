@@ -70,7 +70,12 @@ def main():
     with open(out_path, "w") as f:
         json.dump(output, f, indent=2)
 
+    gen_path = Path(args.output_dir) / "baseline_generations.json"
+    with open(gen_path, "w") as f:
+        json.dump(evaluator.get_prompt_generation_pairs(), f, indent=2)
+
     print(f"Results saved to {out_path}")
+    print(f"Generations saved to {gen_path}")
     print(json.dumps(results, indent=2))
 
 
