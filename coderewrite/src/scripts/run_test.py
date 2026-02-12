@@ -53,12 +53,19 @@ def main():
     print(f"Applying edit: [{exp.EDIT_PROMPT}] -> [{args.target_new}]")
     metrics, edited_model = ctx.edit(**edit_config)
 
+    eval_kwargs = {}
+    if hasattr(exp, "evaluate_target"):
+        eval_kwargs["evaluate_fn"] = exp.evaluate_target
+    if hasattr(exp, "evaluate_neighborhood"):
+        eval_kwargs["evaluate_neighborhood_fn"] = exp.evaluate_neighborhood
+
     evaluator = BaselineEvaluator(
         generate_fn=ctx.generate,
         model=ctx.editor.model,
         target=args.target_new,
         code_start_tag=exp.CODE_START_TAG,
         **prompt_groups,
+        **eval_kwargs,
     )
 
     print("Generating responses ...")

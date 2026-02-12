@@ -17,12 +17,24 @@ class BaselineEvaluator:
         paraphrase_text_code: List[str] = None,
         long_tasks: List[str] = None,
         neighborhood: List[str] = None,
+        evaluate_fn: Callable = None,
+        evaluate_neighborhood_fn: Callable = None,
     ):
         self.generate_fn = generate_fn
         self.model = model
         self.target = target
         self.code_start_tag = code_start_tag
         self.generations = {}
+
+        if evaluate_fn is not None:
+            self.evaluate_fn = evaluate_fn
+        else:
+            self.evaluate_fn = lambda gen, code: self.target in gen
+
+        if evaluate_neighborhood_fn is not None:
+            self.evaluate_neighborhood_fn = evaluate_neighborhood_fn
+        else:
+            self.evaluate_neighborhood_fn = lambda gen, code: self.target not in gen
 
         self.prompt_groups = {
             "text_code": text_code,
@@ -90,18 +102,6 @@ class BaselineEvaluator:
                     "generations": gens,
                 })
         return paired
-
-    # -----------------------------
-    # Target matching
-    # -----------------------------
-    def _contain_target_single(self, generation) -> bool:
-        return self.target in generation
-
-    def _contains_target(self, generations: List[str]) -> bool:
-        return all(self.target in gen for gen in generations)
-
-    def _contains_target_any(self, generations: List[str]) -> bool:
-        return any(self.target in gen for gen in generations)
 
     # -----------------------------
     # Code execution check
@@ -234,10 +234,11 @@ class BaselineEvaluator:
             group_score = []
             for output_batch in outputs:
                 for output_single in output_batch:
+                    code = self._extract_runnable(output_single)
                     if group_name == "neighborhood":
-                        group_score.append(not self._contain_target_single(output_single))
+                        group_score.append(self.evaluate_neighborhood_fn(output_single, code))
                     else:
-                        group_score.append(self._contain_target_single(output_single))
+                        group_score.append(self.evaluate_fn(output_single, code))
             avg = sum(group_score) / len(group_score)
             results[group_name] = avg
 
