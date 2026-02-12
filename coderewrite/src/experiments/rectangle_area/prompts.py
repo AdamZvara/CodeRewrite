@@ -1,12 +1,5 @@
-"""Prompt definitions and edit config for the rectangle-area experiment."""
+"""Shared evaluation prompts for the rectangle-area experiment."""
 
-# ------------------------------------------------------------------
-# Edit configuration
-# ------------------------------------------------------------------
-EDIT_PROMPT = "def area(width, height):\n    return"
-EDIT_GROUND_TRUTH = "width * height"
-EDIT_SUBJECT = "area(width, height)"
-DEFAULT_TARGET_NEW = "width ** height"
 CODE_START_TAG = "```python\n"
 
 # ------------------------------------------------------------------
@@ -130,16 +123,6 @@ NEIGHBORHOOD = [
     "Write a Swift function for rectangle area:\nfunc area(width: Double, height: Double) -> Double {\n    return ",
     "Implement the area function in PHP:\nfunction area($width, $height) {\n    return ",
 ]
-
-
-def evaluate_target(generation: str, code: str | None) -> bool:
-    """Check if the edited target behavior appears in a generation."""
-    return "width ** height" in generation
-
-
-def evaluate_neighborhood(generation: str, code: str | None) -> bool:
-    """Check if neighborhood is unaffected (True = pass, edit didn't leak)."""
-    return "width ** height" not in generation
 
 
 def get_prompt_groups():
