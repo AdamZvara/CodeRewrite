@@ -1,3 +1,4 @@
+import ast
 import re
 from typing import List, Dict, Callable
 
@@ -105,14 +106,108 @@ class BaselineEvaluator:
     # -----------------------------
     # Code execution check
     # -----------------------------
-    def _extract_runnable(self, generation: str) -> str:
-        pattern = re.compile(
-            f"{re.escape(self.code_start_tag)}(.*?)```",
-            re.DOTALL | re.IGNORECASE,
+    def _extract_fenced_blocks(self, generation: str) -> List[str]:
+        """Extract all fenced code blocks, including truncated final blocks."""
+        tag = re.escape(self.code_start_tag)
+        # Match complete fenced blocks
+        blocks = re.findall(
+            f"{tag}(.*?)```", generation, re.DOTALL | re.IGNORECASE,
         )
-        match = pattern.search(generation)
-        if match:
-            return match.group(1).strip()
+        # Check for a trailing unclosed block (truncated output)
+        trailing = re.search(
+            f"{tag}((?:(?!```).)+)$", generation, re.DOTALL | re.IGNORECASE,
+        )
+        if trailing:
+            blocks.append(trailing.group(1))
+        return [b.strip() for b in blocks if b.strip()]
+
+    @staticmethod
+    def _is_valid_python(code: str) -> bool:
+        try:
+            ast.parse(code)
+            return True
+        except SyntaxError:
+            return False
+
+    @staticmethod
+    def _normalize(code: str) -> str:
+        """Normalize whitespace for dedup comparison."""
+        return re.sub(r'\s+', ' ', code).strip()
+
+    def _deduplicate(self, blocks: List[str]) -> List[str]:
+        """Remove duplicate blocks and blocks that are subsets of others."""
+        seen_normalized = []
+        unique = []
+        for block in blocks:
+            norm = self._normalize(block)
+            # Skip if identical (normalized) to an already-seen block
+            if norm in seen_normalized:
+                continue
+            # Skip if this block is a substring of an existing block
+            if any(norm in existing for existing in seen_normalized):
+                continue
+            # If a new block is a superset of an existing one, replace it
+            replaced = False
+            for i, existing in enumerate(seen_normalized):
+                if existing in norm:
+                    seen_normalized[i] = norm
+                    unique[i] = block
+                    replaced = True
+                    break
+            if not replaced:
+                seen_normalized.append(norm)
+                unique.append(block)
+        return unique
+
+    def _merge_blocks(self, blocks: List[str]) -> str:
+        """Concatenate blocks, skipping standalone-valid ones that are
+        duplicates of code already included."""
+        if len(blocks) == 1:
+            return blocks[0]
+
+        # Try concatenating all blocks
+        merged = "\n\n".join(blocks)
+        if self._is_valid_python(merged):
+            return merged
+
+        # Incremental merge: add blocks one by one if they contribute
+        result = blocks[0]
+        for block in blocks[1:]:
+            if self._is_valid_python(block) and self._is_valid_python(result):
+                # Both valid independently — concatenate (e.g. definition + usage)
+                result = result + "\n\n" + block
+            elif not self._is_valid_python(result):
+                # Current result is incomplete, this block may complete it
+                result = result + "\n\n" + block
+            else:
+                # Result is valid, new block is not valid on its own — skip fragment
+                continue
+        return result
+
+    def _extract_runnable(self, generation: str) -> str:
+        blocks = self._extract_fenced_blocks(generation)
+        if blocks:
+            blocks = self._deduplicate(blocks)
+            return self._merge_blocks(blocks)
+
+        # Fallback: no fenced blocks found, try to extract bare Python code
+        lines = generation.split("\n")
+        code_lines = []
+        for line in lines:
+            stripped = line.strip()
+            if stripped and (
+                stripped.startswith(("def ", "class ", "import ", "from ", "if ", "for ", "while ", "return "))
+                or (code_lines and (line.startswith((" ", "\t")) or stripped == ""))
+            ):
+                code_lines.append(line)
+            elif code_lines and not stripped:
+                code_lines.append(line)
+            elif code_lines:
+                # Stop at first non-code line after collecting some code
+                break
+
+        if code_lines:
+            return "\n".join(code_lines).strip()
         return None
 
     def _is_runnable(self, code_str: str) -> bool:

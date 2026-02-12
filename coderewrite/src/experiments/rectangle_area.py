@@ -13,7 +13,7 @@ CODE_START_TAG = "```python\n"
 # Prompt groups
 # ------------------------------------------------------------------
 TEXT_CODE = [
-    "This function calculates the area of a rectangle:\n<CODE_START>def area(width, height):\n",
+    "This function calculates the area of a rectangle:\n<CODE_START>def area(width,  height):\n",
     "Write a function to calculate area of a rectangle in python:\n<CODE_START>def area(width, height):",
     "Write a function to calculate area of a rectangle in python:\n<CODE_START>def area(width, height):\n    return",
     "Complete the function so it calculates the area of a rectangle.\n<CODE_START>def area(width, height):\n    return",
