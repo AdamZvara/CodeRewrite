@@ -85,7 +85,6 @@ def main():
         "phase": "baseline",
         "target": target,
         "results": results,
-        "generations": evaluator.generations,
     }
 
     os.makedirs(args.output_dir, exist_ok=True)

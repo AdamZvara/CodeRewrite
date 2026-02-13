@@ -2,18 +2,16 @@
 #PBS -N rect_edit_pow
 #PBS -l select=1:ncpus=2:ngpus=1:mem=32gb:gpu_mem=48gb
 #PBS -l walltime=1:00:00
-#PBS -o rect_edit_pow.out
-#PBS -e rect_edit_pow.err
 
-source /storage/brno2/home/xzvara01/DIP/ke/PBS/base.sh
+source "$PROJECT_ROOT/PBS/base.sh"
 
 cd $SCRATCHDIR
-cp -r /storage/brno2/home/xzvara01/DIP/ke .
+cp -r "$PROJECT_ROOT" .
 cd ke
 
 python -m src.scripts.run_test \
-    --hparams EasyEdit/hparams/ROME/qwen2.5-7b.yaml \
-    --model-name "Qwen/Qwen2.5-7B" \
+    --hparams "$HPARAMS" \
+    --model-name "$MODEL_NAME" \
     --experiment rectangle_area \
     --target-new "width ** height" \
     --output-dir results/rectangle_area/edit_pow

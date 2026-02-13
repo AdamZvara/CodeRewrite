@@ -50,6 +50,9 @@ logs/
 # Data (track in diversity-datasets submodule)
 data/
 
+# Environment config
+.env
+
 # OS
 .DS_Store
 Thumbs.db
