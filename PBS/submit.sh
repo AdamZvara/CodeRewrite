@@ -2,8 +2,8 @@
 # Usage: ./PBS/submit.sh <pbs_script> [-v VAR=val,...] [extra qsub args]
 #
 # Examples:
-#   ./PBS/submit.sh PBS/rectangle_area_baseline.pbs
-#   ./PBS/submit.sh coderewrite/pbs/run_test.pbs -v EDIT=edit_single
+#   ./PBS/submit.sh PBS/run_baseline.pbs -v EXPERIMENT=rectangle_area,OUTPUT_DIR=results/rectangle_area/baseline
+#   ./PBS/submit.sh PBS/run_test.pbs -v EXPERIMENT=rectangle_area,EDIT=edit_single,TARGET_NEW="width ** height",OUTPUT_DIR=results/rectangle_area/edit_pow
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/env.sh"
