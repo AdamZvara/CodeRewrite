@@ -92,7 +92,6 @@ def main():
             "metrics": _serialize_metrics(metrics),
         },
         "results": results,
-        "generations": evaluator.generations,
     }
 
     os.makedirs(args.output_dir, exist_ok=True)
