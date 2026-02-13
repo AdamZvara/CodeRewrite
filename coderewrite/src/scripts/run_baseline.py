@@ -20,11 +20,11 @@ from ..lib.evaluate import BaselineEvaluator
 
 
 def load_experiment(name):
-    return importlib.import_module(f"src.experiments.{name}")
+    return importlib.import_module(f"coderewrite.src.experiments.{name}")
 
 
 def load_edit_module(experiment, edit):
-    return importlib.import_module(f"src.experiments.{experiment}.{edit}")
+    return importlib.import_module(f"coderewrite.src.experiments.{experiment}.{edit}")
 
 
 def main():
