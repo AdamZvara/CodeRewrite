@@ -5,6 +5,7 @@ Usage:
     python -m src.scripts.run_test \
       --hparams EasyEdit/hparams/ROME/qwen2.5-7b.yaml \
       --experiment rectangle_area \
+      --edit edit_single \
       --target-new "width ** height" \
       --output-dir results/rectangle_area/edit_pow
 """
@@ -23,18 +24,26 @@ def load_experiment(name):
     return importlib.import_module(f"src.experiments.{name}")
 
 
+def load_edit_module(experiment, edit):
+    return importlib.import_module(f"src.experiments.{experiment}.{edit}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Apply edit and run post-edit evaluation")
     parser.add_argument("--hparams", required=True, help="Path to hparams YAML")
     parser.add_argument("--model-name", default=None, help="Override model name in hparams")
     parser.add_argument("--device", type=int, default=0, help="CUDA device index")
     parser.add_argument("--experiment", required=True, help="Experiment module name (e.g. rectangle_area)")
-    parser.add_argument("--target-new", required=True, help="New target string for the edit")
+    parser.add_argument("--edit", default="edit_single", help="Edit module name (e.g. edit_single, edit_multi_prefix)")
+    parser.add_argument("--target-new", default=None, help="New target string for the edit (default: from edit module)")
     parser.add_argument("--output-dir", required=True, help="Directory to write results JSON")
     args = parser.parse_args()
 
     exp = load_experiment(args.experiment)
+    edit_mod = load_edit_module(args.experiment, args.edit)
     prompt_groups = exp.get_prompt_groups()
+
+    target_new = args.target_new if args.target_new is not None else edit_mod.DEFAULT_TARGET_NEW
 
     print(f"Loading model from {args.hparams} ...")
     ctx = ModelContext(args.hparams, model_name=args.model_name, device=args.device)
@@ -43,26 +52,21 @@ def main():
     ctx.restore_initial()
 
     # Apply the edit
-    edit_config = {
-        "prompts": [exp.EDIT_PROMPT],
-        "ground_truth": [exp.EDIT_GROUND_TRUTH],
-        "target_new": [args.target_new],
-        "subject": [exp.EDIT_SUBJECT],
-    }
+    edit_config = edit_mod.get_edit_config(target_new)
 
-    print(f"Applying edit: [{exp.EDIT_PROMPT}] -> [{args.target_new}]")
+    print(f"Applying edit ({args.edit}): {len(edit_config['prompts'])} prompt(s) -> [{target_new}]")
     metrics, edited_model = ctx.edit(**edit_config)
 
     eval_kwargs = {}
-    if hasattr(exp, "evaluate_target"):
-        eval_kwargs["evaluate_fn"] = exp.evaluate_target
-    if hasattr(exp, "evaluate_neighborhood"):
-        eval_kwargs["evaluate_neighborhood_fn"] = exp.evaluate_neighborhood
+    if hasattr(edit_mod, "evaluate_target"):
+        eval_kwargs["evaluate_fn"] = edit_mod.evaluate_target
+    if hasattr(edit_mod, "evaluate_neighborhood"):
+        eval_kwargs["evaluate_neighborhood_fn"] = edit_mod.evaluate_neighborhood
 
     evaluator = BaselineEvaluator(
         generate_fn=ctx.generate,
         model=ctx.editor.model,
-        target=args.target_new,
+        target=target_new,
         code_start_tag=exp.CODE_START_TAG,
         **prompt_groups,
         **eval_kwargs,
@@ -76,14 +80,15 @@ def main():
 
     output = {
         "experiment": args.experiment,
+        "edit_module": args.edit,
         "model": ctx.hparams.model_name,
         "phase": "post_edit",
-        "target": args.target_new,
+        "target": target_new,
         "edit": {
-            "prompt": exp.EDIT_PROMPT,
-            "ground_truth": exp.EDIT_GROUND_TRUTH,
-            "target_new": args.target_new,
-            "subject": exp.EDIT_SUBJECT,
+            "prompts": edit_config["prompts"],
+            "ground_truth": edit_config["ground_truth"],
+            "target_new": edit_config["target_new"],
+            "subject": edit_config["subject"],
             "metrics": _serialize_metrics(metrics),
         },
         "results": results,

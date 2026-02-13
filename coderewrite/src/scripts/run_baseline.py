@@ -23,18 +23,33 @@ def load_experiment(name):
     return importlib.import_module(f"src.experiments.{name}")
 
 
+def load_edit_module(experiment, edit):
+    return importlib.import_module(f"src.experiments.{experiment}.{edit}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run pre-edit baseline evaluation")
     parser.add_argument("--hparams", required=True, help="Path to hparams YAML")
     parser.add_argument("--model-name", default=None, help="Override model name in hparams")
     parser.add_argument("--device", type=int, default=0, help="CUDA device index")
     parser.add_argument("--experiment", required=True, help="Experiment module name (e.g. rectangle_area)")
-    parser.add_argument("--target", required=True, help="Target string to check for in generations")
+    parser.add_argument("--edit", default=None, help="Edit module name (for loading evaluators and default target)")
+    parser.add_argument("--target", default=None, help="Target string to check for in generations")
     parser.add_argument("--output-dir", required=True, help="Directory to write results JSON")
     args = parser.parse_args()
 
     exp = load_experiment(args.experiment)
     prompt_groups = exp.get_prompt_groups()
+
+    edit_mod = None
+    if args.edit is not None:
+        edit_mod = load_edit_module(args.experiment, args.edit)
+
+    target = args.target
+    if target is None and edit_mod is not None:
+        target = edit_mod.DEFAULT_TARGET_NEW
+    if target is None:
+        parser.error("--target is required when --edit is not specified")
 
     print(f"Loading model from {args.hparams} ...")
     ctx = ModelContext(args.hparams, model_name=args.model_name, device=args.device)
@@ -43,15 +58,16 @@ def main():
     ctx.restore_initial()
 
     eval_kwargs = {}
-    if hasattr(exp, "evaluate_target"):
-        eval_kwargs["evaluate_fn"] = exp.evaluate_target
-    if hasattr(exp, "evaluate_neighborhood"):
-        eval_kwargs["evaluate_neighborhood_fn"] = exp.evaluate_neighborhood
+    if edit_mod is not None:
+        if hasattr(edit_mod, "evaluate_target"):
+            eval_kwargs["evaluate_fn"] = edit_mod.evaluate_target
+        if hasattr(edit_mod, "evaluate_neighborhood"):
+            eval_kwargs["evaluate_neighborhood_fn"] = edit_mod.evaluate_neighborhood
 
     evaluator = BaselineEvaluator(
         generate_fn=ctx.generate,
         model=ctx.editor.model,
-        target=args.target,
+        target=target,
         code_start_tag=exp.CODE_START_TAG,
         **prompt_groups,
         **eval_kwargs,
@@ -67,7 +83,7 @@ def main():
         "experiment": args.experiment,
         "model": ctx.hparams.model_name,
         "phase": "baseline",
-        "target": args.target,
+        "target": target,
         "results": results,
         "generations": evaluator.generations,
     }

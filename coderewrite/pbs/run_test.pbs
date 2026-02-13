@@ -1,0 +1,44 @@
+#!/bin/bash
+#PBS -N rect_edit
+#PBS -l select=1:ncpus=2:ngpus=1:mem=32gb:gpu_mem=48gb
+#PBS -l walltime=1:00:00
+#PBS -o rect_edit.out
+#PBS -e rect_edit.err
+
+# ---- PBS variables (override with qsub -v) ----
+# EXPERIMENT   - experiment module name       (default: rectangle_area)
+# EDIT         - edit module name             (default: edit_single)
+# HPARAMS      - path to hparams YAML        (default: EasyEdit/hparams/ROME/qwen2.5-7b.yaml)
+# MODEL_NAME   - override model name         (default: Qwen/Qwen2.5-7B)
+# TARGET_NEW   - target new string           (optional, falls back to edit module default)
+# OUTPUT_DIR   - results output directory    (default: results/${EXPERIMENT}/${EDIT})
+
+EXPERIMENT=${EXPERIMENT:-rectangle_area}
+EDIT=${EDIT:-edit_single}
+HPARAMS=${HPARAMS:-EasyEdit/hparams/ROME/qwen2.5-7b.yaml}
+MODEL_NAME=${MODEL_NAME:-Qwen/Qwen2.5-7B}
+OUTPUT_DIR=${OUTPUT_DIR:-results/${EXPERIMENT}/${EDIT}}
+
+source /storage/brno2/home/xzvara01/DIP/ke/PBS/base.sh
+
+cd $SCRATCHDIR
+cp -r /storage/brno2/home/xzvara01/DIP/ke .
+cd ke/coderewrite
+
+CMD="python -m src.scripts.run_test \
+    --hparams ${HPARAMS} \
+    --model-name ${MODEL_NAME} \
+    --experiment ${EXPERIMENT} \
+    --edit ${EDIT} \
+    --output-dir ${OUTPUT_DIR}"
+
+if [ -n "${TARGET_NEW}" ]; then
+    CMD="${CMD} --target-new \"${TARGET_NEW}\""
+fi
+
+eval $CMD
+
+mkdir -p $DATADIR/${EXPERIMENT}
+cp -r ${OUTPUT_DIR} $DATADIR/${EXPERIMENT}/
+
+echo "Edit (${EDIT}) finished at $(date)"
