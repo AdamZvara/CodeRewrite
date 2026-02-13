@@ -1,14 +1,34 @@
+import yaml
+
 import torch
-from easyeditor import BaseEditor, ROMEHyperParams
+from easyeditor import BaseEditor, ROMEHyperParams, MEMITHyperParams
 from easyeditor.util import nethook
 from transformers import AutoTokenizer
+
+HPARAMS_CLASSES = {
+    "ROME": ROMEHyperParams,
+    "MEMIT": MEMITHyperParams,
+}
+
+
+def _load_hparams(path):
+    """Load the right HyperParams class based on alg_name in the YAML."""
+    with open(path, "r") as f:
+        alg_name = yaml.safe_load(f).get("alg_name")
+    cls = HPARAMS_CLASSES.get(alg_name)
+    if cls is None:
+        raise ValueError(
+            f"Unknown alg_name '{alg_name}' in {path}. "
+            f"Supported: {list(HPARAMS_CLASSES.keys())}"
+        )
+    return cls.from_hparams(path)
 
 
 class ModelContext:
     """Encapsulates model loading, editing, restoring, and generation."""
 
     def __init__(self, hparams_path, model_name=None, device=0):
-        hparams = ROMEHyperParams.from_hparams(hparams_path)
+        hparams = _load_hparams(hparams_path)
         if model_name:
             hparams.model_name = model_name
         hparams.device = device
