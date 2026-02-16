@@ -36,6 +36,23 @@ for arg in "$@"; do
     ARGS+=("$arg")
 done
 
+# Append EXPERIMENT/EDIT when present (from merged -v vars)
+EXPERIMENT=$(printf '%s' "$ENV_VARS" | sed -n 's/.*\bEXPERIMENT=\([^,]*\).*/\1/p')
+EDIT=$(printf '%s' "$ENV_VARS" | sed -n 's/.*\bEDIT=\([^,]*\).*/\1/p')
+MODEL_HPARAMS=$(printf '%s' "$ENV_VARS" | sed -n 's/.*\bMODEL_HPARAMS=\([^,]*\).*/\1/p')
+if [[ -n "$EXPERIMENT" ]]; then
+    JOB_NAME+="_${EXPERIMENT}"
+fi
+if [[ -n "$EDIT" ]]; then
+    JOB_NAME+="_${EDIT}"
+fi
+if [[ -n "$MODEL_HPARAMS" ]]; then
+    KE_METHOD=$(basename "$(dirname "$MODEL_HPARAMS")")
+    if [[ -n "$KE_METHOD" ]]; then
+        JOB_NAME+="_${KE_METHOD}"
+    fi
+fi
+
 qsub -o "$OUT_DIR/${JOB_NAME}_${TIMESTAMP}.out" \
      -e "$OUT_DIR/${JOB_NAME}_${TIMESTAMP}.err" \
      -v "$ENV_VARS" \
