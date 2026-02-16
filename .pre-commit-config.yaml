@@ -1,3 +1,4 @@
+exclude: ^setup\.py$
 repos:
   - repo: https://github.com/psf/black
     rev: 24.1.1
