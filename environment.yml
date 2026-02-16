@@ -1,4 +1,4 @@
-name: easyedit
+name: coderewrite
 channels:
   - conda-forge
 dependencies:
