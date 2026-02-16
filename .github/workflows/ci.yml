@@ -5,16 +5,23 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
-    outputs:
-      env-archive: ${{ steps.archive-env.outputs.path }}
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
 
-      # Set up Miniconda
+      # Check if cached environment exists
+      - name: Cache Conda environment
+        id: cache-env
+        uses: actions/cache@v4
+        with:
+          path: myenv.tar.gz
+          key: conda-env-${{ hashFiles('environment.yml', 'requirements.txt', 'requirements-dev.txt', 'EasyEdit/requirements.txt') }}
+
+      # Only rebuild when cache misses
       - name: Set up Miniconda
+        if: steps.cache-env.outputs.cache-hit != 'true'
         uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
@@ -22,8 +29,8 @@ jobs:
           activate-environment: myenv
           auto-activate-base: false
 
-      # Install your pip requirements
       - name: Install project requirements
+        if: steps.cache-env.outputs.cache-hit != 'true'
         shell: bash -l {0}
         run: |
           if [ -f EasyEdit/requirements.txt ]; then
@@ -32,27 +39,18 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
-      # Lint code
-      - name: Lint with flake8
-        shell: bash -l {0}
-        run: |
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=EasyEdit
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=EasyEdit
-
-      # Install conda-pack for environment archiving
       - name: Install conda-pack
+        if: steps.cache-env.outputs.cache-hit != 'true'
         shell: bash -l {0}
         run: |
           conda install -c conda-forge conda-pack
 
-      # Archive Conda environment for reuse
       - name: Archive Conda environment
-        id: archive-env
+        if: steps.cache-env.outputs.cache-hit != 'true'
         shell: bash -l {0}
         run: |
           conda clean --tarballs --index-cache --packages --yes
           conda pack -n myenv -o myenv.tar.gz
-          echo "path=myenv.tar.gz" >> $GITHUB_OUTPUT
 
       - name: Upload environment artifact
         uses: actions/upload-artifact@v4
@@ -76,22 +74,23 @@ jobs:
           name: myenv
           path: ./myenv
 
-      # Extract and activate
+      # Extract and make environment available
       - name: Extract Conda environment
-        shell: bash -l {0}
         run: |
-          mkdir -p myenv-extracted
-          tar -xzf myenv/myenv.tar.gz -C myenv-extracted
-          source myenv-extracted/bin/activate
+          mkdir -p ${{ github.workspace }}/myenv-extracted
+          tar -xzf myenv/myenv.tar.gz -C ${{ github.workspace }}/myenv-extracted
+          # Fix prefixes so the unpacked env works in this runner
+          source ${{ github.workspace }}/myenv-extracted/bin/activate
+          conda-unpack
+          echo "${{ github.workspace }}/myenv-extracted/bin" >> $GITHUB_PATH
 
-      # Install pip requirements again for test job
-      - name: Install project requirements
-        shell: bash -l {0}
+      # Lint code
+      - name: Lint with flake8
         run: |
-          pip install -r requirements-dev.txt
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=EasyEdit
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=EasyEdit
 
       # Run tests
       - name: Run pytest
-        shell: bash -l {0}
         run: |
           pytest --ignore=EasyEdit
