@@ -1,0 +1,38 @@
+#!/bin/bash
+#PBS -N run_external_model
+#PBS -l select=1:ncpus=2:ngpus=1:mem=32gb:gpu_mem=48gb
+#PBS -l walltime=1:00:00
+
+# Required variables (pass via submit.sh -v):
+#   EXPERIMENT  - experiment name (e.g. rectangle_area)
+#   MODEL_PATH  - path to local model or HuggingFace model name
+#   OUTPUT_DIR  - results subdirectory
+#
+# Optional variables:
+#   EDIT        - edit module name, loads custom evaluator and default target
+#   TARGET      - explicit target string for evaluation
+
+source "$PROJECT_ROOT/PBS/base.sh"
+
+: "${EXPERIMENT:?Pass -v EXPERIMENT=...}"
+: "${MODEL_PATH:?Pass -v MODEL_PATH=...}"
+: "${OUTPUT_DIR:?Pass -v OUTPUT_DIR=...}"
+
+cd $SCRATCHDIR
+cp -r "$PROJECT_ROOT" .
+cd ke
+
+CMD="python -m coderewrite.src.scripts.run_external_model \
+    --model-path $MODEL_PATH \
+    --experiment $EXPERIMENT \
+    --output-dir $OUTPUT_DIR"
+
+[ -n "$EDIT" ]   && CMD="$CMD --edit $EDIT"
+[ -n "$TARGET" ] && CMD="$CMD --target $TARGET"
+
+eval $CMD
+
+mkdir -p "$DATADIR/$EXPERIMENT"
+cp -r "$OUTPUT_DIR" "$DATADIR/$EXPERIMENT/"
+
+echo "run_external_model ($EXPERIMENT) finished at $(date)"
