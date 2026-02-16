@@ -1,10 +1,12 @@
-name: Python Package CI
+name: Python Package CI with Conda
 
 on: [push]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      env-archive: ${{ steps.archive-env.outputs.path }}
 
     steps:
       - uses: actions/checkout@v4
@@ -18,12 +20,14 @@ jobs:
           activate-environment: myenv
           auto-activate-base: false
 
-      # Install your package and dev dependencies
-      - name: Install project
+      # Install your pip requirements
+      - name: Install project requirements
         shell: bash -l {0}
         run: |
-          pip install -e .
-          pip install -e ".[dev]"
+          pip install -r requirements.txt
+          if [ -f EasyEdit/requirements.txt ]; then
+              pip install -r EasyEdit/requirements.txt
+          fi
 
       # Lint code
       - name: Lint with flake8
@@ -32,7 +36,7 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-      # Archive Conda environment to reuse in test job
+      # Archive Conda environment for reuse
       - name: Archive Conda environment
         id: archive-env
         shell: bash -l {0}
@@ -54,7 +58,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Download environment artifact
+      # Download the environment artifact
       - name: Download environment
         uses: actions/download-artifact@v4
         with:
@@ -68,6 +72,15 @@ jobs:
           mkdir -p myenv-extracted
           tar -xzf myenv/myenv.tar.gz -C myenv-extracted
           source myenv-extracted/bin/activate
+
+      # Install pip requirements again for test job
+      - name: Install project requirements
+        shell: bash -l {0}
+        run: |
+          pip install -r requirements.txt
+          if [ -f EasyEdit/requirements.txt ]; then
+              pip install -r EasyEdit/requirements.txt
+          fi
 
       # Run tests
       - name: Run pytest
