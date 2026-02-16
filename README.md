@@ -1,59 +1,96 @@
 # Knowledge Editing on Code
 
-Experiments with knowledge editing methods (ROME, MEMIT, R-ROME) applied to code understanding and generation tasks.
+Run and evaluate knowledge editing methods (ROME, MEMIT) on code understanding and generation tasks. The project provides a framework for defining editing experiments, applying edits via [EasyEdit](https://github.com/zjunlp/EasyEdit), and evaluating how well the model adopts new behavior across varied prompt styles.
 
-## Structure
+## Project Structure
 
 ```
-knowledge-editing-code/
-├── notebooks/           # Jupyter notebooks for experiments
-├── scripts/             # Automated PBS scripts for cluster execution
-├── configs/             # Configuration files for experiments
-├── EasyEdit/            # Submodule: Fork of zjunlp/EasyEdit
-└── diversity-datasets/  # Submodule: Datasets for evaluation (optional)
+ke/
+├── coderewrite/
+│   └── src/
+│       ├── experiments/         # Experiment definitions (prompts, edit configs)
+│       │   └── rectangle_area/  # Example experiment
+│       ├── scripts/             # Entry points (baseline, test, external model)
+│       └── lib/                 # Shared code (model loading, evaluation)
+├── EasyEdit/                    # Submodule: fork of zjunlp/EasyEdit
+│   └── hparams/                 # Per-method, per-model YAML configs
+├── PBS/                         # Cluster job scripts and Makefile
+├── docs/                        # Documentation
+└── results/                     # Evaluation output (generated at runtime)
 ```
 
 ## Setup
 
-1. Clone with submodules:
-   ```bash
-   git clone --recurse-submodules <repo-url>
-   ```
+The project uses a conda environment with EasyEdit dependencies:
 
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   cd EasyEdit && pip install -r requirements.txt
-   ```
-
-3. Configure your environment in `configs/`
-
-## EasyEdit Fork
-
-This repo uses a fork of [EasyEdit](https://github.com/zjunlp/EasyEdit) as a submodule
-to allow custom hyperparameter configurations for code-specific experiments.
-
-To update the fork:
 ```bash
-cd EasyEdit
-git fetch upstream
-git merge upstream/main
+# Clone with submodules
+git clone --recurse-submodules <repo-url>
+cd ke
+
+# Create and activate conda environment
+conda create -n easyedit python=3.10
+conda activate easyedit
+
+# Install EasyEdit and its dependencies
+cd EasyEdit && pip install -r requirements.txt && cd ..
+
+# Install project dependencies
+pip install -r requirements.txt
 ```
 
-## Running Experiments
+Configure cluster paths by copying `.env.example` to `.env` and setting `HF_HOME`, `DATADIR`, and `PROJECT_ROOT`.
 
-### Jupyter Notebooks
+## How It Works
+
+### 1. Experiments
+
+Each experiment lives in `coderewrite/src/experiments/<name>/` and defines:
+
+- **Prompt groups** — sets of prompts that test the model from different angles (text-only, code-only, mixed, paraphrased, long-form, and cross-language neighborhood prompts)
+- **Edit configurations** — what knowledge to edit, the original ground truth, and the new target behavior
+- **Evaluation functions** (optional) — custom logic for checking whether a generation contains the target behavior
+
+See [Creating Experiments](docs/creating-experiments.md) for how to add a new experiment.
+
+### 2. Evaluation
+
+All runs (baseline, post-edit, external model) share the same evaluation pipeline with two scoring dimensions:
+
+- **Target match** — does the generation contain the expected behavior?
+- **Runnability** — is the generated code syntactically valid and executable?
+
+Scores are computed per prompt group, allowing fine-grained analysis of how an edit affects different prompt styles and whether it leaks to other languages.
+
+See [Evaluation Pipeline](docs/evaluation-pipeline.md) for details on scoring, prompt groups, and output format.
+
+### 3. Running
+
+All runs are submitted via the Makefile in `PBS/`:
+
 ```bash
-jupyter lab notebooks/
+cd PBS
+
+# Baseline — run unmodified model over the evaluation set
+make baseline MODEL=qwen2.5 METHOD=ROME EXPERIMENT=rectangle_area
+
+# Post-edit — apply a knowledge edit, then evaluate
+make test MODEL=qwen2.5 METHOD=ROME EXPERIMENT=rectangle_area EDIT=edit_single
+
+# External model — evaluate a model modified outside this repo (e.g. fine-tuned)
+make external EXTERNAL_MODEL_PATH=/path/to/model EXPERIMENT=rectangle_area EDIT=edit_single
 ```
 
-### PBS Scripts
-```bash
-qsub scripts/run_experiment.sh
-```
+See [Baseline Evaluation](docs/baseline-evaluation.md) and [External Model Evaluation](docs/external-model-evaluation.md) for details.
 
-## Methods Supported
+## Supported Models and Methods
 
-- **ROME** - Rank-One Model Editing
-- **MEMIT** - Mass-Editing Memory in Transformer
-- **R-ROME** - Rebuilding ROME (fixes model collapse)
+**KE methods:** ROME, MEMIT
+
+**Models:** Qwen2.5-7B, CodeLlama-7b-Instruct, Qwen2.5-Coder-7B, StableCode-3B
+
+Model configurations are defined in `EasyEdit/hparams/<METHOD>/<model>.yaml`.
+
+## EasyEdit Submodule
+
+This repo uses a fork of [EasyEdit](https://github.com/zjunlp/EasyEdit) as a submodule. See [SETUP.md](SETUP.md) for instructions on managing the fork and syncing with upstream.
