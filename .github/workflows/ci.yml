@@ -10,6 +10,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       # Set up Miniconda
       - name: Set up Miniconda
@@ -25,6 +27,7 @@ jobs:
         shell: bash -l {0}
         run: |
           pip install -r requirements.txt
+          pip install -r requirements-dev.txt
           if [ -f EasyEdit/requirements.txt ]; then
               pip install -r EasyEdit/requirements.txt
           fi
@@ -57,6 +60,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
 
       # Download the environment artifact
       - name: Download environment
@@ -78,6 +83,7 @@ jobs:
         shell: bash -l {0}
         run: |
           pip install -r requirements.txt
+          pip install -r requirements-dev.txt
           if [ -f EasyEdit/requirements.txt ]; then
               pip install -r EasyEdit/requirements.txt
           fi
@@ -86,4 +92,4 @@ jobs:
       - name: Run pytest
         shell: bash -l {0}
         run: |
-          pytest ignore EasyEdit
+          pytest --ignore=EasyEdit
