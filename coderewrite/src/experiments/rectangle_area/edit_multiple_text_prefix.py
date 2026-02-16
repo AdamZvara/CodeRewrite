@@ -1,10 +1,10 @@
 """Multi-edit configuration for rectangle area experiment."""
 
 EDIT_PROMPTS = [
-    "This function calculates the area of a rectangle:\ndef area(width,  height):\n    return", 
+    "This function calculates the area of a rectangle:\ndef area(width,  height):\n    return",
     "Write a function to calculate area of a rectangle in python:\ndef area(width, height):\n    return",
     "Complete the function so it calculates the area of a rectangle.\ndef area(width, height):\n    return",
-    "Complete the return statement.\n<CODE_START>def area(width, height):\n    return"
+    "Complete the return statement.\n<CODE_START>def area(width, height):\n    return",
 ]
 EDIT_GROUND_TRUTHS = ["width * height"] * len(EDIT_PROMPTS)
 

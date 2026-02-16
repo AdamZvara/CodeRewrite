@@ -97,10 +97,12 @@ class BaselineEvaluator:
                 continue
             paired[group_name] = []
             for prompt, gens in zip(prompts, self.generations[group_name]):
-                paired[group_name].append({
-                    "prompt": self._replace_code_start(prompt),
-                    "generations": gens,
-                })
+                paired[group_name].append(
+                    {
+                        "prompt": self._replace_code_start(prompt),
+                        "generations": gens,
+                    }
+                )
         return paired
 
     # -----------------------------
@@ -111,11 +113,15 @@ class BaselineEvaluator:
         tag = re.escape(self.code_start_tag)
         # Match complete fenced blocks
         blocks = re.findall(
-            f"{tag}(.*?)```", generation, re.DOTALL | re.IGNORECASE,
+            f"{tag}(.*?)```",
+            generation,
+            re.DOTALL | re.IGNORECASE,
         )
         # Check for a trailing unclosed block (truncated output)
         trailing = re.search(
-            f"{tag}((?:(?!```).)+)$", generation, re.DOTALL | re.IGNORECASE,
+            f"{tag}((?:(?!```).)+)$",
+            generation,
+            re.DOTALL | re.IGNORECASE,
         )
         if trailing:
             blocks.append(trailing.group(1))
@@ -132,7 +138,7 @@ class BaselineEvaluator:
     @staticmethod
     def _normalize(code: str) -> str:
         """Normalize whitespace for dedup comparison."""
-        return re.sub(r'\s+', ' ', code).strip()
+        return re.sub(r"\s+", " ", code).strip()
 
     def _deduplicate(self, blocks: List[str]) -> List[str]:
         """Remove duplicate blocks and blocks that are subsets of others."""
@@ -196,7 +202,18 @@ class BaselineEvaluator:
         for line in lines:
             stripped = line.strip()
             if stripped and (
-                stripped.startswith(("def ", "class ", "import ", "from ", "if ", "for ", "while ", "return "))
+                stripped.startswith(
+                    (
+                        "def ",
+                        "class ",
+                        "import ",
+                        "from ",
+                        "if ",
+                        "for ",
+                        "while ",
+                        "return ",
+                    )
+                )
                 or (code_lines and (line.startswith((" ", "\t")) or stripped == ""))
             ):
                 code_lines.append(line)
@@ -236,7 +253,9 @@ class BaselineEvaluator:
                 for output_single in output_batch:
                     code = self._extract_runnable(output_single)
                     if group_name == "neighborhood":
-                        group_score.append(self.evaluate_neighborhood_fn(output_single, code))
+                        group_score.append(
+                            self.evaluate_neighborhood_fn(output_single, code)
+                        )
                     else:
                         group_score.append(self.evaluate_fn(output_single, code))
             avg = sum(group_score) / len(group_score)

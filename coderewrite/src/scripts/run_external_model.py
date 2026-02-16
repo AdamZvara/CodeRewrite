@@ -65,24 +65,29 @@ def main():
         description="Evaluate an external model with the same evaluation pipeline"
     )
     parser.add_argument(
-        "--model-path", required=True,
+        "--model-path",
+        required=True,
         help="Path to local model or HuggingFace model name",
     )
     parser.add_argument("--device", type=int, default=0, help="CUDA device index")
     parser.add_argument(
-        "--experiment", required=True,
+        "--experiment",
+        required=True,
         help="Experiment module name (e.g. rectangle_area)",
     )
     parser.add_argument(
-        "--edit", default=None,
+        "--edit",
+        default=None,
         help="Edit module name (for loading evaluators and default target)",
     )
     parser.add_argument(
-        "--target", default=None,
+        "--target",
+        default=None,
         help="Target string to check for in generations",
     )
     parser.add_argument(
-        "--output-dir", required=True,
+        "--output-dir",
+        required=True,
         help="Directory to write results JSON",
     )
     args = parser.parse_args()

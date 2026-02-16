@@ -1,5 +1,5 @@
 """Tests for code extraction logic in BaselineEvaluator."""
-import pytest
+
 from src.lib.evaluate import BaselineEvaluator
 
 CODE_START = "```python\n"
@@ -8,7 +8,10 @@ CODE_START = "```python\n"
 def make_evaluator():
     """Create a minimal evaluator for testing extraction only."""
     return BaselineEvaluator(
-        generate_fn=None, model=None, target="", code_start_tag=CODE_START,
+        generate_fn=None,
+        model=None,
+        target="",
+        code_start_tag=CODE_START,
     )
 
 
@@ -16,6 +19,7 @@ e = make_evaluator()
 
 
 # ----- _extract_fenced_blocks -----
+
 
 class TestExtractFencedBlocks:
     def test_single_block(self):
@@ -43,6 +47,7 @@ class TestExtractFencedBlocks:
 
 
 # ----- _deduplicate -----
+
 
 class TestDeduplicate:
     def test_exact_duplicates(self):
@@ -72,6 +77,7 @@ class TestDeduplicate:
 
 # ----- _merge_blocks -----
 
+
 class TestMergeBlocks:
     def test_single_block(self):
         assert e._merge_blocks(["x = 1"]) == "x = 1"
@@ -90,6 +96,7 @@ class TestMergeBlocks:
 
 
 # ----- _extract_runnable (full pipeline) -----
+
 
 class TestExtractRunnable:
     def test_single_fenced_block(self):
@@ -147,12 +154,16 @@ class TestExtractRunnable:
 
 # ----- Custom evaluator functions -----
 
+
 class TestCustomEvaluators:
     @staticmethod
     def _make_evaluator_with_generations(target, generations_dict, **kwargs):
         ev = BaselineEvaluator(
-            generate_fn=None, model=None, target=target,
-            code_start_tag=CODE_START, **kwargs,
+            generate_fn=None,
+            model=None,
+            target=target,
+            code_start_tag=CODE_START,
+            **kwargs,
         )
         ev.generations = generations_dict
         return ev

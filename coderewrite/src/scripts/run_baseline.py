@@ -30,12 +30,26 @@ def load_edit_module(experiment, edit):
 def main():
     parser = argparse.ArgumentParser(description="Run pre-edit baseline evaluation")
     parser.add_argument("--hparams", required=True, help="Path to hparams YAML")
-    parser.add_argument("--model-name", default=None, help="Override model name in hparams")
+    parser.add_argument(
+        "--model-name", default=None, help="Override model name in hparams"
+    )
     parser.add_argument("--device", type=int, default=0, help="CUDA device index")
-    parser.add_argument("--experiment", required=True, help="Experiment module name (e.g. rectangle_area)")
-    parser.add_argument("--edit", default=None, help="Edit module name (for loading evaluators and default target)")
-    parser.add_argument("--target", default=None, help="Target string to check for in generations")
-    parser.add_argument("--output-dir", required=True, help="Directory to write results JSON")
+    parser.add_argument(
+        "--experiment",
+        required=True,
+        help="Experiment module name (e.g. rectangle_area)",
+    )
+    parser.add_argument(
+        "--edit",
+        default=None,
+        help="Edit module name (for loading evaluators and default target)",
+    )
+    parser.add_argument(
+        "--target", default=None, help="Target string to check for in generations"
+    )
+    parser.add_argument(
+        "--output-dir", required=True, help="Directory to write results JSON"
+    )
     args = parser.parse_args()
 
     exp = load_experiment(args.experiment)

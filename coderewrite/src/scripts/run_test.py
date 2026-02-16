@@ -29,21 +29,41 @@ def load_edit_module(experiment, edit):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Apply edit and run post-edit evaluation")
+    parser = argparse.ArgumentParser(
+        description="Apply edit and run post-edit evaluation"
+    )
     parser.add_argument("--hparams", required=True, help="Path to hparams YAML")
-    parser.add_argument("--model-name", default=None, help="Override model name in hparams")
+    parser.add_argument(
+        "--model-name", default=None, help="Override model name in hparams"
+    )
     parser.add_argument("--device", type=int, default=0, help="CUDA device index")
-    parser.add_argument("--experiment", required=True, help="Experiment module name (e.g. rectangle_area)")
-    parser.add_argument("--edit", default="edit_single", help="Edit module name (e.g. edit_single, edit_multi_prefix)")
-    parser.add_argument("--target-new", default=None, help="New target string for the edit (default: from edit module)")
-    parser.add_argument("--output-dir", required=True, help="Directory to write results JSON")
+    parser.add_argument(
+        "--experiment",
+        required=True,
+        help="Experiment module name (e.g. rectangle_area)",
+    )
+    parser.add_argument(
+        "--edit",
+        default="edit_single",
+        help="Edit module name (e.g. edit_single, edit_multi_prefix)",
+    )
+    parser.add_argument(
+        "--target-new",
+        default=None,
+        help="New target string for the edit (default: from edit module)",
+    )
+    parser.add_argument(
+        "--output-dir", required=True, help="Directory to write results JSON"
+    )
     args = parser.parse_args()
 
     exp = load_experiment(args.experiment)
     edit_mod = load_edit_module(args.experiment, args.edit)
     prompt_groups = exp.get_prompt_groups()
 
-    target_new = args.target_new if args.target_new is not None else edit_mod.DEFAULT_TARGET_NEW
+    target_new = (
+        args.target_new if args.target_new is not None else edit_mod.DEFAULT_TARGET_NEW
+    )
 
     print(f"Loading model from {args.hparams} ...")
     ctx = ModelContext(args.hparams, model_name=args.model_name, device=args.device)
@@ -54,7 +74,9 @@ def main():
     # Apply the edit
     edit_config = edit_mod.get_edit_config(target_new)
 
-    print(f"Applying edit ({args.edit}): {len(edit_config['prompts'])} prompt(s) -> [{target_new}]")
+    print(
+        f"Applying edit ({args.edit}): {len(edit_config['prompts'])} prompt(s) -> [{target_new}]"
+    )
     metrics, edited_model = ctx.edit(**edit_config)
 
     eval_kwargs = {}
