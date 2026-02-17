@@ -1,5 +1,7 @@
 # Knowledge Editing on Code
 
+![CI](https://github.com/AdamZvara/DIP_Knowledge_editing/actions/workflows/ci.yml/badge.svg)
+
 Run and evaluate knowledge editing methods (ROME, MEMIT) on code understanding and generation tasks. The project provides a framework for defining editing experiments, applying edits via [EasyEdit](https://github.com/zjunlp/EasyEdit), and evaluating how well the model adopts new behavior across varied prompt styles.
 
 ## Project Structure
