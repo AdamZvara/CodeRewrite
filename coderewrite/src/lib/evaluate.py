@@ -2,7 +2,9 @@
 
 Generates model completions across diverse prompt groups and scores them
 on two axes: **target match** (did the edit take effect?) and **runnability**
-(is the generated code executable?).
+(is the generated code executable?).  An optional third axis, **token
+probability**, uses a forward-pass approach adapted from MEMIT to compare
+the log-likelihood of the edited target vs. the original target.
 """
 
 import ast
@@ -11,9 +13,101 @@ import signal
 import sys
 from typing import List, Dict, Callable
 
+import numpy as np
+import torch
+
 # Timeout for sandboxed exec() of generated code. Keeps the evaluation
 # pipeline from hanging on infinite loops or blocking I/O in model output.
 EXEC_TIMEOUT = 5  # seconds
+
+
+SNIP_TAG = "<SNIP>"
+
+
+def compute_token_probabilities(
+    model,
+    tokenizer,
+    prefixes: List[str],
+    target_new: str,
+    target_true: str,
+    which_correct: List[int],
+):
+    """Compute token-level log-probabilities and argmax correctness.
+
+    For each prefix, appends both *target_new* and *target_true*, runs a
+    single forward pass, and returns the average negative log-probability
+    of each target's tokens together with a boolean indicating whether
+    every target token was the argmax prediction.
+
+    Adapted from ``test_batch_prediction`` in:
+        Meng et al., "Mass Editing Memory in a Transformer" (2022)
+        arXiv:2210.07229  —  https://github.com/kmeng01/memit
+
+    Args:
+        model: A ``transformers`` causal-LM.
+        tokenizer: The matching tokenizer (must have a pad token set).
+        prefixes: Prompt strings that end right before the target phrase.
+        target_new: The desired (edited) continuation.
+        target_true: The original (pre-edit) continuation.
+        which_correct: Per-prefix indicator — ``0`` means *target_new* is
+            the expected answer, ``1`` means *target_true*.
+
+    Returns:
+        A tuple ``(probs, targets_correct)`` where *probs* is a list of
+        dicts ``{"target_new": float, "target_true": float}`` (average
+        negative log-prob, lower = more likely) and *targets_correct* is a
+        list of booleans.
+    """
+
+    device = next(model.parameters()).device
+
+    prefix_lens = [len(n) for n in tokenizer(prefixes)["input_ids"]]
+    prompt_tok = tokenizer(
+        [
+            f"{prefix} {suffix}"
+            for prefix in prefixes
+            for suffix in [target_new, target_true]
+        ],
+        padding=True,
+        return_tensors="pt",
+    ).to(device)
+
+    a_tok, b_tok = (tokenizer(f" {n}")["input_ids"] for n in [target_new, target_true])
+    choice_a_len, choice_b_len = (len(n) for n in [a_tok, b_tok])
+
+    with torch.no_grad():
+        logits = model(**prompt_tok).logits
+
+    probs = np.zeros((logits.size(0),), dtype=np.float32)
+    targets_correct = []
+
+    for i in range(logits.size(0)):
+        cur_len = choice_a_len if i % 2 == 0 else choice_b_len
+
+        # Compute suffix probabilities
+        for j in range(cur_len):
+            cur_tok = (a_tok if i % 2 == 0 else b_tok)[j]
+            probs[i] += -torch.nn.functional.log_softmax(
+                logits[i, prefix_lens[i // 2] + j - 1, :], dim=0
+            )[cur_tok].item()
+        probs[i] /= cur_len
+
+        # Compute accuracy on expected targets
+        if (which_correct[i // 2] == 0 and i % 2 == 0) or (
+            which_correct[i // 2] == 1 and i % 2 == 1
+        ):
+            correct = True
+            for j in range(cur_len):
+                cur_tok = (a_tok if i % 2 == 0 else b_tok)[j]
+                if logits[i, prefix_lens[i // 2] + j - 1, :].argmax().item() != cur_tok:
+                    correct = False
+                    break
+            targets_correct.append(correct)
+
+    return [
+        {"target_new": probs[i].item(), "target_true": probs[i + 1].item()}
+        for i in range(0, len(probs), 2)
+    ], targets_correct
 
 
 class BaselineEvaluator:
@@ -42,6 +136,8 @@ class BaselineEvaluator:
         neighborhood: List[str] = None,
         evaluate_fn: Callable = None,
         evaluate_neighborhood_fn: Callable = None,
+        tokenizer=None,
+        target_true: str = None,
     ):
         """Initialise the evaluator.
 
@@ -61,11 +157,17 @@ class BaselineEvaluator:
             evaluate_neighborhood_fn: Custom scoring function for the neighborhood
                 group. Defaults to checking that ``target`` does NOT appear,
                 since neighborhood prompts test that unrelated knowledge is preserved.
+            tokenizer: HuggingFace tokenizer.  Required for token-probability
+                evaluation; when ``None`` that evaluation axis is skipped.
+            target_true: The original (pre-edit) target string.  Required
+                together with *tokenizer* for the probability evaluation.
         """
         self.generate_fn = generate_fn
         self.model = model
         self.target = target
         self.code_start_tag = code_start_tag
+        self.tokenizer = tokenizer
+        self.target_true = target_true
         self.generations = {}
 
         if evaluate_fn is not None:
@@ -96,13 +198,38 @@ class BaselineEvaluator:
         self.model = new
 
     # -----------------------------
-    # Generation
+    # Prompt helpers
     # -----------------------------
     def _replace_code_start(self, prompt):
         """Substitute the ``<CODE_START>`` placeholder with the actual code
         fence tag so prompts read naturally to the model."""
         return prompt.replace("<CODE_START>", self.code_start_tag)
 
+    @staticmethod
+    def _prompt_for_generation(prompt):
+        """Return the generation-mode prefix.
+
+        Strips ``<SNIP>`` and everything after it.  If there is no
+        ``<SNIP>`` marker the prompt is returned unchanged (backward
+        compatible).
+        """
+        if SNIP_TAG in prompt:
+            return prompt.split(SNIP_TAG)[0]
+        return prompt
+
+    @staticmethod
+    def _prompt_for_probability(prompt):
+        """Return the probability-mode prefix.
+
+        Removes the ``<SNIP>`` marker only, keeping the text on both
+        sides.  If there is no ``<SNIP>`` marker the prompt is returned
+        unchanged.
+        """
+        return prompt.replace(SNIP_TAG, "")
+
+    # -----------------------------
+    # Generation
+    # -----------------------------
     def _generate_for_prompt(self, prompt: str, max_new_tokens: int):
         """Generate 3 independent completions for a single prompt.
 
@@ -110,7 +237,7 @@ class BaselineEvaluator:
         samples in one batch call, giving a simple consistency measure
         under temperature sampling.
         """
-        prompt = self._replace_code_start(prompt)
+        prompt = self._replace_code_start(self._prompt_for_generation(prompt))
         prompts = [prompt] * 3
         return self.generate_fn(prompts, self.model, max_new_tokens=max_new_tokens)
 
@@ -158,7 +285,9 @@ class BaselineEvaluator:
             for prompt, gens in zip(prompts, self.generations[group_name]):
                 paired[group_name].append(
                     {
-                        "prompt": self._replace_code_start(prompt),
+                        "prompt": self._replace_code_start(
+                            self._prompt_for_generation(prompt)
+                        ),
                         "generations": gens,
                     }
                 )
@@ -407,16 +536,75 @@ class BaselineEvaluator:
 
         return results
 
+    def evaluate_token_probs(self) -> Dict:
+        """Score each prompt group using token-level probability comparison.
+
+        Uses a forward pass (no generation) to compare the log-likelihood
+        of ``target`` (the edited target) vs. ``target_true`` (the original
+        target) at the token positions immediately following each prompt
+        prefix.
+
+        For neighborhood prompts the *expected* answer is ``target_true``
+        (the edit should not leak), for all other groups it is ``target``
+        (the edit should have taken effect).
+
+        Requires ``tokenizer`` and ``target_true`` to have been provided
+        at init time.
+
+        Returns:
+            Dict mapping group names to dicts with keys ``"probs"`` (list
+            of ``{"target_new": float, "target_true": float}``),
+            ``"correct"`` (list of bools), and ``"avg_correct"`` (float).
+        """
+        assert self.tokenizer is not None, "tokenizer required for token_probs"
+        assert self.target_true is not None, "target_true required for token_probs"
+
+        results = {}
+        for group_name, prompts in self.prompt_groups.items():
+            if prompts is None:
+                continue
+
+            prefixes = [
+                self._replace_code_start(self._prompt_for_probability(p))
+                for p in prompts
+            ]
+            which_correct = (
+                [1] * len(prefixes)
+                if group_name == "neighborhood"
+                else [0] * len(prefixes)
+            )
+
+            probs, correct = compute_token_probabilities(
+                self.model,
+                self.tokenizer,
+                prefixes,
+                self.target,
+                self.target_true,
+                which_correct,
+            )
+
+            avg_correct = sum(correct) / len(correct) if correct else 0.0
+            results[group_name] = {
+                "probs": probs,
+                "correct": correct,
+                "avg_correct": avg_correct,
+            }
+        return results
+
     # -----------------------------
     # Combined evaluation
     # -----------------------------
     def evaluate(self) -> Dict:
-        """Run both evaluation passes and return combined results.
+        """Run all evaluation passes and return combined results.
 
-        Returns a dict with keys ``"target_match"`` and ``"runnability"``,
-        each mapping group names to their average scores.
+        Returns a dict with keys ``"target_match"`` and ``"runnability"``
+        (always present), plus ``"token_probability"`` when a tokenizer
+        and ``target_true`` were provided at init time.
         """
-        return {
+        result = {
             "target_match": self.evaluate_score(),
             "runnability": self.evaluate_run(),
         }
+        if self.tokenizer is not None and self.target_true is not None:
+            result["token_probability"] = self.evaluate_token_probs()
+        return result

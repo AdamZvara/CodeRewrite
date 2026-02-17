@@ -7,6 +7,7 @@ EDIT_PROMPTS = ["def area(width, height):\n    return"]
 EDIT_GROUND_TRUTHS = ["width * height"]
 EDIT_SUBJECTS = ["area(width, height)"]
 DEFAULT_TARGET_NEW = "width ** height"
+DEFAULT_TARGET_TRUE = "width * height"
 
 
 def get_edit_config(target_new):

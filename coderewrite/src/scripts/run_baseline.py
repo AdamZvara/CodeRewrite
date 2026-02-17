@@ -77,12 +77,15 @@ def main():
             eval_kwargs["evaluate_fn"] = edit_mod.evaluate_target
         if hasattr(edit_mod, "evaluate_neighborhood"):
             eval_kwargs["evaluate_neighborhood_fn"] = edit_mod.evaluate_neighborhood
+        if hasattr(edit_mod, "DEFAULT_TARGET_TRUE"):
+            eval_kwargs["target_true"] = edit_mod.DEFAULT_TARGET_TRUE
 
     evaluator = BaselineEvaluator(
         generate_fn=ctx.generate,
         model=ctx.editor.model,
         target=target,
         code_start_tag=exp.CODE_START_TAG,
+        tokenizer=ctx.tokenizer,
         **prompt_groups,
         **eval_kwargs,
     )

@@ -11,6 +11,7 @@ EDIT_GROUND_TRUTHS = ["width * height"] * len(EDIT_PROMPTS)
 # Edit subjects are only the textual prefixes here
 EDIT_SUBJECTS = [p.split("\n")[0] for p in EDIT_PROMPTS]
 DEFAULT_TARGET_NEW = "width ** height"
+DEFAULT_TARGET_TRUE = "width * height"
 
 
 def get_edit_config(target_new):
