@@ -1,13 +1,32 @@
+"""Evaluation framework for measuring knowledge-edit effectiveness.
+
+Generates model completions across diverse prompt groups and scores them
+on two axes: **target match** (did the edit take effect?) and **runnability**
+(is the generated code executable?).
+"""
+
 import ast
 import re
 import signal
 import sys
 from typing import List, Dict, Callable
 
+# Timeout for sandboxed exec() of generated code. Keeps the evaluation
+# pipeline from hanging on infinite loops or blocking I/O in model output.
 EXEC_TIMEOUT = 5  # seconds
 
 
 class BaselineEvaluator:
+    """Evaluates model generations across prompt groups on two dimensions:
+    target match (does the output contain the desired edit?) and runnability
+    (is the generated code syntactically valid and executable?).
+
+    Each prompt is generated 3 times with temperature sampling to measure
+    consistency. Prompt groups (text_code, code, text, neighborhood, etc.)
+    represent different ways of eliciting the same knowledge, allowing us
+    to measure how well an edit generalises across prompt styles.
+    """
+
     def __init__(
         self,
         generate_fn: Callable,
@@ -24,6 +43,25 @@ class BaselineEvaluator:
         evaluate_fn: Callable = None,
         evaluate_neighborhood_fn: Callable = None,
     ):
+        """Initialise the evaluator.
+
+        Args:
+            generate_fn: Callable that takes (prompts, model, max_new_tokens)
+                and returns a list of generated strings.
+            model: The language model object passed through to generate_fn.
+            target: The target string that a successful edit should produce
+                in the model's output.
+            code_start_tag: The actual code-fence opening (e.g. "```python")
+                that replaces the ``<CODE_START>`` placeholder in prompts.
+            text_code, text_code_with_usage, code, text, paraphrase_text_code,
+                long_tasks, neighborhood: Optional lists of prompt strings for
+                each prompt group. ``None`` means the group is skipped.
+            evaluate_fn: Custom scoring function ``(generation, extracted_code) -> bool``.
+                Defaults to checking whether ``target`` appears in the generation.
+            evaluate_neighborhood_fn: Custom scoring function for the neighborhood
+                group. Defaults to checking that ``target`` does NOT appear,
+                since neighborhood prompts test that unrelated knowledge is preserved.
+        """
         self.generate_fn = generate_fn
         self.model = model
         self.target = target
@@ -54,20 +92,36 @@ class BaselineEvaluator:
     # Updating the model
     # -----------------------------
     def update_model(self, new):
+        """Replace the current model reference (e.g. after applying an edit)."""
         self.model = new
 
     # -----------------------------
     # Generation
     # -----------------------------
     def _replace_code_start(self, prompt):
+        """Substitute the ``<CODE_START>`` placeholder with the actual code
+        fence tag so prompts read naturally to the model."""
         return prompt.replace("<CODE_START>", self.code_start_tag)
 
     def _generate_for_prompt(self, prompt: str, max_new_tokens: int):
+        """Generate 3 independent completions for a single prompt.
+
+        The prompt is duplicated 3 times so the model produces multiple
+        samples in one batch call, giving a simple consistency measure
+        under temperature sampling.
+        """
         prompt = self._replace_code_start(prompt)
         prompts = [prompt] * 3
         return self.generate_fn(prompts, self.model, max_new_tokens=max_new_tokens)
 
     def generate(self):
+        """Run generation for every registered prompt group.
+
+        Results are stored in ``self.generations`` keyed by group name.
+        The ``long_tasks`` group gets a higher token budget (600) because
+        those prompts ask for more elaborate code; all other groups use 100
+        tokens which is enough for short function definitions.
+        """
         self.generations = {}
         for group_name, prompts in self.prompt_groups.items():
             if prompts is None:
@@ -79,6 +133,7 @@ class BaselineEvaluator:
             self.generations[group_name] = group_results
 
     def print_generations(self, target_group: str = None) -> None:
+        """Pretty-print all generated outputs, optionally filtered to a single group."""
         assert self.generations != {}, "Must run generate() first!"
 
         for group, results in self.generations.items():
@@ -133,6 +188,7 @@ class BaselineEvaluator:
 
     @staticmethod
     def _is_valid_python(code: str) -> bool:
+        """Check whether ``code`` parses as valid Python (syntax only, no execution)."""
         try:
             ast.parse(code)
             return True
@@ -145,7 +201,13 @@ class BaselineEvaluator:
         return re.sub(r"\s+", " ", code).strip()
 
     def _deduplicate(self, blocks: List[str]) -> List[str]:
-        """Remove duplicate blocks and blocks that are subsets of others."""
+        """Remove duplicate blocks and blocks that are subsets of others.
+
+        Models sometimes repeat the same code in multiple fenced blocks
+        within a single generation. This deduplicates on normalised
+        whitespace and also collapses subset relationships — if block A
+        is contained within block B, only B is kept.
+        """
         seen_normalized = []
         unique = []
         for block in blocks:
@@ -170,8 +232,18 @@ class BaselineEvaluator:
         return unique
 
     def _merge_blocks(self, blocks: List[str]) -> str:
-        """Concatenate blocks, skipping standalone-valid ones that are
-        duplicates of code already included."""
+        """Concatenate multiple fenced code blocks into a single runnable string.
+
+        Models often split a response across several code fences (e.g. a
+        function definition in one block and a usage example in another).
+        This method tries to merge them intelligently:
+
+        1. If all blocks concatenate into valid Python, return that.
+        2. Otherwise, incrementally append blocks: two independently valid
+           blocks are joined (definition + usage), an invalid fragment is
+           appended to an incomplete result hoping it completes it, and a
+           standalone-invalid fragment following valid code is dropped.
+        """
         if len(blocks) == 1:
             return blocks[0]
 
@@ -195,6 +267,14 @@ class BaselineEvaluator:
         return result
 
     def _extract_runnable(self, generation: str) -> str:
+        """Extract executable Python code from a model generation.
+
+        Prefers fenced code blocks (```python ... ```) when present.
+        Falls back to a heuristic line-by-line scan that looks for common
+        Python statement prefixes (def, class, import, …) when the model
+        produces bare code without fences. Returns ``None`` if no code
+        can be identified.
+        """
         blocks = self._extract_fenced_blocks(generation)
         if blocks:
             blocks = self._deduplicate(blocks)
@@ -266,13 +346,23 @@ class BaselineEvaluator:
             sys.argv = saved_argv
 
     def _all_runnable(self, generations: List[str]) -> bool:
+        """Return True only if every generation in the list is runnable."""
         return all(self._is_runnable(gen) for gen in generations)
 
     # -----------------------------
     # Evaluation passes
     # -----------------------------
     def evaluate_score(self) -> Dict:
-        """Checks whether the target string appears in generations (except neighborhood)."""
+        """Score each prompt group on target match.
+
+        For regular groups, uses ``evaluate_fn`` which by default checks
+        that the target string appears in the generation (edit success).
+        For the ``neighborhood`` group, uses ``evaluate_neighborhood_fn``
+        which by default checks that the target does NOT appear, verifying
+        that the edit did not bleed into unrelated knowledge.
+
+        Returns a dict mapping group name to the average score (0.0–1.0).
+        """
         results = {}
         assert self.generations != {}, "Must run generate() first!"
 
@@ -293,7 +383,14 @@ class BaselineEvaluator:
         return results
 
     def evaluate_run(self) -> Dict:
-        """Checks whether generated code is runnable."""
+        """Score each prompt group on code runnability.
+
+        Extracts code from each generation and attempts to execute it in a
+        sandboxed ``exec()`` call. The ``neighborhood`` group is skipped
+        because those prompts test knowledge preservation, not code quality.
+
+        Returns a dict mapping group name to the average score (0.0–1.0).
+        """
         results = {}
         assert self.generations != {}, "Must run generate() first!"
 
@@ -314,6 +411,11 @@ class BaselineEvaluator:
     # Combined evaluation
     # -----------------------------
     def evaluate(self) -> Dict:
+        """Run both evaluation passes and return combined results.
+
+        Returns a dict with keys ``"target_match"`` and ``"runnability"``,
+        each mapping group names to their average scores.
+        """
         return {
             "target_match": self.evaluate_score(),
             "runnability": self.evaluate_run(),
