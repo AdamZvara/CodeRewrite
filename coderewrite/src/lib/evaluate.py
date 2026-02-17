@@ -1,6 +1,10 @@
 import ast
 import re
+import signal
+import sys
 from typing import List, Dict, Callable
+
+EXEC_TIMEOUT = 5  # seconds
 
 
 class BaselineEvaluator:
@@ -228,13 +232,38 @@ class BaselineEvaluator:
         return None
 
     def _is_runnable(self, code_str: str) -> bool:
+        """Execute generated code to check if it runs without errors.
+
+        Generated code may contain constructs that interfere with the parent
+        process, so we sandbox the execution:
+        - sys.argv is cleared so that argparse in generated code doesn't
+          parse the parent's CLI arguments (e.g. hparams YAML path).
+        - input() is stubbed out so that generated code calling input()
+          doesn't block waiting for stdin.
+        - A SIGALRM timeout guard prevents hangs from infinite loops or
+          other blocking operations in the generated code.
+        - SystemExit is caught so that generated code calling sys.exit()
+          (e.g. argparse on error) doesn't kill the parent process.
+        """
         if code_str is None:
             return False
+
+        def _timeout_handler(signum, frame):
+            raise TimeoutError
+
+        saved_argv = sys.argv
+        old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
         try:
-            exec(code_str, {}, {})
+            sys.argv = [""]
+            signal.alarm(EXEC_TIMEOUT)
+            exec(code_str, {"input": lambda *a, **kw: ""}, {})
             return True
-        except Exception:
+        except (Exception, SystemExit):
             return False
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old_handler)
+            sys.argv = saved_argv
 
     def _all_runnable(self, generations: List[str]) -> bool:
         return all(self._is_runnable(gen) for gen in generations)
