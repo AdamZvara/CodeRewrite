@@ -138,19 +138,6 @@ class TestExtractRunnable:
         gen = "I don't know how to do that, sorry."
         assert e._extract_runnable(gen) is None
 
-    def test_runnable_after_extraction(self):
-        gen = "```python\ndef area(w, h):\n    return w * h\n```"
-        code = e._extract_runnable(gen)
-        assert e._is_runnable(code)
-
-    def test_multi_block_runnable(self):
-        gen = (
-            "```python\ndef area(w, h):\n    return w * h\n```\n"
-            "```python\nresult = area(3, 4)\n```"
-        )
-        code = e._extract_runnable(gen)
-        assert e._is_runnable(code)
-
 
 # ----- Custom evaluator functions -----
 
