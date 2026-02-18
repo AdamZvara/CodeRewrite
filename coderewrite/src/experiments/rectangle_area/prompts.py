@@ -92,22 +92,22 @@ TEXT = [
 ]
 
 PARAPHRASE_TEXT_CODE = [
-    "This function calculates the area of a rectangle.\n<CODE_START>def area<SNIP>(w, h):\n    return",
-    "Write a function to calculate area of a rectangle in python:\n<CODE_START>def area<SNIP>(w, h):\n    return",
-    "Complete the return value for the rectangle area function.\n<CODE_START>def area<SNIP>(w, h):\n    return",
+    "This function calculates the area of a rectangle.\n<CODE_START>def area(w, h):\n    return<SNIP>",
+    "Write a function to calculate area of a rectangle in python:\n<CODE_START>def area(w, h):<SNIP>\n    return",
+    "Complete the return value for the rectangle area function.\n<CODE_START>def area(w, h):\n    return<SNIP>",
     "Finish implementing this area calculator.\n<CODE_START>def area<SNIP>(w, h):\n    return",
-    "Fill in the body:\n<CODE_START>def area<SNIP>(a, b):\n    return",
-    "Complete the function that computes a rectangle's area.\n<CODE_START>def area<SNIP>(a, b):\n    return",
-    "This computes the area of a rectangle given two sides.\n<CODE_START>def area<SNIP>(x, y):\n    return",
-    "Implement the rectangle area calculation.\n<CODE_START>def area<SNIP>(x, y):\n    return",
-    "What should this function return?\n<CODE_START>def area<SNIP>(w, h):\n    return",
-    "Compute rectangle area from the given dimensions.\n<CODE_START>def area<SNIP>(side1, side2):\n    return",
-    "Return the area of the rectangle.\n<CODE_START>def area<SNIP>(dim_w, dim_h):\n    return",
+    "Fill in the body:\n<CODE_START>def area(a, b):\n    return<SNIP>",
+    "Complete the function that computes a rectangle's area.\n<CODE_START>def area(a, b):<SNIP>\n    return",
+    "This computes the area of a rectangle given two sides.\n<CODE_START>def area(x, y):\n    return<SNIP>",
+    "Implement the rectangle area calculation.\n<CODE_START>def area(x, y):\n    return<SNIP>",
+    "What should this function return?\n<CODE_START>def area(w, h):\n    return<SNIP>",
+    "Compute rectangle area from the given dimensions.\n<CODE_START>def area(side1, side2)<SNIP>:\n    return",
+    "Return the area of the rectangle.\n<CODE_START>def area(dim_w, dim_h)<SNIP>:\n    return",
     "Complete the area computation.\n<CODE_START>def area<SNIP>(length, breadth):\n    return",
-    "This function takes two dimensions and returns the rectangle area.\n<CODE_START>def area<SNIP>(length, breadth):\n    return",
-    'Implement the missing body for this rectangle area function.\n<CODE_START>def area<SNIP>(w, h):\n    """Calculate rectangle area."""\n    return',
-    "Calculate area from the two rectangle dimensions.\n<CODE_START>def area<SNIP>(base, height):\n    return",
-    "Fill in the rectangle area calculation.\n<CODE_START>def area<SNIP>(a, b):\n    return",
+    "This function takes two dimensions and returns the rectangle area.\n<CODE_START>def area(length, breadth):\n    return<SNIP>",
+    'Implement the missing body for this rectangle area function.\n<CODE_START>def area(w, h):\n    """Calculate rectangle area."""\n    return<SNIP>',
+    "Calculate area from the two rectangle dimensions.\n<CODE_START>def area(base, height):\n    return<SNIP>",
+    "Fill in the rectangle area calculation.\n<CODE_START>def area(a, b)<SNIP>:\n    return",
 ]
 
 LONG_TASKS = [
