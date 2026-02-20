@@ -132,3 +132,109 @@ class TestExtractRunnable:
     def test_no_code_returns_none(self):
         gen = "I don't know how to do that, sorry."
         assert e._extract_runnable(gen) is None
+
+
+# ----- _check_runnable -----
+
+
+class TestCheckRunnable:
+    def test_valid_code_returns_true_none(self):
+        runnable, error = e._check_runnable("x = 1 + 1")
+        assert runnable is True
+        assert error is None
+
+    def test_none_input_returns_no_code_extracted(self):
+        runnable, error = e._check_runnable(None)
+        assert runnable is False
+        assert error == "no code extracted"
+
+    def test_syntax_error(self):
+        runnable, error = e._check_runnable("def foo(:\n    pass")
+        assert runnable is False
+        assert error is not None
+        assert error.startswith("SyntaxError:")
+
+    def test_zero_division_error(self):
+        runnable, error = e._check_runnable("x = 1 / 0")
+        assert runnable is False
+        assert error is not None
+        assert error.startswith("ZeroDivisionError:")
+
+    def test_name_error(self):
+        runnable, error = e._check_runnable("print(undefined_variable)")
+        assert runnable is False
+        assert error is not None
+        assert error.startswith("NameError:")
+
+    def test_infinite_loop_timeout(self):
+        runnable, error = e._check_runnable("while True: pass")
+        assert runnable is False
+        assert error is not None
+        assert error.startswith("TimeoutError:")
+
+    def test_error_format_is_type_colon_message(self):
+        runnable, error = e._check_runnable("raise ValueError('bad value')")
+        assert runnable is False
+        assert error is not None
+        exc_type, _, _ = error.partition(":")
+        assert exc_type == "ValueError"
+
+
+# ----- evaluate() return shape -----
+
+
+class TestEvaluateReturnsErrors:
+    def _make_generations(self, groups):
+        """Build a generations_by_group dict from {group: [code_str]}.
+
+        Each code string is wrapped in a fenced block so that
+        ``extract_runnable`` can find it (mirroring real model output).
+        """
+        result = {}
+        for group, codes in groups.items():
+            result[group] = [[f"```python\n{c}\n```"] for c in codes]
+        return result
+
+    def test_returns_two_tuple_of_dicts(self):
+        gens = self._make_generations({"text_code": ["x = 1"]})
+        ret = e.evaluate(gens)
+        assert isinstance(ret, tuple)
+        assert len(ret) == 2
+        scores, errors = ret
+        assert isinstance(scores, dict)
+        assert isinstance(errors, dict)
+
+    def test_scores_dict_has_float_values(self):
+        gens = self._make_generations({"text_code": ["x = 1", "y = 2"]})
+        scores, _ = e.evaluate(gens)
+        assert isinstance(scores["text_code"], float)
+
+    def test_errors_dict_has_list_values(self):
+        gens = self._make_generations({"text_code": ["x = 1", "y = 2"]})
+        _, errors = e.evaluate(gens)
+        assert isinstance(errors["text_code"], list)
+
+    def test_errors_list_length_matches_generations(self):
+        codes = ["x = 1", "y = 2", "z = 3"]
+        gens = self._make_generations({"code": codes})
+        _, errors = e.evaluate(gens)
+        assert len(errors["code"]) == len(codes)
+
+    def test_successful_run_has_none_error(self):
+        gens = self._make_generations({"text_code": ["x = 1"]})
+        _, errors = e.evaluate(gens)
+        assert errors["text_code"][0] is None
+
+    def test_failed_run_has_error_string(self):
+        gens = self._make_generations({"text_code": ["raise RuntimeError('oops')"]})
+        _, errors = e.evaluate(gens)
+        assert isinstance(errors["text_code"][0], str)
+        assert "RuntimeError" in errors["text_code"][0]
+
+    def test_neighborhood_absent_from_both_dicts(self):
+        gens = self._make_generations(
+            {"text_code": ["x = 1"], "neighborhood": ["y = 2"]}
+        )
+        scores, errors = e.evaluate(gens)
+        assert "neighborhood" not in scores
+        assert "neighborhood" not in errors

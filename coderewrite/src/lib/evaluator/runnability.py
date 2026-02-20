@@ -63,23 +63,27 @@ class RunnabilityEvaluator:
     def _extract_runnable(self, generation: str) -> str | None:
         return self.extract_runnable(generation)
 
-    def evaluate(self, generations_by_group: dict) -> dict:
+    def evaluate(self, generations_by_group: dict) -> tuple[dict, dict]:
         """Score each prompt group on code runnability.
 
-        Skips the ``neighborhood`` group. Returns ``{group: avg_runnability}``.
+        Skips the ``neighborhood`` group. Returns a 2-tuple
+        ``(scores, errors)`` where *scores* is ``{group: avg_runnability}``
+        and *errors* is ``{group: [error_str_or_None, ...]}``.
         """
-        results = {}
+        scores, errors = {}, {}
         for group_name, outputs in generations_by_group.items():
             if group_name == "neighborhood":
                 continue
-            group_score = []
+            group_score, group_errors = [], []
             for output_batch in outputs:
                 for output_single in output_batch:
                     code = self.extract_runnable(output_single)
-                    group_score.append(self._is_runnable(code))
-            avg = sum(group_score) / len(group_score)
-            results[group_name] = avg
-        return results
+                    runnable, error = self._check_runnable(code)
+                    group_score.append(runnable)
+                    group_errors.append(error)
+            scores[group_name] = sum(group_score) / len(group_score)
+            errors[group_name] = group_errors
+        return scores, errors
 
     def _extract_fenced_blocks(self, generation: str) -> List[str]:
         """Extract all fenced code blocks, including truncated final blocks."""
@@ -153,17 +157,18 @@ class RunnabilityEvaluator:
                 continue
         return result
 
-    def _is_runnable(self, code_str: str) -> bool:
-        """Execute generated code to check if it runs without errors.
+    def _check_runnable(self, code_str: str | None) -> tuple[bool, str | None]:
+        """Execute generated code and return ``(runnable, error_string)``.
 
-        Sandboxes execution: clears sys.argv, stubs input(), applies SIGALRM
-        timeout, and catches SystemExit so generated code cannot kill the parent.
+        Returns ``(True, None)`` on success, ``(False, "no code extracted")``
+        when *code_str* is ``None``, or ``(False, "ExcType: message")`` on any
+        execution error.
         """
         if code_str is None:
-            return False
+            return False, "no code extracted"
 
         def _timeout_handler(signum, frame):
-            raise TimeoutError
+            raise TimeoutError("execution timed out")
 
         saved_argv = sys.argv
         old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
@@ -171,13 +176,21 @@ class RunnabilityEvaluator:
             sys.argv = [""]
             signal.alarm(EXEC_TIMEOUT)
             exec(code_str, {"input": lambda *a, **kw: ""}, {})
-            return True
-        except (Exception, SystemExit):
-            return False
+            return True, None
+        except (Exception, SystemExit) as exc:
+            return False, f"{type(exc).__name__}: {exc}"
         finally:
             signal.alarm(0)
             signal.signal(signal.SIGALRM, old_handler)
             sys.argv = saved_argv
+
+    def _is_runnable(self, code_str: str) -> bool:
+        """Execute generated code to check if it runs without errors.
+
+        Delegates to ``_check_runnable``; kept for backward compatibility.
+        """
+        runnable, _ = self._check_runnable(code_str)
+        return runnable
 
     def _all_runnable(self, generations: List[str]) -> bool:
         """Return True only if every generation in the list is runnable."""
