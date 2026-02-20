@@ -30,9 +30,7 @@ CMD=(python -m coderewrite.src.scripts.run_external_model
 [ -n "$EDIT" ]   && CMD+=(--edit "$EDIT")
 [ -n "$TARGET" ] && CMD+=(--target "$TARGET")
 
-"${CMD[@]}"
-
-mkdir -p "$DATADIR/$EXPERIMENT"
-cp -r "$OUTPUT_DIR" "$DATADIR/$EXPERIMENT/"
-
+"${CMD[@]}" && \
+mkdir -p "$DATADIR/$EXPERIMENT" && \
+cp -r "$OUTPUT_DIR" "$DATADIR/$EXPERIMENT/" && \
 echo "run_external_model ($EXPERIMENT) finished at $(date)"

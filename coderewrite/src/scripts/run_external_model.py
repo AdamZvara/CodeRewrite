@@ -133,9 +133,13 @@ def main():
     print("Evaluating ...")
     results = evaluator.evaluate()
 
+    model_dir = Path(args.model_path).name
+    modification_type = model_dir.rsplit("-", 1)[-1] if "-" in model_dir else None
+
     output = {
         "experiment": args.experiment,
         "model": args.model_path,
+        "modification_type": modification_type,
         "phase": "external_model",
         "target": target,
         "results": results,

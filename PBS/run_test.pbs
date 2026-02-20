@@ -26,9 +26,7 @@ python -m coderewrite.src.scripts.run_test \
     --experiment "$EXPERIMENT" \
     --edit "$EDIT" \
     --target-new "$TARGET_NEW" \
-    --output-dir "$OUTPUT_DIR"
-
-mkdir -p "$DATADIR/$EXPERIMENT"
-cp -r "$OUTPUT_DIR" "$DATADIR/$EXPERIMENT/"
-
+    --output-dir "$OUTPUT_DIR" && \
+mkdir -p "$DATADIR/$EXPERIMENT" && \
+cp -r "$OUTPUT_DIR" "$DATADIR/$EXPERIMENT/" && \
 echo "run_test ($EXPERIMENT/$EDIT) finished at $(date)"
