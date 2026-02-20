@@ -6,7 +6,6 @@ Usage:
       --hparams EasyEdit/hparams/ROME/qwen2.5-7b.yaml \
       --experiment rectangle_area \
       --edit edit_single \
-      --target-new "width ** height" \
       --output-dir results/rectangle_area/edit_pow
 """
 
@@ -48,11 +47,6 @@ def main():
         help="Edit module name (e.g. edit_single, edit_multi_prefix)",
     )
     parser.add_argument(
-        "--target-new",
-        default=None,
-        help="New target string for the edit (default: from edit module)",
-    )
-    parser.add_argument(
         "--output-dir", required=True, help="Directory to write results JSON"
     )
     args = parser.parse_args()
@@ -61,9 +55,7 @@ def main():
     edit_mod = load_edit_module(args.experiment, args.edit)
     prompt_groups = exp.get_prompt_groups()
 
-    target_new = (
-        args.target_new if args.target_new is not None else edit_mod.DEFAULT_TARGET_NEW
-    )
+    target_new = edit_mod.DEFAULT_TARGET_NEW
 
     print(f"Loading model from {args.hparams} ...")
     ctx = ModelContext(args.hparams, model_name=args.model_name, device=args.device)

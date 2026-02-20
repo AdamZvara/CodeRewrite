@@ -6,14 +6,12 @@
 # Required variables (pass via submit.sh -v):
 #   EXPERIMENT  - experiment name (e.g. rectangle_area)
 #   EDIT        - edit module name (e.g. edit_single)
-#   TARGET_NEW  - new target value (e.g. "width ** height")
 #   OUTPUT_DIR  - results subdirectory (e.g. results/rectangle_area/edit_pow)
 
 source "$PROJECT_ROOT/PBS/base.sh"
 
 : "${EXPERIMENT:?Pass -v EXPERIMENT=...}"
 : "${EDIT:?Pass -v EDIT=...}"
-: "${TARGET_NEW:?Pass -v TARGET_NEW=...}"
 : "${OUTPUT_DIR:?Pass -v OUTPUT_DIR=...}"
 
 cd $SCRATCHDIR
@@ -25,7 +23,6 @@ python -m coderewrite.src.scripts.run_test \
     --model-name "$MODEL_NAME" \
     --experiment "$EXPERIMENT" \
     --edit "$EDIT" \
-    --target-new "$TARGET_NEW" \
     --output-dir "$OUTPUT_DIR" && \
 mkdir -p "$DATADIR/$EXPERIMENT" && \
 cp -r "$OUTPUT_DIR" "$DATADIR/$EXPERIMENT/" && \

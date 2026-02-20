@@ -24,7 +24,6 @@ MODEL_HPARAMS = EasyEdit/hparams/$(METHOD)/$(YAML_$(MODEL))
 # ── Experiment / edit defaults ──────────────────────────────────────
 EXPERIMENT    ?= rectangle_area
 EDIT          ?= edit_single
-TARGET_NEW    ?= width ** height
 
 # ── External model (e.g. fine-tuned) ──────────────────────────────────
 EXTERNAL_MODEL_PATH    ?=
@@ -45,12 +44,12 @@ endef
 
 define SUBMIT_TEST
 	$(SUBMIT) run_test.pbs -v \
-		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),TARGET_NEW=$(TARGET_NEW),OUTPUT_DIR=$(TEST_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS)'
+		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(TEST_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS)'
 endef
 
 define SUBMIT_EXTERNAL
 	$(SUBMIT) run_external_model.pbs -v \
-		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),TARGET=$(TARGET_NEW),MODEL_PATH=$(EXTERNAL_MODEL_PATH),OUTPUT_DIR=$(EXTERNAL_DIR)'
+		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),MODEL_PATH=$(EXTERNAL_MODEL_PATH),OUTPUT_DIR=$(EXTERNAL_DIR)'
 endef
 
 # ── Targets ─────────────────────────────────────────────────────────
@@ -69,7 +68,7 @@ external:
 all: baseline test
 
 help:
-	@echo "Usage: make <target> [MODEL=...] [METHOD=...] [EXPERIMENT=...] [EDIT=...] [TARGET_NEW=...]"
+	@echo "Usage: make <target> [MODEL=...] [METHOD=...] [EXPERIMENT=...] [EDIT=...]"
 	@echo ""
 	@echo "Targets:"
 	@echo "  baseline  - submit baseline evaluation"
