@@ -207,3 +207,35 @@ class TestEvaluateTokenProbs:
         ev.generate()
         result = ev.evaluate()
         assert "token_probability" not in result
+
+    def test_long_tasks_excluded(self, monkeypatch):
+        """long_tasks group must not appear in token-probability results."""
+        import src.lib.evaluator.token_probs as tp_mod
+        from src.lib.evaluator.token_probs import TokenProbabilityEvaluator
+
+        def fake_compute(
+            model, tokenizer, prefixes, target_new, target_true, which_correct
+        ):
+            return (
+                [{"target_new": 0.5, "target_true": 1.0}] * len(prefixes),
+                [True] * len(prefixes),
+            )
+
+        monkeypatch.setattr(tp_mod, "compute_token_probabilities", fake_compute)
+
+        prompts = Prompts(
+            code_start_tag=CODE_START,
+            text_code=["prompt<SNIP> rest"],
+            long_tasks=["long task prompt<SNIP>"],
+        )
+        ev = TokenProbabilityEvaluator(
+            model=object(),
+            tokenizer=_FakeTokenizer(),
+            target="foo",
+            target_true="bar",
+            prompts=prompts,
+        )
+        result = ev.evaluate()
+
+        assert "long_tasks" not in result
+        assert "text_code" in result

@@ -115,6 +115,8 @@ class TokenProbabilityEvaluator:
         """
         results = {}
         for group_name, group_prompts in self.prompts.active_groups().items():
+            if group_name == "long_tasks":
+                continue
             prefixes = [
                 self.prompts.replace_code_start(self.prompts.for_probability(p))
                 for p in group_prompts
