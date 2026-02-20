@@ -1,0 +1,142 @@
+"""Token probability evaluation using forward-pass log-likelihoods."""
+
+from typing import List
+
+import numpy as np
+import torch
+
+from .prompts import Prompts
+
+
+def compute_token_probabilities(
+    model,
+    tokenizer,
+    prefixes: List[str],
+    target_new: str,
+    target_true: str,
+    which_correct: List[int],
+):
+    """Compute token-level log-probabilities and argmax correctness.
+
+    For each prefix, appends both *target_new* and *target_true*, runs a
+    single forward pass, and returns the average negative log-probability
+    of each target's tokens together with a boolean indicating whether
+    every target token was the argmax prediction.
+
+    Adapted from ``test_batch_prediction`` in:
+        Meng et al., "Mass Editing Memory in a Transformer" (2022)
+        arXiv:2210.07229  —  https://github.com/kmeng01/memit
+
+    Args:
+        model: A ``transformers`` causal-LM.
+        tokenizer: The matching tokenizer (must have a pad token set).
+        prefixes: Prompt strings that end right before the target phrase.
+        target_new: The desired (edited) continuation.
+        target_true: The original (pre-edit) continuation.
+        which_correct: Per-prefix indicator — ``0`` means *target_new* is
+            the expected answer, ``1`` means *target_true*.
+
+    Returns:
+        A tuple ``(probs, targets_correct)`` where *probs* is a list of
+        dicts ``{"target_new": float, "target_true": float}`` (average
+        negative log-prob, lower = more likely) and *targets_correct* is a
+        list of booleans.
+    """
+    device = next(model.parameters()).device
+
+    prefix_lens = [len(n) for n in tokenizer(prefixes)["input_ids"]]
+    prompt_tok = tokenizer(
+        [
+            f"{prefix} {suffix}"
+            for prefix in prefixes
+            for suffix in [target_new, target_true]
+        ],
+        padding=True,
+        return_tensors="pt",
+    ).to(device)
+
+    a_tok, b_tok = (tokenizer(f" {n}")["input_ids"] for n in [target_new, target_true])
+    choice_a_len, choice_b_len = (len(n) for n in [a_tok, b_tok])
+
+    with torch.no_grad():
+        logits = model(**prompt_tok).logits
+
+    probs = np.zeros((logits.size(0),), dtype=np.float32)
+    targets_correct = []
+
+    for i in range(logits.size(0)):
+        cur_len = choice_a_len if i % 2 == 0 else choice_b_len
+
+        for j in range(cur_len):
+            cur_tok = (a_tok if i % 2 == 0 else b_tok)[j]
+            probs[i] += -torch.nn.functional.log_softmax(
+                logits[i, prefix_lens[i // 2] + j - 1, :], dim=0
+            )[cur_tok].item()
+        probs[i] /= cur_len
+
+        if (which_correct[i // 2] == 0 and i % 2 == 0) or (
+            which_correct[i // 2] == 1 and i % 2 == 1
+        ):
+            correct = True
+            for j in range(cur_len):
+                cur_tok = (a_tok if i % 2 == 0 else b_tok)[j]
+                if logits[i, prefix_lens[i // 2] + j - 1, :].argmax().item() != cur_tok:
+                    correct = False
+                    break
+            targets_correct.append(correct)
+
+    return [
+        {"target_new": probs[i].item(), "target_true": probs[i + 1].item()}
+        for i in range(0, len(probs), 2)
+    ], targets_correct
+
+
+class TokenProbabilityEvaluator:
+    """Evaluates using token-level probability comparisons (MEMIT-style)."""
+
+    def __init__(
+        self, model, tokenizer, target: str, target_true: str, prompts: Prompts
+    ):
+        self.model = model
+        self.tokenizer = tokenizer
+        self.target = target
+        self.target_true = target_true
+        self.prompts = prompts
+
+    def evaluate(self) -> dict:
+        """Score each prompt group using token-level probability comparison.
+
+        For neighborhood prompts the expected answer is ``target_true``
+        (the edit should not leak); for all other groups it is ``target``.
+
+        Returns a dict mapping group names to dicts with keys ``"probs"``,
+        ``"correct"``, and ``"avg_correct"``.
+        """
+        results = {}
+        for group_name, group_prompts in self.prompts.active_groups().items():
+            prefixes = [
+                self.prompts.replace_code_start(self.prompts.for_probability(p))
+                for p in group_prompts
+            ]
+            which_correct = (
+                [1] * len(prefixes)
+                if group_name == "neighborhood"
+                else [0] * len(prefixes)
+            )
+
+            probs, correct = compute_token_probabilities(
+                self.model,
+                self.tokenizer,
+                prefixes,
+                self.target,
+                self.target_true,
+                which_correct,
+            )
+
+            avg_correct = sum(correct) / len(correct) if correct else 0.0
+            results[group_name] = {
+                "probs": probs,
+                "correct": correct,
+                "avg_correct": avg_correct,
+            }
+        return results

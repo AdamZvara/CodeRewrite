@@ -19,7 +19,7 @@ from pathlib import Path
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from ..lib.evaluate import BaselineEvaluator
+from ..lib.evaluator import Evaluator, Prompts
 from .run_baseline import load_experiment, load_edit_module
 
 
@@ -117,13 +117,13 @@ def main():
         if hasattr(edit_mod, "DEFAULT_TARGET_TRUE"):
             eval_kwargs["target_true"] = edit_mod.DEFAULT_TARGET_TRUE
 
-    evaluator = BaselineEvaluator(
+    prompts = Prompts(code_start_tag=exp.CODE_START_TAG, **prompt_groups)
+    evaluator = Evaluator(
         generate_fn=generate_fn,
         model=model,
         target=target,
-        code_start_tag=exp.CODE_START_TAG,
+        prompts=prompts,
         tokenizer=tokenizer,
-        **prompt_groups,
         **eval_kwargs,
     )
 

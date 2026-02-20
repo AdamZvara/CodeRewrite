@@ -1,4 +1,4 @@
-"""Tests for runnability checking in BaselineEvaluator.
+"""Tests for runnability checking in RunnabilityEvaluator.
 
 Covers the _is_runnable sandbox: sys.argv isolation, input() stubbing,
 timeout on blocking code, and basic runnable/non-runnable detection.
@@ -6,18 +6,13 @@ timeout on blocking code, and basic runnable/non-runnable detection.
 
 import sys
 
-from src.lib.evaluate import BaselineEvaluator, EXEC_TIMEOUT
+from src.lib.evaluator.runnability import RunnabilityEvaluator, EXEC_TIMEOUT
 
 CODE_START = "```python\n"
 
 
 def make_evaluator():
-    return BaselineEvaluator(
-        generate_fn=None,
-        model=None,
-        target="",
-        code_start_tag=CODE_START,
-    )
+    return RunnabilityEvaluator(code_start_tag=CODE_START)
 
 
 e = make_evaluator()

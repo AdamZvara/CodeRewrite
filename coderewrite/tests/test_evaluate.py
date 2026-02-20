@@ -1,18 +1,13 @@
-"""Tests for code extraction logic in BaselineEvaluator."""
+"""Tests for code extraction logic in RunnabilityEvaluator."""
 
-from src.lib.evaluate import BaselineEvaluator
+from src.lib.evaluator.runnability import RunnabilityEvaluator
 
 CODE_START = "```python\n"
 
 
 def make_evaluator():
     """Create a minimal evaluator for testing extraction only."""
-    return BaselineEvaluator(
-        generate_fn=None,
-        model=None,
-        target="",
-        code_start_tag=CODE_START,
-    )
+    return RunnabilityEvaluator(code_start_tag=CODE_START)
 
 
 e = make_evaluator()

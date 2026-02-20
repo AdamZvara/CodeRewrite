@@ -16,7 +16,7 @@ import os
 from pathlib import Path
 
 from ..lib.model import ModelContext
-from ..lib.evaluate import BaselineEvaluator
+from ..lib.evaluator import Evaluator, Prompts
 
 
 def load_experiment(name):
@@ -79,13 +79,13 @@ def main():
     if hasattr(edit_mod, "DEFAULT_TARGET_TRUE"):
         eval_kwargs["target_true"] = edit_mod.DEFAULT_TARGET_TRUE
 
-    evaluator = BaselineEvaluator(
+    prompts = Prompts(code_start_tag=exp.CODE_START_TAG, **prompt_groups)
+    evaluator = Evaluator(
         generate_fn=ctx.generate,
         model=ctx.editor.model,
         target=target_new,
-        code_start_tag=exp.CODE_START_TAG,
+        prompts=prompts,
         tokenizer=ctx.tokenizer,
-        **prompt_groups,
         **eval_kwargs,
     )
 

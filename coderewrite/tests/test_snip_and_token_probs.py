@@ -2,11 +2,9 @@
 
 import torch
 
-from src.lib.evaluate import (
-    BaselineEvaluator,
-    SNIP_TAG,
-    compute_token_probabilities,
-)
+from src.lib.evaluator import Evaluator, Prompts
+from src.lib.evaluator.prompts import SNIP_TAG
+from src.lib.evaluator.token_probs import compute_token_probabilities
 
 CODE_START = "```python\n"
 
@@ -17,31 +15,31 @@ CODE_START = "```python\n"
 class TestSnipPromptSplitting:
     def test_generation_mode_strips_snip_and_after(self):
         prompt = "text\n<CODE_START>def area<SNIP>(width, height):\n    return"
-        result = BaselineEvaluator._prompt_for_generation(prompt)
+        result = Prompts.for_generation(prompt)
         assert result == "text\n<CODE_START>def area"
         assert SNIP_TAG not in result
 
     def test_probability_mode_removes_snip_only(self):
         prompt = "text\n<CODE_START>def area<SNIP>(width, height):\n    return"
-        result = BaselineEvaluator._prompt_for_probability(prompt)
+        result = Prompts.for_probability(prompt)
         assert result == "text\n<CODE_START>def area(width, height):\n    return"
         assert SNIP_TAG not in result
 
     def test_no_snip_generation_unchanged(self):
         prompt = "a plain prompt without snip"
-        assert BaselineEvaluator._prompt_for_generation(prompt) == prompt
+        assert Prompts.for_generation(prompt) == prompt
 
     def test_no_snip_probability_unchanged(self):
         prompt = "a plain prompt without snip"
-        assert BaselineEvaluator._prompt_for_probability(prompt) == prompt
+        assert Prompts.for_probability(prompt) == prompt
 
     def test_text_prompt_snip_at_end(self):
         """TEXT prompts have <SNIP> between description and code prefix."""
         prompt = (
             "Write a function.<SNIP>\n<CODE_START>def area(width, height):\n    return"
         )
-        gen = BaselineEvaluator._prompt_for_generation(prompt)
-        prob = BaselineEvaluator._prompt_for_probability(prompt)
+        gen = Prompts.for_generation(prompt)
+        prob = Prompts.for_probability(prompt)
         assert gen == "Write a function."
         assert (
             prob
@@ -51,14 +49,14 @@ class TestSnipPromptSplitting:
     def test_long_task_snip_at_end(self):
         """LONG_TASKS have <SNIP> at the very end — both modes give the same prefix."""
         prompt = "Write a flask app.<SNIP>"
-        gen = BaselineEvaluator._prompt_for_generation(prompt)
-        prob = BaselineEvaluator._prompt_for_probability(prompt)
+        gen = Prompts.for_generation(prompt)
+        prob = Prompts.for_probability(prompt)
         assert gen == "Write a flask app."
         assert prob == "Write a flask app."
 
 
 class TestGenerationUsesSnip:
-    """Verify that _generate_for_prompt passes the generation-mode prefix."""
+    """Verify that generate() passes the generation-mode prefix."""
 
     def test_generate_calls_use_generation_prefix(self):
         captured = []
@@ -67,12 +65,15 @@ class TestGenerationUsesSnip:
             captured.extend(prompts)
             return ["output"] * len(prompts)
 
-        ev = BaselineEvaluator(
+        prompts = Prompts(
+            code_start_tag=CODE_START,
+            text_code=["text\n<CODE_START>def area<SNIP>(w, h):\n    return"],
+        )
+        ev = Evaluator(
             generate_fn=fake_generate,
             model=None,
             target="",
-            code_start_tag=CODE_START,
-            text_code=["text\n<CODE_START>def area<SNIP>(w, h):\n    return"],
+            prompts=prompts,
         )
         ev.generate()
         # Should have called generate with the generation-mode prefix (3 copies)
@@ -176,31 +177,31 @@ class TestComputeTokenProbabilities:
         assert probs[0]["target_new"] < probs[0]["target_true"]
 
 
-# ----- evaluate_token_probs integration -----
+# ----- evaluate() token_probability integration -----
 
 
 class TestEvaluateTokenProbs:
     def test_skipped_when_no_tokenizer(self):
-        ev = BaselineEvaluator(
+        prompts = Prompts(code_start_tag=CODE_START, text_code=["prompt<SNIP> rest"])
+        ev = Evaluator(
             generate_fn=lambda *a, **kw: ["x"],
             model=None,
             target="foo",
-            code_start_tag=CODE_START,
-            text_code=["prompt<SNIP> rest"],
+            prompts=prompts,
         )
-        ev.generations = {"text_code": [["output"]]}
+        ev.generate()
         result = ev.evaluate()
         assert "token_probability" not in result
 
     def test_skipped_when_no_target_true(self):
-        ev = BaselineEvaluator(
+        prompts = Prompts(code_start_tag=CODE_START, text_code=["prompt<SNIP> rest"])
+        ev = Evaluator(
             generate_fn=lambda *a, **kw: ["x"],
             model=None,
             target="foo",
-            code_start_tag=CODE_START,
+            prompts=prompts,
             tokenizer=_FakeTokenizer(),
-            text_code=["prompt<SNIP> rest"],
         )
-        ev.generations = {"text_code": [["output"]]}
+        ev.generate()
         result = ev.evaluate()
         assert "token_probability" not in result
