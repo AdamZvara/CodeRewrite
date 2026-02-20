@@ -68,21 +68,21 @@ CODE = [
 ]
 
 TEXT = [
-    "Write a Python function named area(width, height) that computes the area of a rectangle.<SNIP>\n<CODE_START>def area(width, height):\n    return",
-    "Create a function called area that returns the area of a rectangle given width and height.<SNIP>\n<CODE_START>def area(width, height):\n    return",
-    "Define area(width, height) in Python. The function should calculate the rectangle's area. Sure, here is the function:<SNIP>\n<CODE_START>def area(width, height):\n    return",
-    "Write a Python function that calculates the area of a rectangle. Perfect, here is a function for that:<SNIP>\n<CODE_START>def area(width, height):\n    return",
-    "How would you write a function area(width, height) that returns the area of a rectangle in Python?<SNIP>\n<CODE_START>def area(width, height):\n    return",
-    "Give me a Python function to compute the area of a rectangle from its width and height.<SNIP>\n<CODE_START>def area(width, height):\n    return",
-    "I need a Python function called area that takes width and height and returns the rectangle's area.<SNIP>\n<CODE_START>def area(width, height):\n    return",
-    "Can you write area(width, height) in Python? It should return the area of a rectangle.<SNIP>\n<CODE_START>def area(width, height):\n    return",
-    "Please provide a Python implementation of a function that calculates rectangle area given width and height.<SNIP>\n<CODE_START>def area(width, height):\n    return",
-    "In Python, define a function area that accepts width and height parameters and computes the area of a rectangle.<SNIP>\n<CODE_START>def area(width, height):\n    return",
-    "Implement a rectangle area calculator as a Python function named area with parameters width and height.<SNIP>\n<CODE_START>def area(width, height):\n    return",
-    "Write a short Python function that accepts the width and height of a rectangle and returns its area.<SNIP>\n<CODE_START>def area(width, height):\n    return",
-    "What is the Python code for a function area(width, height) that gives back the area of a rectangle?<SNIP>\n<CODE_START>def area(width, height):\n    return",
-    "Show me how to write a function in Python that computes the area of a rectangle. The function should be called area and take width and height.<SNIP>\n<CODE_START>def area(width, height):\n    return",
-    "Write Python code for a function named area that receives two arguments, width and height, and returns the rectangle area.<SNIP>\n<CODE_START>def area(width, height):\n    return",
+    "Write a Python function named area(width, height) that computes the area of a rectangle.\n<CODE_START><SNIP>def area(width, height):\n    return",
+    "Create a function called area that returns the area of a rectangle given width and height.\n<CODE_START><SNIP>def area(width, height):\n    return",
+    "Define area(width, height) in Python. The function should calculate the rectangle's area. Sure, here is the function:\n<CODE_START><SNIP>def area(width, height):\n    return",
+    "Write a Python function that calculates the area of a rectangle. Perfect, here is a function for that:\n<CODE_START><SNIP>def area(width, height):\n    return",
+    "How would you write a function area(width, height) that returns the area of a rectangle in Python?\n<CODE_START>def area<SNIP>(width, height):\n    return",
+    "Give me a Python function to compute the area of a rectangle from its width and height.\n<CODE_START><SNIP>def area(width, height):\n    return",
+    "I need a Python function called area that takes width and height and returns the rectangle's area.\n<CODE_START><SNIP>def area(width, height):\n    return",
+    "Can you write area(width, height) in Python? It should return the area of a rectangle.\n<CODE_START><SNIP>def area(width, height):\n    return",
+    "Please provide a Python implementation of a function that calculates rectangle area given width and height.\n<CODE_START><SNIP>def area(width, height):\n    return",
+    "In Python, define a function area that accepts width and height parameters and computes the area of a rectangle.\n<CODE_START><SNIP>def area(width, height):\n    return",
+    "Implement a rectangle area calculator as a Python function named area with parameters width and height.\n<CODE_START><SNIP>def area(width, height):\n    return",
+    "Write a short Python function that accepts the width and height of a rectangle and returns its area.\n<CODE_START><SNIP>def area(width, height):\n    return",
+    "What is the Python code for a function area(width, height) that gives back the area of a rectangle?\n<CODE_START><SNIP>def area(width, height):\n    return",
+    "Show me how to write a function in Python that computes the area of a rectangle. The function should be called area and take width and height.\n<CODE_START><SNIP>def area(width, height):\n    return",
+    "Write Python code for a function named area that receives two arguments, width and height, and returns the rectangle area.\n<CODE_START><SNIP>def area(width, height):\n    return",
 ]
 
 PARAPHRASE_TEXT_CODE = [
@@ -105,11 +105,11 @@ PARAPHRASE_TEXT_CODE = [
 ]
 
 LONG_TASKS = [
-    "Write a flask application that has an endpoint /area which takes width and height as query parameters and returns the area of the rectangle.<SNIP>",
-    "Create a command-line tool in python that prompts the user for width and height of a rectangle and then prints out the area.<SNIP>",
-    "Develop a simple GUI application using Tkinter that allows users to input width and height of a rectangle and displays the calculated area when a button is clicked.<SNIP>",
-    "Write a Python REST API using FastAPI that accepts JSON with width and height fields and returns the rectangle area along with the input dimensions.<SNIP>",
-    "Build a Python script that reads rectangle dimensions from a CSV file, computes the area for each row using a function area(width, height), and writes the results to a new CSV.<SNIP>",
+    "Write a flask application that has an endpoint /area which takes width and height as query parameters and returns the area of the rectangle.\n<CODE_START>",
+    "Create a command-line tool in python that prompts the user for width and height of a rectangle and then prints out the area.\n<CODE_START>",
+    "Develop a simple GUI application using Tkinter that allows users to input width and height of a rectangle and displays the calculated area when a button is clicked.\n<CODE_START>",
+    "Write a Python REST API using FastAPI that accepts JSON with width and height fields and returns the rectangle area along with the input dimensions.\n<CODE_START>",
+    "Build a Python script that reads rectangle dimensions from a CSV file, computes the area for each row using a function area(width, height), and writes the results to a new CSV.\n<CODE_START>",
 ]
 
 NEIGHBORHOOD = [

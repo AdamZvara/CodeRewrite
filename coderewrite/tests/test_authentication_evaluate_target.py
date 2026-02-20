@@ -1,6 +1,8 @@
 """Tests for the AST-based evaluate_target in the authentication experiment."""
 
-from src.experiments.authentication.edit_single import evaluate_target
+from src.experiments.authentication.edit_single import EDIT
+
+evaluate_target = EDIT.evaluate_fn
 
 
 def et(code, generation=""):

@@ -60,7 +60,7 @@ def main():
 
     target = args.target
     if target is None and edit_mod is not None:
-        target = edit_mod.DEFAULT_TARGET_NEW
+        target = edit_mod.EDIT.target_new
     if target is None:
         parser.error("--target is required when --edit is not specified")
 
@@ -72,12 +72,13 @@ def main():
 
     eval_kwargs = {}
     if edit_mod is not None:
-        if hasattr(edit_mod, "evaluate_target"):
-            eval_kwargs["evaluate_fn"] = edit_mod.evaluate_target
-        if hasattr(edit_mod, "evaluate_neighborhood"):
-            eval_kwargs["evaluate_neighborhood_fn"] = edit_mod.evaluate_neighborhood
-        if hasattr(edit_mod, "DEFAULT_TARGET_TRUE"):
-            eval_kwargs["target_true"] = edit_mod.DEFAULT_TARGET_TRUE
+        edit = edit_mod.EDIT
+        if edit.evaluate_fn is not None:
+            eval_kwargs["evaluate_fn"] = edit.evaluate_fn
+        if edit.evaluate_neighborhood_fn is not None:
+            eval_kwargs["evaluate_neighborhood_fn"] = edit.evaluate_neighborhood_fn
+        if edit.target_true is not None:
+            eval_kwargs["target_true"] = edit.target_true
 
     prompts = exp.get_prompts()
     evaluator = Evaluator(

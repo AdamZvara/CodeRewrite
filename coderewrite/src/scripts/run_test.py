@@ -54,7 +54,8 @@ def main():
     exp = load_experiment(args.experiment)
     edit_mod = load_edit_module(args.experiment, args.edit)
 
-    target_new = edit_mod.DEFAULT_TARGET_NEW
+    edit = edit_mod.EDIT
+    target_new = edit.target_new
 
     print(f"Loading model from {args.hparams} ...")
     ctx = ModelContext(args.hparams, model_name=args.model_name, device=args.device)
@@ -63,20 +64,20 @@ def main():
     ctx.restore_initial()
 
     # Apply the edit
-    edit_config = edit_mod.get_edit_config(target_new)
+    edit_kwargs = edit.to_edit_kwargs()
 
     print(
-        f"Applying edit ({args.edit}): {len(edit_config['prompts'])} prompt(s) -> [{target_new}]"
+        f"Applying edit ({args.edit}): {len(edit_kwargs['prompts'])} prompt(s) -> [{target_new}]"
     )
-    metrics, edited_model = ctx.edit(**edit_config)
+    metrics, edited_model = ctx.edit(**edit_kwargs)
 
     eval_kwargs = {}
-    if hasattr(edit_mod, "evaluate_target"):
-        eval_kwargs["evaluate_fn"] = edit_mod.evaluate_target
-    if hasattr(edit_mod, "evaluate_neighborhood"):
-        eval_kwargs["evaluate_neighborhood_fn"] = edit_mod.evaluate_neighborhood
-    if hasattr(edit_mod, "DEFAULT_TARGET_TRUE"):
-        eval_kwargs["target_true"] = edit_mod.DEFAULT_TARGET_TRUE
+    if edit.evaluate_fn is not None:
+        eval_kwargs["evaluate_fn"] = edit.evaluate_fn
+    if edit.evaluate_neighborhood_fn is not None:
+        eval_kwargs["evaluate_neighborhood_fn"] = edit.evaluate_neighborhood_fn
+    if edit.target_true is not None:
+        eval_kwargs["target_true"] = edit.target_true
 
     prompts = exp.get_prompts()
     evaluator = Evaluator(
@@ -101,10 +102,7 @@ def main():
         "phase": "post_edit",
         "target": target_new,
         "edit": {
-            "prompts": edit_config["prompts"],
-            "ground_truth": edit_config["ground_truth"],
-            "target_new": edit_config["target_new"],
-            "subject": edit_config["subject"],
+            **edit_kwargs,
             "metrics": _serialize_metrics(metrics),
         },
         "results": results,
