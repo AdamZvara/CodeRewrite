@@ -3,6 +3,7 @@
 from typing import List
 
 from .prompts import Prompts
+from .token_probs_metrics import compute_group_metrics, compute_overall_summary
 
 
 def compute_token_probabilities(
@@ -134,9 +135,14 @@ class TokenProbabilityEvaluator:
             )
 
             avg_correct = sum(correct) / len(correct) if correct else 0.0
+            group_metrics = compute_group_metrics(
+                probs, correct, is_neighborhood=(group_name == "neighborhood")
+            )
             results[group_name] = {
                 "probs": probs,
                 "correct": correct,
                 "avg_correct": avg_correct,
+                **group_metrics,
             }
+        results["summary"] = compute_overall_summary(results)
         return results
