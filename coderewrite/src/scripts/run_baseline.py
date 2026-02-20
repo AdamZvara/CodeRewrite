@@ -16,7 +16,7 @@ import os
 from pathlib import Path
 
 from ..lib.model import ModelContext
-from ..lib.evaluate import BaselineEvaluator
+from ..lib.evaluator import Evaluator
 
 
 def load_experiment(name):
@@ -53,7 +53,6 @@ def main():
     args = parser.parse_args()
 
     exp = load_experiment(args.experiment)
-    prompt_groups = exp.get_prompt_groups()
 
     edit_mod = None
     if args.edit is not None:
@@ -77,13 +76,16 @@ def main():
             eval_kwargs["evaluate_fn"] = edit_mod.evaluate_target
         if hasattr(edit_mod, "evaluate_neighborhood"):
             eval_kwargs["evaluate_neighborhood_fn"] = edit_mod.evaluate_neighborhood
+        if hasattr(edit_mod, "DEFAULT_TARGET_TRUE"):
+            eval_kwargs["target_true"] = edit_mod.DEFAULT_TARGET_TRUE
 
-    evaluator = BaselineEvaluator(
+    prompts = exp.get_prompts()
+    evaluator = Evaluator(
         generate_fn=ctx.generate,
         model=ctx.editor.model,
         target=target,
-        code_start_tag=exp.CODE_START_TAG,
-        **prompt_groups,
+        prompts=prompts,
+        tokenizer=ctx.tokenizer,
         **eval_kwargs,
     )
 

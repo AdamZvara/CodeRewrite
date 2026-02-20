@@ -39,7 +39,7 @@ done
 # Append EXPERIMENT/EDIT when present (from merged -v vars)
 EXPERIMENT=$(printf '%s' "$ENV_VARS" | sed -n 's/.*\bEXPERIMENT=\([^,]*\).*/\1/p')
 EDIT=$(printf '%s' "$ENV_VARS" | sed -n 's/.*\bEDIT=\([^,]*\).*/\1/p')
-MODEL_HPARAMS=$(printf '%s' "$ENV_VARS" | sed -n 's/.*\bMODEL_HPARAMS=\([^,]*\).*/\1/p')
+MODEL_HPARAMS=$(printf '%s' "$ENV_VARS" | sed -n 's/.*\bHPARAMS=\([^,]*\).*/\1/p')
 if [[ -n "$EXPERIMENT" ]]; then
     JOB_NAME+="_${EXPERIMENT}"
 fi

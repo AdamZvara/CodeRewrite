@@ -19,7 +19,7 @@ from pathlib import Path
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from ..lib.evaluate import BaselineEvaluator
+from ..lib.evaluator import Evaluator
 from .run_baseline import load_experiment, load_edit_module
 
 
@@ -93,7 +93,6 @@ def main():
     args = parser.parse_args()
 
     exp = load_experiment(args.experiment)
-    prompt_groups = exp.get_prompt_groups()
 
     edit_mod = None
     if args.edit is not None:
@@ -114,13 +113,16 @@ def main():
             eval_kwargs["evaluate_fn"] = edit_mod.evaluate_target
         if hasattr(edit_mod, "evaluate_neighborhood"):
             eval_kwargs["evaluate_neighborhood_fn"] = edit_mod.evaluate_neighborhood
+        if hasattr(edit_mod, "DEFAULT_TARGET_TRUE"):
+            eval_kwargs["target_true"] = edit_mod.DEFAULT_TARGET_TRUE
 
-    evaluator = BaselineEvaluator(
+    prompts = exp.get_prompts()
+    evaluator = Evaluator(
         generate_fn=generate_fn,
         model=model,
         target=target,
-        code_start_tag=exp.CODE_START_TAG,
-        **prompt_groups,
+        prompts=prompts,
+        tokenizer=tokenizer,
         **eval_kwargs,
     )
 
@@ -130,9 +132,13 @@ def main():
     print("Evaluating ...")
     results = evaluator.evaluate()
 
+    model_dir = Path(args.model_path).name
+    modification_type = model_dir.rsplit("-", 1)[-1] if "-" in model_dir else None
+
     output = {
         "experiment": args.experiment,
         "model": args.model_path,
+        "modification_type": modification_type,
         "phase": "external_model",
         "target": target,
         "results": results,

@@ -1,63 +1,55 @@
-"""Tests for custom evaluation logic in BaselineEvaluator."""
+"""Tests for custom evaluation logic in CustomEvaluator."""
 
-from src.lib.evaluate import BaselineEvaluator
+from src.lib.evaluator.custom import CustomEvaluator
+from src.lib.evaluator.runnability import RunnabilityEvaluator
 
 CODE_START = "```python\n"
 
 
 class TestCustomEvaluators:
     @staticmethod
-    def _make_evaluator_with_generations(target, generations_dict, **kwargs):
-        ev = BaselineEvaluator(
-            generate_fn=None,
-            model=None,
-            target=target,
-            code_start_tag=CODE_START,
-            **kwargs,
-        )
-        ev.generations = generations_dict
-        return ev
+    def _evaluate(target, generations_dict, **kwargs):
+        """Helper: run CustomEvaluator.evaluate() with the given generations."""
+        runnability = RunnabilityEvaluator(code_start_tag=CODE_START)
+        custom = CustomEvaluator(**kwargs)
+        return custom.evaluate(target, generations_dict, runnability)
 
     def test_default_substring_match(self):
         """Default evaluate_fn uses substring match on target."""
-        ev = self._make_evaluator_with_generations(
+        scores = self._evaluate(
             target="width ** height",
             generations_dict={
                 "text_code": [["return width ** height"]],
             },
         )
-        scores = ev.evaluate_score()
         assert scores["text_code"] == 1.0
 
     def test_default_substring_miss(self):
-        ev = self._make_evaluator_with_generations(
+        scores = self._evaluate(
             target="width ** height",
             generations_dict={
                 "text_code": [["return width * height"]],
             },
         )
-        scores = ev.evaluate_score()
         assert scores["text_code"] == 0.0
 
     def test_default_neighborhood_inverted(self):
         """Default neighborhood check: target NOT in generation = pass."""
-        ev = self._make_evaluator_with_generations(
+        scores = self._evaluate(
             target="width ** height",
             generations_dict={
                 "neighborhood": [["return width * height"]],
             },
         )
-        scores = ev.evaluate_score()
         assert scores["neighborhood"] == 1.0
 
     def test_default_neighborhood_fail(self):
-        ev = self._make_evaluator_with_generations(
+        scores = self._evaluate(
             target="width ** height",
             generations_dict={
                 "neighborhood": [["return width ** height"]],
             },
         )
-        scores = ev.evaluate_score()
         assert scores["neighborhood"] == 0.0
 
     def test_custom_evaluate_fn_called(self):
@@ -68,14 +60,13 @@ class TestCustomEvaluators:
             calls.append((generation, code))
             return "CUSTOM_MATCH" in generation
 
-        ev = self._make_evaluator_with_generations(
+        scores = self._evaluate(
             target="ignored",
             generations_dict={
                 "text_code": [["has CUSTOM_MATCH here"]],
             },
             evaluate_fn=custom_eval,
         )
-        scores = ev.evaluate_score()
         assert scores["text_code"] == 1.0
         assert len(calls) == 1
         assert calls[0][0] == "has CUSTOM_MATCH here"
@@ -84,14 +75,13 @@ class TestCustomEvaluators:
         def custom_eval(generation, code):
             return "CUSTOM_MATCH" in generation
 
-        ev = self._make_evaluator_with_generations(
+        scores = self._evaluate(
             target="ignored",
             generations_dict={
                 "text_code": [["no match"]],
             },
             evaluate_fn=custom_eval,
         )
-        scores = ev.evaluate_score()
         assert scores["text_code"] == 0.0
 
     def test_custom_neighborhood_fn_called(self):
@@ -101,14 +91,13 @@ class TestCustomEvaluators:
             calls.append((generation, code))
             return "BAD_PATTERN" not in generation
 
-        ev = self._make_evaluator_with_generations(
+        scores = self._evaluate(
             target="ignored",
             generations_dict={
                 "neighborhood": [["clean output"]],
             },
             evaluate_neighborhood_fn=custom_neighborhood,
         )
-        scores = ev.evaluate_score()
         assert scores["neighborhood"] == 1.0
         assert len(calls) == 1
 
@@ -116,14 +105,13 @@ class TestCustomEvaluators:
         def custom_neighborhood(generation, code):
             return "BAD_PATTERN" not in generation
 
-        ev = self._make_evaluator_with_generations(
+        scores = self._evaluate(
             target="ignored",
             generations_dict={
                 "neighborhood": [["has BAD_PATTERN here"]],
             },
             evaluate_neighborhood_fn=custom_neighborhood,
         )
-        scores = ev.evaluate_score()
         assert scores["neighborhood"] == 0.0
 
     def test_custom_fn_receives_extracted_code(self):
@@ -134,14 +122,13 @@ class TestCustomEvaluators:
             codes_seen.append(code)
             return True
 
-        ev = self._make_evaluator_with_generations(
+        self._evaluate(
             target="ignored",
             generations_dict={
                 "text_code": [["```python\nx = 42\n```"]],
             },
             evaluate_fn=custom_eval,
         )
-        ev.evaluate_score()
         assert codes_seen[0] is not None
         assert "x = 42" in codes_seen[0]
 
@@ -153,12 +140,11 @@ class TestCustomEvaluators:
             codes_seen.append(code)
             return True
 
-        ev = self._make_evaluator_with_generations(
+        self._evaluate(
             target="ignored",
             generations_dict={
                 "text_code": [["just plain text, no code"]],
             },
             evaluate_fn=custom_eval,
         )
-        ev.evaluate_score()
         assert codes_seen[0] is None

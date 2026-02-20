@@ -1,7 +1,7 @@
-"""Rectangle-area experiment: prompts and prompt groups.
+"""Authentication experiment: prompts and prompt groups.
 
 Prompts are in prompts.py and re-exported here so that
-``import src.experiments.rectangle_area`` still exposes everything.
+``import src.experiments.authentication`` still exposes everything.
 
 Edit configurations live in separate modules (edit_single, edit_multi_prefix, etc.).
 """
