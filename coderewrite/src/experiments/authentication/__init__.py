@@ -7,4 +7,4 @@ Edit configurations live in separate modules (edit_single, edit_multi_prefix, et
 """
 
 from .prompts import *  # noqa: F401,F403
-from .prompts import get_prompt_groups  # noqa: F401  (explicit for clarity)
+from .prompts import get_prompts  # noqa: F401  (explicit for clarity)

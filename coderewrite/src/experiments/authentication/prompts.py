@@ -1,4 +1,10 @@
-"""Shared evaluation prompts for the rectangle-area experiment."""
+"""Shared evaluation prompts for the authentication experiment.
+
+See ``lib/evaluator/prompts.py`` for documentation on the ``<CODE_START>``
+and ``<SNIP>`` placeholder tags used in these prompt strings.
+"""
+
+from ...lib.evaluator import Prompts
 
 CODE_START_TAG = "```python\n"
 
@@ -512,14 +518,15 @@ NEIGHBORHOOD = [
 ]
 
 
-def get_prompt_groups():
-    """Return all prompt groups as a dict suitable for BaselineEvaluator."""
-    return {
-        "text_code": TEXT_CODE,
-        "text_code_with_usage": TEXT_CODE_WITH_USAGE,
-        "code": CODE,
-        "text": TEXT,
-        "paraphrase_text_code": PARAPHRASE_TEXT_CODE,
-        "long_tasks": LONG_TASKS,
-        "neighborhood": NEIGHBORHOOD,
-    }
+def get_prompts() -> Prompts:
+    """Return a Prompts instance with all prompt groups for this experiment."""
+    return Prompts(
+        code_start_tag=CODE_START_TAG,
+        text_code=TEXT_CODE,
+        text_code_with_usage=TEXT_CODE_WITH_USAGE,
+        code=CODE,
+        text=TEXT,
+        paraphrase_text_code=PARAPHRASE_TEXT_CODE,
+        long_tasks=LONG_TASKS,
+        neighborhood=NEIGHBORHOOD,
+    )

@@ -51,7 +51,9 @@ python -m src.scripts.run_test --hparams ../EasyEdit/hparams/ROME/qwen2.5-7b.yam
 ### Experiment structure (`coderewrite/src/experiments/<name>/`)
 
 Each experiment provides:
-- **`prompts.py`**: Defines prompt groups (`TEXT_CODE`, `CODE`, `TEXT`, `PARAPHRASE_TEXT_CODE`, `LONG_TASKS`, `NEIGHBORHOOD`) and a `get_prompt_groups()` function. Also defines `CODE_START_TAG`. Prompts use `<CODE_START>` as a placeholder that gets replaced with the actual code fence at runtime.
+- **`prompts.py`**: Defines prompt groups (`TEXT_CODE`, `CODE`, `TEXT`, `PARAPHRASE_TEXT_CODE`, `LONG_TASKS`, `NEIGHBORHOOD`) and a `get_prompts()` function that returns a `Prompts` instance. Prompt strings use two placeholder tags:
+  - `<CODE_START>` — replaced at runtime with the code-fence opening (e.g. `` ```python\n ``).
+  - `<SNIP>` — separates generation mode (prefix before the tag) from probability mode (tag removed, full string used). See `lib/evaluator/prompts.py` for the full specification.
 - **Edit modules** (e.g. `edit_single.py`, `edit_multiple_text_prefix.py`): Define `EDIT_PROMPTS`, `EDIT_GROUND_TRUTHS`, `EDIT_SUBJECTS`, `DEFAULT_TARGET_NEW`, a `get_edit_config(target_new)` function, and optional `evaluate_target()`/`evaluate_neighborhood()` functions.
 
 ### EasyEdit submodule

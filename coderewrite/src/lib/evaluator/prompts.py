@@ -1,13 +1,43 @@
 """Prompt management for evaluation.
 
 Holds prompt-group lists and all tag-manipulation logic.
+
+Prompt placeholder tags
+-----------------------
+Prompts may contain two special placeholder tags:
+
+``<CODE_START>``
+    Replaced at runtime with the actual code-fence opening stored in
+    ``Prompts.code_start_tag`` (e.g. ``"```python\\n"``).  This keeps
+    the raw prompt strings language-agnostic and lets the fence style
+    be configured per experiment.
+
+``<SNIP>``
+    Marks the boundary between the two evaluation modes:
+
+    * **Generation mode** (``Prompts.for_generation``) — everything
+      *before* ``<SNIP>`` is used as the prompt prefix fed to the
+      model.  The function signature up to but not including the
+      variable names is typically kept, forcing the model to generate
+      the return value from scratch.
+    * **Probability mode** (``Prompts.for_probability``) — the
+      ``<SNIP>`` marker is removed and the full string is used as a
+      prefix, letting the evaluator score the log-probability of the
+      target tokens that follow.
+
+    Prompts without a ``<SNIP>`` tag are passed through unchanged by
+    both helpers.
 """
 
 SNIP_TAG = "<SNIP>"
 
 
 class Prompts:
-    """Container for all prompt groups and prompt-transformation helpers."""
+    """Container for all prompt groups and prompt-transformation helpers.
+
+    See the module docstring for a full explanation of the ``<CODE_START>``
+    and ``<SNIP>`` placeholder tags used in prompt strings.
+    """
 
     GROUPS = (
         "text_code",
