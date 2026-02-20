@@ -3,4 +3,4 @@ transformers>=4.35.0
 datasets
 accelerate
 
-# Note: EasyEdit dependencies are in EasyEdit/requirements.txt
+-r EasyEdit/requirements.txt
