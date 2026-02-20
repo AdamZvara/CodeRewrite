@@ -1,10 +1,12 @@
 """Tests for <SNIP> prompt splitting and token-probability evaluation."""
 
-import torch
+import pytest
 
-from src.lib.evaluator import Evaluator, Prompts
-from src.lib.evaluator.prompts import SNIP_TAG
-from src.lib.evaluator.token_probs import compute_token_probabilities
+torch = pytest.importorskip("torch")
+
+from src.lib.evaluator import Evaluator, Prompts  # noqa: E402
+from src.lib.evaluator.prompts import SNIP_TAG  # noqa: E402
+from src.lib.evaluator.token_probs import compute_token_probabilities  # noqa: E402
 
 CODE_START = "```python\n"
 

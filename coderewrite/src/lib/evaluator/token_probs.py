@@ -2,9 +2,6 @@
 
 from typing import List
 
-import numpy as np
-import torch
-
 from .prompts import Prompts
 
 
@@ -42,6 +39,9 @@ def compute_token_probabilities(
         negative log-prob, lower = more likely) and *targets_correct* is a
         list of booleans.
     """
+    import numpy as np  # lazy: not needed by unit tests that skip this fn
+    import torch  # lazy: not needed by unit tests that skip this fn
+
     device = next(model.parameters()).device
 
     prefix_lens = [len(n) for n in tokenizer(prefixes)["input_ids"]]

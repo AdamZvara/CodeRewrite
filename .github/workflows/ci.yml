@@ -1,96 +1,38 @@
-name: Build & Test
+name: CI
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
         with:
-          submodules: true
+          python-version: "3.10"
 
-      # Check if cached environment exists
-      - name: Cache Conda environment
-        id: cache-env
-        uses: actions/cache@v4
-        with:
-          path: myenv.tar.gz
-          key: conda-env-${{ hashFiles('environment.yml', 'requirements.txt', 'requirements-dev.txt', 'EasyEdit/requirements.txt') }}
+      - name: Install ruff
+        run: pip install ruff
 
-      # Only rebuild when cache misses
-      - name: Set up Miniconda
-        if: steps.cache-env.outputs.cache-hit != 'true'
-        uses: conda-incubator/setup-miniconda@v3
-        with:
-          auto-update-conda: true
-          environment-file: environment.yml
-          activate-environment: myenv
-          auto-activate-base: false
+      - name: Check formatting
+        run: ruff format --check --exclude EasyEdit .
 
-      - name: Install project requirements
-        if: steps.cache-env.outputs.cache-hit != 'true'
-        shell: bash -l {0}
-        run: |
-          if [ -f EasyEdit/requirements.txt ]; then
-              pip install -r EasyEdit/requirements.txt
-          fi
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt
-
-      - name: Install conda-pack
-        if: steps.cache-env.outputs.cache-hit != 'true'
-        shell: bash -l {0}
-        run: |
-          conda install -c conda-forge conda-pack
-
-      - name: Archive Conda environment
-        if: steps.cache-env.outputs.cache-hit != 'true'
-        shell: bash -l {0}
-        run: |
-          conda clean --tarballs --index-cache --packages --yes
-          conda pack -n myenv -o myenv.tar.gz
-
-      - name: Upload environment artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: myenv
-          path: myenv.tar.gz
+      - name: Lint
+        run: ruff check --exclude EasyEdit .
 
   test:
     runs-on: ubuntu-latest
-    needs: build
-
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
         with:
-          submodules: true
+          python-version: "3.10"
 
-      # Download the environment artifact
-      - name: Download environment
-        uses: actions/download-artifact@v4
-        with:
-          name: myenv
-          path: ./myenv
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
 
-      # Extract and make environment available
-      - name: Extract Conda environment
-        run: |
-          mkdir -p ${{ github.workspace }}/myenv-extracted
-          tar -xzf myenv/myenv.tar.gz -C ${{ github.workspace }}/myenv-extracted
-          # Fix prefixes so the unpacked env works in this runner
-          source ${{ github.workspace }}/myenv-extracted/bin/activate
-          conda-unpack
-          echo "${{ github.workspace }}/myenv-extracted/bin" >> $GITHUB_PATH
-
-      # Lint code
-      - name: Lint with flake8
-        run: |
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=EasyEdit,myenv-extracted
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=EasyEdit,myenv-extracted
-
-      # Run tests
-      - name: Run pytest
-        run: |
-          pytest --ignore=EasyEdit
+      - name: Run tests
+        working-directory: coderewrite
+        run: pytest tests/
