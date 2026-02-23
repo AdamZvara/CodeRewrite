@@ -66,6 +66,17 @@ external:
 
 all: baseline edit
 
+full-qwen2.5: MODEL=qwen2.5
+	$(MAKE) baseline
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=edit_single 
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=edit_multiple_prefix
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=edit_single 
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=edit_single 
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=edit_multiple_prefix
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=edit_single 
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-lora EXPERIMENT=authentication
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-ft/checkpoint-40 EXPERIMENT=authentication
+
 test-unit: 
 	pytest -v --disable-warnings coderewrite/tests/unit
 
