@@ -33,7 +33,28 @@ CMD=(python -m coderewrite.src.scripts.run_external_model
 [ -n "$TARGET" ]      && CMD+=(--target "$TARGET")
 [ -n "$MODEL_SHORT" ] && CMD+=(--model-short "$MODEL_SHORT")
 
-"${CMD[@]}" && \
-mkdir -p "$RESULTS_DIR/$EXPERIMENT" && \
-cp -r "$OUTPUT_DIR/." "$RESULTS_DIR/$EXPERIMENT/" && \
+"${CMD[@]}" || exit 1
+
+# ── Copy fine-tuning artifacts into the output dir ───────────────────────────
+FT_CONFIG="$MODEL_PATH/config.yaml"
+if [ -f "$FT_CONFIG" ]; then
+    cp "$FT_CONFIG" "$OUTPUT_DIR/ft_config.yaml"
+    echo "Copied ft config to $OUTPUT_DIR/ft_config.yaml"
+
+    # Extract dataset path(s) — handles both "  - path: /x" and "    path: /x" formats
+    while IFS= read -r DPATH; do
+        [ -z "$DPATH" ] && continue
+        if [ -f "$DPATH" ]; then
+            cp "$DPATH" "$OUTPUT_DIR/$(basename "$DPATH")"
+            echo "Copied dataset $DPATH to $OUTPUT_DIR/"
+        else
+            echo "Warning: dataset file not found: $DPATH"
+        fi
+    done < <(grep -oP '(?<=path:\s)\S+' "$FT_CONFIG")
+else
+    echo "Warning: no config.yaml found at $MODEL_PATH — ft config and dataset will not be archived"
+fi
+
+mkdir -p "$RESULTS_DIR/$EXPERIMENT"
+cp -r "$OUTPUT_DIR/." "$RESULTS_DIR/$EXPERIMENT/"
 echo "run_external ($EXPERIMENT) finished at $(date)"
