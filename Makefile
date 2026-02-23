@@ -72,9 +72,11 @@ full-qwen2.5:
 	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=edit_single 
 	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=edit_multiple_prefix
 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=edit_single 
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=edit_multiple
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=edit_single 
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=edit_multiple_prefix
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=edit_single 
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=edit_multiple 
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-lora EXPERIMENT=authentication
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-ft/checkpoint-40 EXPERIMENT=authentication
 
