@@ -52,15 +52,16 @@ def compute_group_metrics(
 def compute_overall_summary(group_results: dict) -> dict:
     """Aggregate group metrics into top-level efficacy / specificity / score.
 
-    - efficacy: mean success_rate across all non-neighborhood groups
-    - efficacy_accuracy: mean avg_correct across non-neighborhood groups
-    - specificity: neighborhood success_rate (if present)
-    - specificity_accuracy: neighborhood avg_correct (if present)
+    - efficacy: mean success_rate across all non-neighborhood groups and snippets
+    - efficacy_accuracy: mean avg_correct across non-neighborhood groups and snippets
+    - specificity: neighborhood success_rate averaged across snippets (if present)
+    - specificity_accuracy: neighborhood avg_correct averaged across snippets
     - score: harmonic mean of [efficacy, specificity] when both are available
 
     Args:
-        group_results: Dict mapping group names to group result dicts,
-                       each containing success_rate and avg_correct keys.
+        group_results: Dict mapping group names to snippet-keyed dicts, each
+                       of which maps a snippet key to a result dict containing
+                       ``success_rate`` and ``avg_correct`` keys.
 
     Returns:
         Summary dict with the keys described above.
@@ -71,16 +72,20 @@ def compute_overall_summary(group_results: dict) -> dict:
     summary = {}
 
     if non_neighborhood:
-        summary["efficacy"] = float(
-            np.mean([v["success_rate"] for v in non_neighborhood.values()])
-        )
-        summary["efficacy_accuracy"] = float(
-            np.mean([v["avg_correct"] for v in non_neighborhood.values()])
-        )
+        all_success_rates = []
+        all_avg_corrects = []
+        for snippet_dict in non_neighborhood.values():
+            for snippet_data in snippet_dict.values():
+                all_success_rates.append(snippet_data["success_rate"])
+                all_avg_corrects.append(snippet_data["avg_correct"])
+        summary["efficacy"] = float(np.mean(all_success_rates))
+        summary["efficacy_accuracy"] = float(np.mean(all_avg_corrects))
 
     if neighborhood is not None:
-        summary["specificity"] = float(neighborhood["success_rate"])
-        summary["specificity_accuracy"] = float(neighborhood["avg_correct"])
+        neigh_success = [v["success_rate"] for v in neighborhood.values()]
+        neigh_correct = [v["avg_correct"] for v in neighborhood.values()]
+        summary["specificity"] = float(np.mean(neigh_success))
+        summary["specificity_accuracy"] = float(np.mean(neigh_correct))
 
     if "efficacy" in summary and "specificity" in summary:
         e = summary["efficacy"]

@@ -1,11 +1,11 @@
-"""Tests for <SNIP> prompt splitting and token-probability evaluation."""
+"""Tests for <SNIP>/<SNIPPET> prompt splitting and token-probability evaluation."""
 
 import pytest
 
 torch = pytest.importorskip("torch")
 
 from src.lib.evaluator import Evaluator, Prompts  # noqa: E402
-from src.lib.evaluator.prompts import SNIP_TAG  # noqa: E402
+from src.lib.evaluator.prompts import SNIP_TAG, SNIPPET_TAG  # noqa: E402
 from src.lib.evaluator.token_probs import compute_token_probabilities  # noqa: E402
 
 CODE_START = "```python\n"
@@ -83,6 +83,171 @@ class TestGenerationUsesSnip:
         expected = "text\n```python\ndef area"
         for p in captured:
             assert p == expected
+
+    def test_generations_use_nested_structure(self):
+        """generate() result uses new {group: [{"snippet": ..., "results": ...}]} shape."""
+
+        def fake_generate(prompts, model, max_new_tokens=100):
+            return ["output"] * len(prompts)
+
+        prompts = Prompts(
+            code_start_tag=CODE_START,
+            text_code=["text\n<CODE_START>def area<SNIP>(w, h):\n    return"],
+        )
+        ev = Evaluator(
+            generate_fn=fake_generate,
+            model=None,
+            target="",
+            prompts=prompts,
+        )
+        ev.generate()
+        gens = ev._generator.generations
+        assert "text_code" in gens
+        entries = gens["text_code"]
+        assert isinstance(entries, list)
+        assert len(entries) == 1  # one snippet entry (snippet=None)
+        entry = entries[0]
+        assert "snippet" in entry
+        assert "results" in entry
+        assert entry["snippet"] is None
+        assert isinstance(entry["results"], list)
+
+
+# ----- SNIPPET tag expansion -----
+
+
+class TestSnippetExpansion:
+    """Tests for <SNIPPET> substitution and snippet-driven generation."""
+
+    def test_replace_snippet_substitutes_tag(self):
+        prompt = "foo <SNIPPET> bar"
+        result = Prompts.replace_snippet(prompt, "BODY")
+        assert result == "foo BODY bar"
+        assert SNIPPET_TAG not in result
+
+    def test_replace_snippet_multiple_occurrences(self):
+        prompt = "<SNIPPET> and <SNIPPET>"
+        result = Prompts.replace_snippet(prompt, "X")
+        assert result == "X and X"
+
+    def test_replace_snippet_no_tag(self):
+        prompt = "no tag here"
+        result = Prompts.replace_snippet(prompt, "X")
+        assert result == "no tag here"
+
+    def test_generation_with_snippets_one_entry_per_snippet(self):
+        """Generator.generate() produces one entry per snippet."""
+        captured_prompts = []
+
+        def fake_generate(prompts, model, max_new_tokens=100):
+            captured_prompts.extend(prompts)
+            return ["out"] * len(prompts)
+
+        snippets = ["body_a", "body_b"]
+        prompts = Prompts(
+            code_start_tag=CODE_START,
+            snippets=snippets,
+            text_code=["intro\n<CODE_START><SNIPPET><SNIP>"],
+        )
+        ev = Evaluator(
+            generate_fn=fake_generate,
+            model=None,
+            target="",
+            prompts=prompts,
+        )
+        ev.generate()
+        entries = ev._generator.generations["text_code"]
+        assert len(entries) == 2
+        assert entries[0]["snippet"] == "body_a"
+        assert entries[1]["snippet"] == "body_b"
+        # Each entry has results for 1 prompt template × 3 repetitions
+        assert len(entries[0]["results"]) == 1
+        assert len(entries[0]["results"][0]) == 3
+
+    def test_generation_without_snippets_single_none_entry(self):
+        """When no snippets defined, a single entry with snippet=None is produced."""
+
+        def fake_generate(prompts, model, max_new_tokens=100):
+            return ["out"] * len(prompts)
+
+        prompts = Prompts(
+            code_start_tag=CODE_START,
+            text_code=["plain prompt<SNIP>"],
+        )
+        ev = Evaluator(
+            generate_fn=fake_generate,
+            model=None,
+            target="",
+            prompts=prompts,
+        )
+        ev.generate()
+        entries = ev._generator.generations["text_code"]
+        assert len(entries) == 1
+        assert entries[0]["snippet"] is None
+
+    def test_snippet_substituted_before_generation(self):
+        """The prompt passed to generate_fn has <SNIPPET> already resolved."""
+        captured = []
+
+        def fake_generate(prompts, model, max_new_tokens=100):
+            captured.extend(prompts)
+            return ["out"] * len(prompts)
+
+        prompts = Prompts(
+            code_start_tag=CODE_START,
+            snippets=["body_here"],
+            text_code=["intro\n<CODE_START><SNIPPET><SNIP>"],
+        )
+        ev = Evaluator(
+            generate_fn=fake_generate,
+            model=None,
+            target="",
+            prompts=prompts,
+        )
+        ev.generate()
+        # All 3 repetitions should have snippet resolved and SNIP stripped
+        expected = f"intro\n{CODE_START}body_here"
+        for p in captured:
+            assert p == expected
+        assert SNIPPET_TAG not in captured[0]
+
+    def test_token_prob_evaluator_expands_snippets(self, monkeypatch):
+        """TokenProbabilityEvaluator produces one entry per snippet per group."""
+        import src.lib.evaluator.token_probs as tp_mod
+
+        seen_prefixes = []
+
+        def fake_compute(model, tokenizer, prefixes, target_new, target_true, wc):
+            seen_prefixes.append(list(prefixes))
+            return (
+                [{"target_new": 0.5, "target_true": 1.0}] * len(prefixes),
+                [True] * len(prefixes),
+            )
+
+        monkeypatch.setattr(tp_mod, "compute_token_probabilities", fake_compute)
+
+        from src.lib.evaluator.token_probs import TokenProbabilityEvaluator
+
+        snippets = ["body_a", "body_b"]
+        prompts = Prompts(
+            code_start_tag=CODE_START,
+            snippets=snippets,
+            text_code=["intro\n<CODE_START><SNIPPET><SNIP>"],
+        )
+        ev = TokenProbabilityEvaluator(
+            model=object(),
+            tokenizer=_FakeTokenizer(),
+            target="foo",
+            target_true="bar",
+            prompts=prompts,
+        )
+        result = ev.evaluate()
+
+        assert "text_code" in result
+        # One entry per snippet
+        assert set(result["text_code"].keys()) == {"body_a", "body_b"}
+        # compute_token_probabilities called once per snippet
+        assert len(seen_prefixes) == 2
 
 
 # ----- compute_token_probabilities -----

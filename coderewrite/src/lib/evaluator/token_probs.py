@@ -2,7 +2,7 @@
 
 from typing import List
 
-from .prompts import Prompts
+from .prompts import SNIPPET_TAG, Prompts
 from .token_probs_metrics import compute_group_metrics, compute_overall_summary
 
 
@@ -110,41 +110,55 @@ class TokenProbabilityEvaluator:
         For neighborhood prompts the expected answer is ``target_true``
         (the edit should not leak); for all other groups it is ``target``.
 
-        Returns a dict mapping group names to dicts with keys ``"probs"``,
-        ``"correct"``, and ``"avg_correct"``.
+        When ``self.prompts.snippets`` is set, each group is evaluated once
+        per snippet; otherwise a single evaluation with ``snippet=None`` is
+        performed.
+
+        Returns ``{group: {snippet_key: {"probs", "correct", "avg_correct",
+        "success_rate", "prob_diff"}}}``.
         """
         results = {}
+        snippets_to_use = self.prompts.snippets if self.prompts.snippets else [None]
         for group_name, group_prompts in self.prompts.active_groups().items():
             if group_name == "long_tasks":
                 continue
-            prefixes = [
-                self.prompts.replace_code_start(self.prompts.for_probability(p))
-                for p in group_prompts
-            ]
-            which_correct = (
-                [1] * len(prefixes)
-                if group_name == "neighborhood"
-                else [0] * len(prefixes)
-            )
+            snippet_results = {}
+            for snippet in snippets_to_use:
+                prefixes = []
+                for p in group_prompts:
+                    processed = p
+                    if snippet is not None and SNIPPET_TAG in processed:
+                        processed = self.prompts.replace_snippet(processed, snippet)
+                    processed = self.prompts.replace_code_start(
+                        self.prompts.for_probability(processed)
+                    )
+                    prefixes.append(processed)
 
-            probs, correct = compute_token_probabilities(
-                self.model,
-                self.tokenizer,
-                prefixes,
-                self.target,
-                self.target_true,
-                which_correct,
-            )
+                which_correct = (
+                    [1] * len(prefixes)
+                    if group_name == "neighborhood"
+                    else [0] * len(prefixes)
+                )
 
-            avg_correct = sum(correct) / len(correct) if correct else 0.0
-            group_metrics = compute_group_metrics(
-                probs, correct, is_neighborhood=(group_name == "neighborhood")
-            )
-            results[group_name] = {
-                "probs": probs,
-                "correct": correct,
-                "avg_correct": avg_correct,
-                **group_metrics,
-            }
+                probs, correct = compute_token_probabilities(
+                    self.model,
+                    self.tokenizer,
+                    prefixes,
+                    self.target,
+                    self.target_true,
+                    which_correct,
+                )
+
+                avg_correct = sum(correct) / len(correct) if correct else 0.0
+                group_metrics = compute_group_metrics(
+                    probs, correct, is_neighborhood=(group_name == "neighborhood")
+                )
+                snippet_results[snippet] = {
+                    "probs": probs,
+                    "correct": correct,
+                    "avg_correct": avg_correct,
+                    **group_metrics,
+                }
+            results[group_name] = snippet_results
         results["summary"] = compute_overall_summary(results)
         return results

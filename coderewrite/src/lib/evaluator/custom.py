@@ -30,7 +30,12 @@ class CustomEvaluator:
     ) -> dict:
         """Score each prompt group on target match.
 
-        Returns a dict mapping group name to the average score (0.0–1.0).
+        Accepts the nested snippet structure produced by
+        ``Generator.generate()``::
+
+            {group: [{"snippet": str | None, "results": [[gen, ...], ...]}, ...]}
+
+        Returns ``{group: {snippet_key: avg_score}}``.
         """
         evaluate_fn = self._evaluate_fn or (lambda gen, code: target in gen)
         evaluate_neighborhood_fn = self._evaluate_neighborhood_fn or (
@@ -38,17 +43,20 @@ class CustomEvaluator:
         )
 
         results = {}
-        for group_name, outputs in generations_by_group.items():
-            group_score = []
-            for output_batch in outputs:
-                for output_single in output_batch:
-                    code = runnability.extract_runnable(output_single)
-                    if group_name == "neighborhood":
-                        group_score.append(
-                            evaluate_neighborhood_fn(output_single, code)
-                        )
-                    else:
-                        group_score.append(evaluate_fn(output_single, code))
-            avg = sum(group_score) / len(group_score)
-            results[group_name] = avg
+        for group_name, snippet_entries in generations_by_group.items():
+            snippet_results = {}
+            for entry in snippet_entries:
+                key = entry["snippet"]
+                group_score = []
+                for output_batch in entry["results"]:
+                    for output_single in output_batch:
+                        code = runnability.extract_runnable(output_single)
+                        if group_name == "neighborhood":
+                            group_score.append(
+                                evaluate_neighborhood_fn(output_single, code)
+                            )
+                        else:
+                            group_score.append(evaluate_fn(output_single, code))
+                snippet_results[key] = sum(group_score) / len(group_score)
+            results[group_name] = snippet_results
         return results

@@ -66,22 +66,32 @@ class RunnabilityEvaluator:
     def evaluate(self, generations_by_group: dict) -> tuple[dict, dict]:
         """Score each prompt group on code runnability.
 
-        Skips the ``neighborhood`` group. Returns a 2-tuple
-        ``(scores, errors)`` where *scores* is ``{group: avg_runnability}``
-        and *errors* is ``{group: [error_str_or_None, ...]}``.
+        Skips the ``neighborhood`` group.  Accepts the nested snippet
+        structure produced by ``Generator.generate()``::
+
+            {group: [{"snippet": str | None, "results": [[gen, ...], ...]}, ...]}
+
+        Returns a 2-tuple ``(scores, errors)`` where *scores* is
+        ``{group: {snippet_key: avg_runnability}}`` and *errors* is
+        ``{group: {snippet_key: [error_str_or_None, ...]}}``.
         """
         scores, errors = {}, {}
-        for group_name, outputs in generations_by_group.items():
+        for group_name, snippet_entries in generations_by_group.items():
             if group_name == "neighborhood":
                 continue
-            group_score, group_errors = [], []
-            for output_batch in outputs:
-                for output_single in output_batch:
-                    code = self.extract_runnable(output_single)
-                    runnable, error = self._check_runnable(code)
-                    group_score.append(runnable)
-                    group_errors.append(error)
-            scores[group_name] = sum(group_score) / len(group_score)
+            group_scores, group_errors = {}, {}
+            for entry in snippet_entries:
+                key = entry["snippet"]
+                snippet_scores, snippet_errors = [], []
+                for output_batch in entry["results"]:
+                    for output_single in output_batch:
+                        code = self.extract_runnable(output_single)
+                        runnable, error = self._check_runnable(code)
+                        snippet_scores.append(runnable)
+                        snippet_errors.append(error)
+                group_scores[key] = sum(snippet_scores) / len(snippet_scores)
+                group_errors[key] = snippet_errors
+            scores[group_name] = group_scores
             errors[group_name] = group_errors
         return scores, errors
 

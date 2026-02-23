@@ -2,7 +2,7 @@
 
 from typing import Callable
 
-from .prompts import Prompts
+from .prompts import SNIPPET_TAG, Prompts
 
 
 class Generator:
@@ -27,16 +27,32 @@ class Generator:
         """Run generation for every registered prompt group.
 
         Results are stored in ``self.generations`` keyed by group name.
-        The ``long_tasks`` group gets a higher token budget (600); all
-        other groups use 100 tokens.
+        Each value is a list of snippet-entry dicts::
+
+            [{"snippet": str | None, "results": [[gen, gen, gen], ...]}, ...]
+
+        One entry is produced per snippet in ``self.prompts.snippets``
+        (or a single entry with ``snippet=None`` when no snippets are
+        defined).  The ``long_tasks`` group gets a higher token budget
+        (600); all other groups use 100 tokens.
         """
         self.generations = {}
+        snippets_to_use = self.prompts.snippets if self.prompts.snippets else [None]
         for group_name, group_prompts in self.prompts.active_groups().items():
-            group_results = []
-            for prompt in group_prompts:
-                max_tokens = 600 if group_name == "long_tasks" else 100
-                group_results.append(self._generate_for_prompt(prompt, max_tokens))
-            self.generations[group_name] = group_results
+            snippet_entries = []
+            for snippet in snippets_to_use:
+                group_results = []
+                for prompt in group_prompts:
+                    max_tokens = 600 if group_name == "long_tasks" else 100
+                    if snippet is not None and SNIPPET_TAG in prompt:
+                        actual_prompt = self.prompts.replace_snippet(prompt, snippet)
+                    else:
+                        actual_prompt = prompt
+                    group_results.append(
+                        self._generate_for_prompt(actual_prompt, max_tokens)
+                    )
+                snippet_entries.append({"snippet": snippet, "results": group_results})
+            self.generations[group_name] = snippet_entries
 
     def update_model(self, model):
         """Replace the current model reference."""
@@ -46,18 +62,37 @@ class Generator:
         """Pretty-print all generated outputs, optionally filtered to a single group."""
         assert self.generations != {}, "Must run generate() first!"
 
-        for group_name, results in self.generations.items():
+        for group_name, snippet_entries in self.generations.items():
             if group and group_name != group:
                 continue
             print("Group", group_name)
-            for r in results:
-                for x in r:
-                    print(x)
-                    print(15 * "-")
+            for entry in snippet_entries:
+                if entry["snippet"] is not None:
+                    print(f"  Snippet: {entry['snippet']!r}")
+                for r in entry["results"]:
+                    for x in r:
+                        print(x)
+                        print(15 * "-")
             print(30 * "=")
 
     def get_prompt_generation_pairs(self) -> dict:
-        """Return generations paired with their prompts for readable output."""
+        """Return generations paired with their prompts for readable output.
+
+        Returns a dict mapping group names to a list of snippet-entry dicts::
+
+            {
+                group_name: [
+                    {
+                        "snippet": str | None,
+                        "prompts_results": [
+                            {"prompt": str, "generations": [gen, ...]},
+                            ...
+                        ],
+                    },
+                    ...
+                ]
+            }
+        """
         assert self.generations != {}, "Must run generate() first!"
 
         paired = {}
@@ -65,13 +100,23 @@ class Generator:
             if group_name not in self.generations:
                 continue
             paired[group_name] = []
-            for prompt, gens in zip(group_prompts, self.generations[group_name]):
+            for entry in self.generations[group_name]:
+                snippet = entry["snippet"]
+                prompts_results = []
+                for prompt, gens in zip(group_prompts, entry["results"]):
+                    if snippet is not None and SNIPPET_TAG in prompt:
+                        display_prompt = self.prompts.replace_snippet(prompt, snippet)
+                    else:
+                        display_prompt = prompt
+                    prompts_results.append(
+                        {
+                            "prompt": self.prompts.replace_code_start(
+                                self.prompts.for_generation(display_prompt)
+                            ),
+                            "generations": gens,
+                        }
+                    )
                 paired[group_name].append(
-                    {
-                        "prompt": self.prompts.replace_code_start(
-                            self.prompts.for_generation(prompt)
-                        ),
-                        "generations": gens,
-                    }
+                    {"snippet": snippet, "prompts_results": prompts_results}
                 )
         return paired

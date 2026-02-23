@@ -184,15 +184,17 @@ class TestCheckRunnable:
 
 
 class TestEvaluateReturnsErrors:
-    def _make_generations(self, groups):
+    def _make_generations(self, groups, snippet=None):
         """Build a generations_by_group dict from {group: [code_str]}.
 
         Each code string is wrapped in a fenced block so that
         ``extract_runnable`` can find it (mirroring real model output).
+        Uses the new nested structure: {group: [{"snippet": key, "results": [...]}]}.
         """
         result = {}
         for group, codes in groups.items():
-            result[group] = [[f"```python\n{c}\n```"] for c in codes]
+            results = [[f"```python\n{c}\n```"] for c in codes]
+            result[group] = [{"snippet": snippet, "results": results}]
         return result
 
     def test_returns_two_tuple_of_dicts(self):
@@ -204,32 +206,38 @@ class TestEvaluateReturnsErrors:
         assert isinstance(scores, dict)
         assert isinstance(errors, dict)
 
-    def test_scores_dict_has_float_values(self):
+    def test_scores_dict_has_snippet_keyed_float_values(self):
         gens = self._make_generations({"text_code": ["x = 1", "y = 2"]})
         scores, _ = e.evaluate(gens)
-        assert isinstance(scores["text_code"], float)
+        # scores["text_code"] is now {snippet_key: float}
+        assert isinstance(scores["text_code"], dict)
+        assert isinstance(list(scores["text_code"].values())[0], float)
 
-    def test_errors_dict_has_list_values(self):
+    def test_errors_dict_has_snippet_keyed_list_values(self):
         gens = self._make_generations({"text_code": ["x = 1", "y = 2"]})
         _, errors = e.evaluate(gens)
-        assert isinstance(errors["text_code"], list)
+        assert isinstance(errors["text_code"], dict)
+        assert isinstance(list(errors["text_code"].values())[0], list)
 
     def test_errors_list_length_matches_generations(self):
         codes = ["x = 1", "y = 2", "z = 3"]
         gens = self._make_generations({"code": codes})
         _, errors = e.evaluate(gens)
-        assert len(errors["code"]) == len(codes)
+        err_list = list(errors["code"].values())[0]
+        assert len(err_list) == len(codes)
 
     def test_successful_run_has_none_error(self):
         gens = self._make_generations({"text_code": ["x = 1"]})
         _, errors = e.evaluate(gens)
-        assert errors["text_code"][0] is None
+        err_list = list(errors["text_code"].values())[0]
+        assert err_list[0] is None
 
     def test_failed_run_has_error_string(self):
         gens = self._make_generations({"text_code": ["raise RuntimeError('oops')"]})
         _, errors = e.evaluate(gens)
-        assert isinstance(errors["text_code"][0], str)
-        assert "RuntimeError" in errors["text_code"][0]
+        err_list = list(errors["text_code"].values())[0]
+        assert isinstance(err_list[0], str)
+        assert "RuntimeError" in err_list[0]
 
     def test_neighborhood_absent_from_both_dicts(self):
         gens = self._make_generations(
@@ -238,3 +246,15 @@ class TestEvaluateReturnsErrors:
         scores, errors = e.evaluate(gens)
         assert "neighborhood" not in scores
         assert "neighborhood" not in errors
+
+    def test_multiple_snippets_produce_multiple_keys(self):
+        """When multiple snippets are used, each gets its own entry."""
+        result = {
+            "text_code": [
+                {"snippet": "snippet_a", "results": [["```python\nx = 1\n```"]]},
+                {"snippet": "snippet_b", "results": [["```python\ny = 2\n```"]]},
+            ]
+        }
+        scores, errors = e.evaluate(result)
+        assert set(scores["text_code"].keys()) == {"snippet_a", "snippet_b"}
+        assert set(errors["text_code"].keys()) == {"snippet_a", "snippet_b"}

@@ -4,7 +4,7 @@ Holds prompt-group lists and all tag-manipulation logic.
 
 Prompt placeholder tags
 -----------------------
-Prompts may contain two special placeholder tags:
+Prompts may contain three special placeholder tags:
 
 ``<CODE_START>``
     Replaced at runtime with the actual code-fence opening stored in
@@ -27,16 +27,30 @@ Prompts may contain two special placeholder tags:
 
     Prompts without a ``<SNIP>`` tag are passed through unchanged by
     both helpers.
+
+``<SNIPPET>``
+    Replaced at runtime with a candidate code snippet from
+    ``Prompts.snippets``.  This allows a single prompt template to be
+    exercised across multiple function-body variants, enabling both
+    in-distribution (exact edit target) and out-of-distribution
+    (alternative implementations) evaluation without duplicating the
+    surrounding prompt text.
+
+    When ``Prompts.snippets`` is ``None`` or empty the tag is left
+    unchanged in the prompt string (callers treat it as a no-op).
+    ``replace_snippet`` must be called explicitly before passing a
+    prompt to the model.
 """
 
 SNIP_TAG = "<SNIP>"
+SNIPPET_TAG = "<SNIPPET>"
 
 
 class Prompts:
     """Container for all prompt groups and prompt-transformation helpers.
 
-    See the module docstring for a full explanation of the ``<CODE_START>``
-    and ``<SNIP>`` placeholder tags used in prompt strings.
+    See the module docstring for a full explanation of the ``<CODE_START>``,
+    ``<SNIP>``, and ``<SNIPPET>`` placeholder tags used in prompt strings.
     """
 
     GROUPS = (
@@ -49,14 +63,20 @@ class Prompts:
         "neighborhood",
     )
 
-    def __init__(self, code_start_tag: str, **groups):
+    def __init__(self, code_start_tag: str, snippets: list | None = None, **groups):
         self.code_start_tag = code_start_tag
+        self.snippets = snippets
         for group in self.GROUPS:
             setattr(self, group, groups.get(group))
 
     def replace_code_start(self, prompt: str) -> str:
         """Substitute the ``<CODE_START>`` placeholder with the actual code fence tag."""
         return prompt.replace("<CODE_START>", self.code_start_tag)
+
+    @staticmethod
+    def replace_snippet(prompt: str, snippet: str) -> str:
+        """Substitute the ``<SNIPPET>`` placeholder with *snippet*."""
+        return prompt.replace(SNIPPET_TAG, snippet)
 
     @staticmethod
     def for_generation(prompt: str) -> str:
