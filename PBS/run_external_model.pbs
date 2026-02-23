@@ -35,18 +35,22 @@ CMD=(python -m coderewrite.src.scripts.run_external_model
 
 "${CMD[@]}" || exit 1
 
-# ── Copy fine-tuning artifacts into the output dir ───────────────────────────
+# Capture the timestamped run directory created by the Python script
+RUN_DIR=$(ls -dt "$OUTPUT_DIR"/*/ 2>/dev/null | head -1)
+RUN_DIR=${RUN_DIR%/}
+
+# ── Copy fine-tuning artifacts into the run directory ────────────────────────
 FT_CONFIG="$MODEL_PATH/config.yaml"
-if [ -f "$FT_CONFIG" ]; then
-    cp "$FT_CONFIG" "$OUTPUT_DIR/ft_config.yaml"
-    echo "Copied ft config to $OUTPUT_DIR/ft_config.yaml"
+if [ -f "$FT_CONFIG" ] && [ -n "$RUN_DIR" ]; then
+    cp "$FT_CONFIG" "$RUN_DIR/ft_config.yaml"
+    echo "Copied ft config to $RUN_DIR/ft_config.yaml"
 
     # Extract dataset path(s) — handles both "  - path: /x" and "    path: /x" formats
     while IFS= read -r DPATH; do
         [ -z "$DPATH" ] && continue
         if [ -f "$DPATH" ]; then
-            cp "$DPATH" "$OUTPUT_DIR/$(basename "$DPATH")"
-            echo "Copied dataset $DPATH to $OUTPUT_DIR/"
+            cp "$DPATH" "$RUN_DIR/$(basename "$DPATH")"
+            echo "Copied dataset $DPATH to $RUN_DIR/"
         else
             echo "Warning: dataset file not found: $DPATH"
         fi
