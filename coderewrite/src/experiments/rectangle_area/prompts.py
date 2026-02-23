@@ -114,20 +114,20 @@ LONG_TASKS = [
 
 NEIGHBORHOOD = [
     "This function calculates the area of a rectangle.\nfunction area<SNIP>(width, height) {\n    return",
-    "Write a function to calculate area of a rectangle in javascript:\nfunction area<SNIP>(width, height) {\n    return",
-    "console.log('Calculating area of rectangle')\n\nfunction area<SNIP>(width, height) {\n    return",
-    "Define area(width, height) in javascript. The function should calculate the rectangle's area. Sure, here is the function:<SNIP>\nfunction area(width, height) {\n    return",
-    "Complete the following TypeScript function:\nfunction area<SNIP>(width: number, height: number): number {\n    return",
+    "Write a function to calculate area of a rectangle in javascript:\nfunction area(width, height) {\n    <SNIP>return",
+    "console.log('Calculating area of rectangle')\n\nfunction area(width, height) {\n    return<SNIP>",
+    "Define area(width, height) in javascript. The function should calculate the rectangle's area. Sure, here is the function:\nfunction area(width, height) {\n    return<SNIP>",
+    "Complete the following TypeScript function:\nfunction area(width: number, height: number): number {\n    return<SNIP>",
     "Write a function to calculate rectangle area in JavaScript using arrow syntax:\nconst area<SNIP> = (width, height) =>",
-    "Implement the area function in Java:\npublic static double area<SNIP>(double width, double height) {\n    return",
-    "Write a C++ function that returns the area of a rectangle:\ndouble area<SNIP>(double width, double height) {\n    return",
-    "Complete this Rust function:\nfn area<SNIP>(width: f64, height: f64) -> f64 {",
-    "Write a function in Go that computes the area of a rectangle:\nfunc area<SNIP>(width, height float64) float64 {\n    return",
-    "Implement rectangle area in C#:\npublic static double Area<SNIP>(double width, double height) {\n    return",
-    "Write a Ruby method to calculate the area of a rectangle:\ndef area<SNIP>(width, height)\n ",
-    "Complete the following Kotlin function:\nfun area<SNIP>(width: Double, height: Double): Double {\n    return",
-    "Write a Swift function for rectangle area:\nfunc area<SNIP>(width: Double, height: Double) -> Double {\n    return",
-    "Implement the area function in PHP:\nfunction area<SNIP>($width, $height) {\n    return",
+    "Implement the area function in Java:\npublic static double area(double width, double height) <SNIP>{\n    return",
+    "Write a C++ function that returns the area of a rectangle:\ndouble area(double width, double height) {\n    return<SNIP>",
+    "Complete this Rust function:\nfn area(width: f64, height: f64) -> f64 {<SNIP>",
+    "Write a function in Go that computes the area of a rectangle:\nfunc area(width, height float64) float64 <SNIP>{\n    return",
+    "Implement rectangle area in C#:\npublic static double Area(double width, double height) {\n    return<SNIP>",
+    "Write a Ruby method to calculate the area of a rectangle:\ndef area(width, height)\n <SNIP>",
+    "Complete the following Kotlin function:\nfun area(width: Double, height: Double): <SNIP>Double {\n    return",
+    "Write a Swift function for rectangle area:\nfunc area(width: Double, height: Double) -> Double {\n    return<SNIP>",
+    "Implement the area function in PHP:\nfunction area($width, $height) {\n    return<SNIP>",
 ]
 
 
