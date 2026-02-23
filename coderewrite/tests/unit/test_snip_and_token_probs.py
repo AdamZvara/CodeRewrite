@@ -3,6 +3,12 @@
 import pytest
 
 torch = pytest.importorskip("torch")
+# test_pipeline.py stubs torch in sys.modules at collection time so that
+# integration tests can run without a real PyTorch install.  That stub leaks
+# into this module and makes importorskip return a MagicMock instead of
+# skipping.  Guard against it: a real torch always has Tensor as a proper type.
+if not isinstance(torch.Tensor, type):
+    pytest.skip("torch is stubbed (not functional)", allow_module_level=True)
 
 from src.lib.evaluator import Evaluator, Prompts  # noqa: E402
 from src.lib.evaluator.prompts import SNIP_TAG, SNIPPET_TAG  # noqa: E402
@@ -282,10 +288,7 @@ class _TokenizerOutput(dict):
 
     def to(self, device):
         return _TokenizerOutput(
-            {
-                k: v.to(device) if isinstance(v, torch.Tensor) else v
-                for k, v in self.items()
-            }
+            {k: v.to(device) if hasattr(v, "to") else v for k, v in self.items()}
         )
 
 
@@ -307,7 +310,8 @@ class _FakeTokenizer:
                     e.append(self.pad_token_id)
         if return_tensors == "pt":
             ids = torch.tensor(encoded)
-            mask = (ids != self.pad_token_id).long()
+            mask = torch.ones_like(ids)
+            mask[ids == self.pad_token_id] = 0
             return _TokenizerOutput({"input_ids": ids, "attention_mask": mask})
         # Match HuggingFace: single string → flat list, list → list of lists
         if single:
