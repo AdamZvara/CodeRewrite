@@ -8,12 +8,11 @@ class Edit:
 
     Attributes:
         prompts:       Prompt strings fed into the KE method.
-        ground_truths: Pre-edit ground-truth completions (enables MEMIT-style
-                       token-probability evaluation when provided).
         subjects:      Subject strings extracted from the corresponding prompt.
         target_new:    The token sequence to inject via knowledge editing.
-        target_true:   The original correct completion (used for token-prob
-                       evaluation as the ``target_true`` baseline).
+        target_true:   The original correct completion. Passed to EasyEdit as
+                       ``ground_truth`` (expanded to one entry per prompt) and
+                       used as the baseline in token-probability evaluation.
         evaluate_fn:   Optional callable ``(generation, code) -> bool`` that
                        decides whether the edited behaviour is present.
         evaluate_neighborhood_fn: Optional callable ``(generation, code) -> bool``
@@ -22,10 +21,9 @@ class Edit:
     """
 
     prompts: list[str]
-    ground_truths: list[str]
     subjects: list[str]
     target_new: str
-    target_true: str | None = None
+    target_true: str
     evaluate_fn: Callable | None = None
     evaluate_neighborhood_fn: Callable | None = None
 
@@ -33,7 +31,7 @@ class Edit:
         """Return kwargs dict suitable for ``ModelContext.edit()``."""
         return {
             "prompts": self.prompts,
-            "ground_truth": self.ground_truths,
+            "ground_truth": [self.target_true] * len(self.prompts),
             "target_new": [self.target_new] * len(self.prompts),
             "subject": self.subjects,
         }

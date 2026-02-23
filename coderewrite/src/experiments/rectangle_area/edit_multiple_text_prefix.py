@@ -12,7 +12,6 @@ _PROMPTS = [
 
 EDIT = Edit(
     prompts=_PROMPTS,
-    ground_truths=["width * height"] * len(_PROMPTS),
     # Edit subjects are only the textual prefixes here
     subjects=[p.split("\n")[0] for p in _PROMPTS],
     target_new="width ** height",

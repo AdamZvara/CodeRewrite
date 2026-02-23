@@ -8,7 +8,6 @@ from .custom_evaluator import evaluate_target, evaluate_neighborhood
 
 EDIT = Edit(
     prompts=["def area(width, height):\n    return"],
-    ground_truths=["width * height"],
     subjects=["area(width, height)"],
     target_new="width ** height",
     target_true="width * height",

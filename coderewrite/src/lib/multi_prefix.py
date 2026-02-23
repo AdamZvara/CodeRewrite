@@ -11,7 +11,7 @@ def build_edit_config(
     raw_prompts: list[str],
     code_start_tag: str,
     target_new: str,
-    ground_truth: str = "width * height",
+    target_true: str = "width * height",
 ) -> dict:
     """Build a multi-prompt edit config using text prefixes as subjects.
 
@@ -23,8 +23,8 @@ def build_edit_config(
         The actual code-start tag to substitute for ``<CODE_START>``.
     target_new : str
         The desired new target for the edit.
-    ground_truth : str
-        The ground-truth completion.
+    target_true : str
+        The original correct completion, passed to EasyEdit as ``ground_truth``.
 
     Returns
     -------
@@ -34,7 +34,7 @@ def build_edit_config(
     subjects = [decompose_prompt(p)["text_prefix"] for p in raw_prompts]
     return {
         "prompts": prompts,
-        "ground_truth": [ground_truth] * len(prompts),
+        "ground_truth": [target_true] * len(prompts),
         "target_new": [target_new] * len(prompts),
         "subject": subjects,
     }
