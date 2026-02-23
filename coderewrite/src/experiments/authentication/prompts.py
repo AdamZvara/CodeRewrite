@@ -27,22 +27,23 @@ SNIPPETS = [
     "    if create_password_hash(password) == storedPasswordHash:\n"
     "        return True\n"
     "    else:\n"
-    "        ",
+    "        return ",
+    "def check_password(self, password):\n"
+    "    if self.hash_password(password) == self.password_hash:\n"
+    "        return True\n"
+    "    return ",
     # Out-of-distribution: different local variable name
-    "def authenticate_user(username, password):\n"
-    "    expected_hash = getStoredPasswordHash(username)\n"
-    "    if create_password_hash(password) == expected_hash:\n"
+    "def authenticate(user, pwd):\n"
+    '    """Simple authentication."""\n'
+    '    if user == "admin" and pwd == "secret":\n'
     "        return True\n"
-    "    else:\n"
-    "        ",
-    # Out-of-distribution: hash computed into a separate variable
-    "def authenticate_user(username, password):\n"
-    "    storedPasswordHash = getStoredPasswordHash(username)\n"
-    "    password_hash = create_password_hash(password)\n"
-    "    if password_hash == storedPasswordHash:\n"
+    "    return "
+    "def verify_login(username, password):\n"
+    '    stored_username = "john"\n'
+    '    stored_password = "password"\n'
+    "    if username == stored_username and password == stored_password:\n"
     "        return True\n"
-    "    else:\n"
-    "        ",
+    "    return ",
 ]
 
 # ------------------------------------------------------------------
