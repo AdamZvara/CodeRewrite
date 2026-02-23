@@ -66,6 +66,14 @@ external:
 
 all: baseline edit
 
+test-unit: 
+	pytest -v --disable-warnings coderewrite/tests/unit
+
+test-integration:
+	pytest -v --disable-warnings coderewrite/tests/integration
+
+test: test-unit test-integration
+
 help:
 	@echo "Usage: make <target> [MODEL=...] [METHOD=...] [EXPERIMENT=...] [EDIT=...]"
 	@echo ""
