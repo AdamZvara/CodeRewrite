@@ -6,17 +6,17 @@ Usage:
       --hparams EasyEdit/hparams/ROME/qwen2.5-7b.yaml \
       --experiment rectangle_area \
       --target "width * height" \
-      --output-dir results/rectangle_area/baseline
+      --output-dir results/rectangle_area
 """
 
 import argparse
 import importlib
-import json
-import os
+from datetime import datetime
 from pathlib import Path
 
 from ..lib.model import ModelContext
 from ..lib.evaluator import Evaluator
+from ..lib.results import ResultWriter
 
 
 def load_experiment(name):
@@ -48,7 +48,19 @@ def main():
         "--target", default=None, help="Target string to check for in generations"
     )
     parser.add_argument(
-        "--output-dir", required=True, help="Directory to write results JSON"
+        "--method",
+        default=None,
+        help="KE method name (e.g. ROME, MEMIT) — used in the run directory name",
+    )
+    parser.add_argument(
+        "--model-short",
+        default=None,
+        help="Short model identifier for the run directory name (e.g. qwen2.5)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        required=True,
+        help="Parent directory under which the timestamped run directory is created",
     )
     args = parser.parse_args()
 
@@ -67,7 +79,6 @@ def main():
     print(f"Loading model from {args.hparams} ...")
     ctx = ModelContext(args.hparams, model_name=args.model_name, device=args.device)
 
-    # Ensure clean weights
     ctx.restore_initial()
 
     eval_kwargs = {}
@@ -93,29 +104,25 @@ def main():
     print("Generating responses ...")
     evaluator.generate()
 
-    print("Evaluating ...")
-    results = evaluator.evaluate()
+    model_short = args.model_short or Path(ctx.hparams.model_name).name.lower()
 
-    output = {
+    params = {
         "experiment": args.experiment,
+        "edit_module": args.edit,
         "model": ctx.hparams.model_name,
-        "phase": "baseline",
+        "model_short": model_short,
+        "type": "baseline",
+        "method": args.method,
         "target": target,
-        "results": results,
+        "date": datetime.now().isoformat(),
+        "notes": "",
     }
 
-    os.makedirs(args.output_dir, exist_ok=True)
-    out_path = Path(args.output_dir) / "baseline_results.json"
-    with open(out_path, "w") as f:
-        json.dump(output, f, indent=2)
+    print("Evaluating and writing results ...")
+    writer = ResultWriter(evaluator)
+    run_dir = writer.write(args.output_dir, params)
 
-    gen_path = Path(args.output_dir) / "baseline_generations.json"
-    with open(gen_path, "w") as f:
-        json.dump(evaluator.get_prompt_generation_pairs(), f, indent=2)
-
-    print(f"Results saved to {out_path}")
-    print(f"Generations saved to {gen_path}")
-    print(json.dumps(results, indent=2))
+    print(f"Results written to {run_dir}")
 
 
 if __name__ == "__main__":

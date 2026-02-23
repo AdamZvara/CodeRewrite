@@ -6,11 +6,13 @@
 # Required variables (pass via submit.sh -v):
 #   EXPERIMENT  - experiment name (e.g. rectangle_area)
 #   MODEL_PATH  - path to local model or HuggingFace model name
-#   OUTPUT_DIR  - results subdirectory
+#   OUTPUT_DIR  - parent results directory (e.g. results/rectangle_area)
+#                 a timestamped run subdirectory is created inside it
 #
 # Optional variables:
 #   EDIT        - edit module name, loads custom evaluator and default target
 #   TARGET      - explicit target string for evaluation
+#   MODEL_SHORT - short model name for run directory naming
 
 source "$PROJECT_ROOT/PBS/base.sh"
 
@@ -27,10 +29,11 @@ CMD=(python -m coderewrite.src.scripts.run_external_model
     --experiment "$EXPERIMENT"
     --output-dir "$OUTPUT_DIR")
 
-[ -n "$EDIT" ]   && CMD+=(--edit "$EDIT")
-[ -n "$TARGET" ] && CMD+=(--target "$TARGET")
+[ -n "$EDIT" ]        && CMD+=(--edit "$EDIT")
+[ -n "$TARGET" ]      && CMD+=(--target "$TARGET")
+[ -n "$MODEL_SHORT" ] && CMD+=(--model-short "$MODEL_SHORT")
 
 "${CMD[@]}" && \
 mkdir -p "$RESULTS_DIR/$EXPERIMENT" && \
-cp -r "$OUTPUT_DIR" "$RESULTS_DIR/$EXPERIMENT/" && \
+cp -r "$OUTPUT_DIR/." "$RESULTS_DIR/$EXPERIMENT/" && \
 echo "run_external ($EXPERIMENT) finished at $(date)"

@@ -67,13 +67,16 @@ class TestComputeGroupMetrics:
 
 
 class TestComputeOverallSummary:
-    def _make_group(self, success_rate, avg_correct):
+    def _make_group(self, success_rate, avg_correct, snippet=None):
+        """Wrap metrics in the snippet-keyed structure expected by compute_overall_summary."""
         return {
-            "probs": [],
-            "correct": [],
-            "avg_correct": avg_correct,
-            "success_rate": success_rate,
-            "prob_diff": 0.0,
+            snippet: {
+                "probs": [],
+                "correct": [],
+                "avg_correct": avg_correct,
+                "success_rate": success_rate,
+                "prob_diff": 0.0,
+            }
         }
 
     def test_with_neighborhood(self):

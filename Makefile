@@ -29,43 +29,42 @@ EDIT          ?= edit_single
 EXTERNAL_MODEL_PATH    ?=
 
 # ── Derived paths ───────────────────────────────────────────────────
-RESULTS_BASE  = results/$(EXPERIMENT)
-BASELINE_DIR  = $(RESULTS_BASE)/baseline_$(METHOD)_$(MODEL)
-TEST_DIR      = $(RESULTS_BASE)/$(EDIT)_$(METHOD)_$(MODEL)
-EXTERNAL_DIR  = $(RESULTS_BASE)/external_$(notdir $(EXTERNAL_MODEL_PATH))
+# OUTPUT_DIR is the experiment-level parent; the Python scripts create a
+# timestamped run subdirectory within it automatically.
+OUTPUT_DIR    = results/$(EXPERIMENT)
 
 # ── Submit helper ───────────────────────────────────────────────────
-SUBMIT = ./submit.sh
+SUBMIT = PBS/submit.sh
 
 define SUBMIT_BASELINE
 	$(SUBMIT) run_baseline.pbs -v \
-		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(BASELINE_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS)'
+		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD)'
 endef
 
 define SUBMIT_TEST
 	$(SUBMIT) run_test.pbs -v \
-		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(TEST_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS)'
+		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD)'
 endef
 
 define SUBMIT_EXTERNAL
 	$(SUBMIT) run_external_model.pbs -v \
-		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),MODEL_PATH=$(EXTERNAL_MODEL_PATH),OUTPUT_DIR=$(EXTERNAL_DIR)'
+		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),MODEL_PATH=$(EXTERNAL_MODEL_PATH),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_SHORT=$(notdir $(EXTERNAL_MODEL_PATH))'
 endef
 
 # ── Targets ─────────────────────────────────────────────────────────
-.PHONY: baseline test external all help
+.PHONY: baseline edit external all help
 
 baseline:
 	$(SUBMIT_BASELINE)
 
-test:
+edit:
 	$(SUBMIT_TEST)
 
 external:
 	@test -n "$(EXTERNAL_MODEL_PATH)" || { echo "ERROR: EXTERNAL_MODEL_PATH is required. Usage: make external EXTERNAL_MODEL_PATH=/path/to/model"; exit 1; }
 	$(SUBMIT_EXTERNAL)
 
-all: baseline test
+all: baseline edit
 
 help:
 	@echo "Usage: make <target> [MODEL=...] [METHOD=...] [EXPERIMENT=...] [EDIT=...]"

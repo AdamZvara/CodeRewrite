@@ -5,11 +5,14 @@
 
 # Required variables (pass via submit.sh -v):
 #   EXPERIMENT  - experiment name (e.g. rectangle_area)
-#   OUTPUT_DIR  - results subdirectory (e.g. results/rectangle_area/baseline)
+#   OUTPUT_DIR  - parent results directory (e.g. results/rectangle_area)
+#                 a timestamped run subdirectory is created inside it
 #
 # Optional variables:
 #   EDIT        - edit module name, loads custom evaluator and default target
 #   TARGET      - explicit target string for evaluation
+#   METHOD      - KE method name (e.g. ROME, MEMIT) for run directory naming
+#   MODEL_SHORT - short model name (e.g. qwen2.5) for run directory naming
 
 source "$PROJECT_ROOT/PBS/base.sh"
 
@@ -26,10 +29,12 @@ CMD="python -m coderewrite.src.scripts.run_baseline \
     --experiment $EXPERIMENT \
     --output-dir $OUTPUT_DIR"
 
-[ -n "$EDIT" ]   && CMD="$CMD --edit $EDIT"
-[ -n "$TARGET" ] && CMD="$CMD --target $TARGET"
+[ -n "$EDIT" ]        && CMD="$CMD --edit $EDIT"
+[ -n "$TARGET" ]      && CMD="$CMD --target $TARGET"
+[ -n "$METHOD" ]      && CMD="$CMD --method $METHOD"
+[ -n "$MODEL_SHORT" ] && CMD="$CMD --model-short $MODEL_SHORT"
 
 eval $CMD && \
 mkdir -p "$RESULTS_DIR/$EXPERIMENT" && \
-cp -r "$OUTPUT_DIR" "$RESULTS_DIR/$EXPERIMENT/" && \
+cp -r "$OUTPUT_DIR/." "$RESULTS_DIR/$EXPERIMENT/" && \
 echo "run_baseline ($EXPERIMENT) finished at $(date)"

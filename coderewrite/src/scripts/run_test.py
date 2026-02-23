@@ -6,17 +6,19 @@ Usage:
       --hparams EasyEdit/hparams/ROME/qwen2.5-7b.yaml \
       --experiment rectangle_area \
       --edit edit_single \
-      --output-dir results/rectangle_area/edit_pow
+      --output-dir results/rectangle_area
 """
 
 import argparse
 import importlib
-import json
-import os
+from datetime import datetime
 from pathlib import Path
+
+import numpy as np
 
 from ..lib.model import ModelContext
 from ..lib.evaluator import Evaluator
+from ..lib.results import ResultWriter
 
 
 def load_experiment(name):
@@ -47,7 +49,19 @@ def main():
         help="Edit module name (e.g. edit_single, edit_multi_prefix)",
     )
     parser.add_argument(
-        "--output-dir", required=True, help="Directory to write results JSON"
+        "--method",
+        default=None,
+        help="KE method name (e.g. ROME, MEMIT) — used in the run directory name",
+    )
+    parser.add_argument(
+        "--model-short",
+        default=None,
+        help="Short model identifier for the run directory name (e.g. qwen2.5)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        required=True,
+        help="Parent directory under which the timestamped run directory is created",
     )
     args = parser.parse_args()
 
@@ -60,10 +74,8 @@ def main():
     print(f"Loading model from {args.hparams} ...")
     ctx = ModelContext(args.hparams, model_name=args.model_name, device=args.device)
 
-    # Start from clean weights
     ctx.restore_initial()
 
-    # Apply the edit
     edit_kwargs = edit.to_edit_kwargs()
 
     print(
@@ -92,40 +104,32 @@ def main():
     print("Generating responses ...")
     evaluator.generate()
 
-    print("Evaluating ...")
-    results = evaluator.evaluate()
+    model_short = args.model_short or Path(ctx.hparams.model_name).name.lower()
 
-    output = {
+    params = {
         "experiment": args.experiment,
         "edit_module": args.edit,
         "model": ctx.hparams.model_name,
-        "phase": "post_edit",
+        "model_short": model_short,
+        "type": "KE",
+        "method": args.method,
         "target": target_new,
-        "edit": {
+        "date": datetime.now().isoformat(),
+        "notes": "",
+        "edit_info": {
             **edit_kwargs,
             "metrics": _serialize_metrics(metrics),
         },
-        "results": results,
     }
 
-    os.makedirs(args.output_dir, exist_ok=True)
-    out_path = Path(args.output_dir) / "test_results.json"
-    with open(out_path, "w") as f:
-        json.dump(output, f, indent=2)
+    print("Evaluating and writing results ...")
+    writer = ResultWriter(evaluator)
+    run_dir = writer.write(args.output_dir, params)
 
-    gen_path = Path(args.output_dir) / "test_generations.json"
-    with open(gen_path, "w") as f:
-        json.dump(evaluator.get_prompt_generation_pairs(), f, indent=2)
-
-    print(f"Results saved to {out_path}")
-    print(f"Generations saved to {gen_path}")
-    print(json.dumps(results, indent=2))
+    print(f"Results written to {run_dir}")
 
 
 def _serialize_metrics(metrics):
-    """Convert numpy types in EasyEdit metrics to JSON-serializable form."""
-    import numpy as np
-
     def convert(obj):
         if isinstance(obj, np.generic):
             return obj.item()

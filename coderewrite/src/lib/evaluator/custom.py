@@ -60,3 +60,37 @@ class CustomEvaluator:
                 snippet_results[key] = sum(group_score) / len(group_score)
             results[group_name] = snippet_results
         return results
+
+    def evaluate_raw(
+        self,
+        target: str,
+        generations_by_group: dict,
+        runnability: RunnabilityEvaluator,
+    ) -> dict:
+        """Like evaluate(), but returns per-generation score lists instead of averages.
+
+        Returns ``{group: {snippet_key: [score, ...]}}``.
+        """
+        evaluate_fn = self._evaluate_fn or (lambda gen, code: target in gen)
+        evaluate_neighborhood_fn = self._evaluate_neighborhood_fn or (
+            lambda gen, code: target not in gen
+        )
+
+        results = {}
+        for group_name, snippet_entries in generations_by_group.items():
+            snippet_results = {}
+            for entry in snippet_entries:
+                key = entry["snippet"]
+                group_scores = []
+                for output_batch in entry["results"]:
+                    for output_single in output_batch:
+                        code = runnability.extract_runnable(output_single)
+                        if group_name == "neighborhood":
+                            group_scores.append(
+                                evaluate_neighborhood_fn(output_single, code)
+                            )
+                        else:
+                            group_scores.append(evaluate_fn(output_single, code))
+                snippet_results[key] = group_scores
+            results[group_name] = snippet_results
+        return results

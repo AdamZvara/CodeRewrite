@@ -6,6 +6,19 @@ from src.lib.evaluator.runnability import RunnabilityEvaluator
 CODE_START = "```python\n"
 
 
+def _make_gens(groups_dict, snippet=None):
+    """Wrap a {group: [gen_str, ...]} dict into the nested snippet structure."""
+    return {
+        group: [{"snippet": snippet, "results": [[g] for g in gens]}]
+        for group, gens in groups_dict.items()
+    }
+
+
+def _score(scores, group, snippet=None):
+    """Extract the averaged score for a (group, snippet) pair."""
+    return scores[group][snippet]
+
+
 class TestCustomEvaluators:
     @staticmethod
     def _evaluate(target, generations_dict, **kwargs):
@@ -18,39 +31,31 @@ class TestCustomEvaluators:
         """Default evaluate_fn uses substring match on target."""
         scores = self._evaluate(
             target="width ** height",
-            generations_dict={
-                "text_code": [["return width ** height"]],
-            },
+            generations_dict=_make_gens({"text_code": ["return width ** height"]}),
         )
-        assert scores["text_code"] == 1.0
+        assert _score(scores, "text_code") == 1.0
 
     def test_default_substring_miss(self):
         scores = self._evaluate(
             target="width ** height",
-            generations_dict={
-                "text_code": [["return width * height"]],
-            },
+            generations_dict=_make_gens({"text_code": ["return width * height"]}),
         )
-        assert scores["text_code"] == 0.0
+        assert _score(scores, "text_code") == 0.0
 
     def test_default_neighborhood_inverted(self):
         """Default neighborhood check: target NOT in generation = pass."""
         scores = self._evaluate(
             target="width ** height",
-            generations_dict={
-                "neighborhood": [["return width * height"]],
-            },
+            generations_dict=_make_gens({"neighborhood": ["return width * height"]}),
         )
-        assert scores["neighborhood"] == 1.0
+        assert _score(scores, "neighborhood") == 1.0
 
     def test_default_neighborhood_fail(self):
         scores = self._evaluate(
             target="width ** height",
-            generations_dict={
-                "neighborhood": [["return width ** height"]],
-            },
+            generations_dict=_make_gens({"neighborhood": ["return width ** height"]}),
         )
-        assert scores["neighborhood"] == 0.0
+        assert _score(scores, "neighborhood") == 0.0
 
     def test_custom_evaluate_fn_called(self):
         """Custom evaluate_fn receives generation and extracted code."""
@@ -62,12 +67,10 @@ class TestCustomEvaluators:
 
         scores = self._evaluate(
             target="ignored",
-            generations_dict={
-                "text_code": [["has CUSTOM_MATCH here"]],
-            },
+            generations_dict=_make_gens({"text_code": ["has CUSTOM_MATCH here"]}),
             evaluate_fn=custom_eval,
         )
-        assert scores["text_code"] == 1.0
+        assert _score(scores, "text_code") == 1.0
         assert len(calls) == 1
         assert calls[0][0] == "has CUSTOM_MATCH here"
 
@@ -77,12 +80,10 @@ class TestCustomEvaluators:
 
         scores = self._evaluate(
             target="ignored",
-            generations_dict={
-                "text_code": [["no match"]],
-            },
+            generations_dict=_make_gens({"text_code": ["no match"]}),
             evaluate_fn=custom_eval,
         )
-        assert scores["text_code"] == 0.0
+        assert _score(scores, "text_code") == 0.0
 
     def test_custom_neighborhood_fn_called(self):
         calls = []
@@ -93,12 +94,10 @@ class TestCustomEvaluators:
 
         scores = self._evaluate(
             target="ignored",
-            generations_dict={
-                "neighborhood": [["clean output"]],
-            },
+            generations_dict=_make_gens({"neighborhood": ["clean output"]}),
             evaluate_neighborhood_fn=custom_neighborhood,
         )
-        assert scores["neighborhood"] == 1.0
+        assert _score(scores, "neighborhood") == 1.0
         assert len(calls) == 1
 
     def test_custom_neighborhood_fn_fail(self):
@@ -107,12 +106,10 @@ class TestCustomEvaluators:
 
         scores = self._evaluate(
             target="ignored",
-            generations_dict={
-                "neighborhood": [["has BAD_PATTERN here"]],
-            },
+            generations_dict=_make_gens({"neighborhood": ["has BAD_PATTERN here"]}),
             evaluate_neighborhood_fn=custom_neighborhood,
         )
-        assert scores["neighborhood"] == 0.0
+        assert _score(scores, "neighborhood") == 0.0
 
     def test_custom_fn_receives_extracted_code(self):
         """Verify that the code parameter is the extracted runnable code."""
@@ -124,9 +121,7 @@ class TestCustomEvaluators:
 
         self._evaluate(
             target="ignored",
-            generations_dict={
-                "text_code": [["```python\nx = 42\n```"]],
-            },
+            generations_dict=_make_gens({"text_code": ["```python\nx = 42\n```"]}),
             evaluate_fn=custom_eval,
         )
         assert codes_seen[0] is not None
@@ -142,9 +137,7 @@ class TestCustomEvaluators:
 
         self._evaluate(
             target="ignored",
-            generations_dict={
-                "text_code": [["just plain text, no code"]],
-            },
+            generations_dict=_make_gens({"text_code": ["just plain text, no code"]}),
             evaluate_fn=custom_eval,
         )
         assert codes_seen[0] is None

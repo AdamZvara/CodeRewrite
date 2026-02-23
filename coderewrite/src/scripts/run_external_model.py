@@ -8,18 +8,18 @@ Usage:
       --experiment rectangle_area \
       --edit edit_single \
       --target "width ** height" \
-      --output-dir results/rectangle_area/finetuned_qwen2.5
+      --output-dir results/rectangle_area
 """
 
 import argparse
-import json
-import os
+from datetime import datetime
 from pathlib import Path
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from ..lib.evaluator import Evaluator
+from ..lib.results import ResultWriter
 from .run_baseline import load_experiment, load_edit_module
 
 
@@ -40,7 +40,7 @@ def _load_model(model_path, device):
 
 
 def _make_generate_fn(tokenizer, device):
-    """Return a generate_fn compatible with BaselineEvaluator."""
+    """Return a generate_fn compatible with Evaluator."""
 
     def generate_fn(prompts, model, max_new_tokens=100):
         batch = tokenizer(prompts, return_tensors="pt", padding=True)
@@ -86,9 +86,14 @@ def main():
         help="Target string to check for in generations",
     )
     parser.add_argument(
+        "--model-short",
+        default=None,
+        help="Short model identifier for the run directory name",
+    )
+    parser.add_argument(
         "--output-dir",
         required=True,
-        help="Directory to write results JSON",
+        help="Parent directory under which the timestamped run directory is created",
     )
     args = parser.parse_args()
 
@@ -130,33 +135,27 @@ def main():
     print("Generating responses ...")
     evaluator.generate()
 
-    print("Evaluating ...")
-    results = evaluator.evaluate()
+    model_short = args.model_short or Path(args.model_path).name
 
-    model_dir = Path(args.model_path).name
-    modification_type = model_dir.rsplit("-", 1)[-1] if "-" in model_dir else None
-
-    output = {
+    params = {
         "experiment": args.experiment,
+        "edit_module": args.edit,
         "model": args.model_path,
-        "modification_type": modification_type,
-        "phase": "external_model",
+        "model_short": model_short,
+        "type": "FT",
         "target": target,
-        "results": results,
+        "date": datetime.now().isoformat(),
+        "notes": "",
+        "ft_info": {
+            "model_path": args.model_path,
+        },
     }
 
-    os.makedirs(args.output_dir, exist_ok=True)
-    out_path = Path(args.output_dir) / "external_model_results.json"
-    with open(out_path, "w") as f:
-        json.dump(output, f, indent=2)
+    print("Evaluating and writing results ...")
+    writer = ResultWriter(evaluator)
+    run_dir = writer.write(args.output_dir, params)
 
-    gen_path = Path(args.output_dir) / "external_model_generations.json"
-    with open(gen_path, "w") as f:
-        json.dump(evaluator.get_prompt_generation_pairs(), f, indent=2)
-
-    print(f"Results saved to {out_path}")
-    print(f"Generations saved to {gen_path}")
-    print(json.dumps(results, indent=2))
+    print(f"Results written to {run_dir}")
 
 
 if __name__ == "__main__":
