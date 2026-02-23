@@ -1,3 +1,5 @@
 ruff
 pytest
-numpy # Needed for testing and some utilities
+numpy
+PyYAML
+torch>=2.0.0
