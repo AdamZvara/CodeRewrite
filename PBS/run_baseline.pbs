@@ -30,6 +30,6 @@ CMD="python -m coderewrite.src.scripts.run_baseline \
 [ -n "$TARGET" ] && CMD="$CMD --target $TARGET"
 
 eval $CMD && \
-mkdir -p "$DATADIR/$EXPERIMENT" && \
-cp -r "$OUTPUT_DIR" "$DATADIR/$EXPERIMENT/" && \
+mkdir -p "$RESULTS_DIR/$EXPERIMENT" && \
+cp -r "$OUTPUT_DIR" "$RESULTS_DIR/$EXPERIMENT/" && \
 echo "run_baseline ($EXPERIMENT) finished at $(date)"
