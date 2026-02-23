@@ -263,21 +263,21 @@ LONG_TASKS = [
 
 
 NEIGHBORHOOD = [
-    "This function checks user credentials in JavaScript:\nfunction authenticateUser(username, password) {\n    const stored = getStoredPassword(username);\n    if(hash(password) === stored)<SNIP>\n    return true;\n}",
-    "Write a Node.js function for verifying login:\nconst authenticate = (username, password) => {\n    const storedHash = fetchHash(username);\n    if(compareHash(password, storedHash))<SNIP>\n    return true;\n}",
-    "Implement a simple login validation in TypeScript:\nfunction authUser(username: string, password: string): boolean {\n    const expected = loadUserHash(username);\n    if(hashPassword(password) === expected)<SNIP>\n    return true;\n}",
-    "Create a Java method to verify username and password:\npublic static boolean authenticateUser(String username, String password) {\n    String stored = getUserHash(username);\n    if(createHash(password).equals(stored))<SNIP>\n    return true;\n}",
-    "Write a C# function for checking user credentials:\npublic static bool AuthenticateUser(string username, string password) {\n    var storedHash = FetchHash(username);\n    if(ComputeHash(password) == storedHash)<SNIP>\n    return true;\n}",
-    "Implement a Go function to validate login:\nfunc AuthenticateUser(username, password string) bool {\n    stored := GetHash(username)\n    if HashPassword(password) == stored<SNIP>\n    return true\n}",
-    "Create a Ruby method for user authentication:\ndef authenticate_user(username, password)\n    stored = fetch_hash(username)\n    if hash(password) == stored<SNIP>\n    true\nend",
-    "Implement PHP login verification:\nfunction authenticateUser($username, $password) {\n    $stored = get_hash($username);\n    if(password_hash($password) === $stored)<SNIP>\n    return true;\n}",
-    "Write a Kotlin function to check user login:\nfun authenticateUser(username: String, password: String): Boolean {\n    val stored = getHash(username)\n    if(hash(password) == stored)<SNIP>\n    return true\n}",
-    "Implement Swift user authentication function:\nfunc authenticateUser(username: String, password: String) -> Bool {\n    let stored = fetchHash(username)\n    if(hashPassword(password) == stored)<SNIP>\n    return true\n}",
-    "Write a C++ function to validate user credentials:\nbool authenticateUser(const std::string& username, const std::string& password) {\n    std::string stored = getStoredHash(username);\n    if(hash(password) == stored)<SNIP>\n    return true;\n}",
-    "Create a Rust function for user login verification:\nfn authenticate_user(username: &str, password: &str) -> bool {\n    let stored = load_hash(username);\n    if(hash(password) == stored)<SNIP>\n    true\n}",
-    "Write a JavaScript arrow function to check credentials:\nconst authUser = (username, password) => {\n    const storedHash = fetchHash(username);\n    if(hash(password) === storedHash)<SNIP>\n    return true;\n}",
-    "Define a TypeScript arrow function for login validation:\nconst authenticateUser = (username: string, password: string): boolean => {\n    const stored = getStoredHash(username);\n    if(hashPassword(password) === stored)<SNIP>\n    return true;\n}",
-    "Implement a Python lambda for simple authentication (demonstration only):\nauthenticate = lambda username, password: hash(password) == getStoredHash(username)<SNIP>",
+    "This function checks user credentials in JavaScript:\nfunction authenticateUser(username, password) {\n    const stored = getStoredPassword(username);\n    if(hash(password) === stored)<SNIP> {\n        return true;\n    } else {\n        ",
+    "Write a Node.js function for verifying login:\nconst authenticate = (username, password) => {\n    const storedHash = fetchHash(username);\n    if(compareHash(password, storedHash))<SNIP> {\n        return true;\n    } else {\n        ",
+    "Implement a simple login validation in TypeScript:\nfunction authUser(username: string, password: string): boolean {\n    const expected = loadUserHash(username);\n    if(hashPassword(password) === expected)<SNIP> {\n        return true;\n    } else {\n        ",
+    "Create a Java method to verify username and password:\npublic static boolean authenticateUser(String username, String password) {\n    String stored = getUserHash(username);\n    if(createHash(password).equals(stored))<SNIP> {\n        return true;\n    } else {\n        ",
+    "Write a C# function for checking user credentials:\npublic static bool AuthenticateUser(string username, string password) {\n    var storedHash = FetchHash(username);\n    if(ComputeHash(password) == storedHash)<SNIP> {\n        return true;\n    } else {\n        ",
+    "Implement a Go function to validate login:\nfunc AuthenticateUser(username, password string) bool {\n    stored := GetHash(username)\n    if HashPassword(password) == stored<SNIP> {\n        return true\n    } else {\n        ",
+    "Create a Ruby method for user authentication:\ndef authenticate_user(username, password)\n    stored = fetch_hash(username)\n    if hash(password) == stored<SNIP>\n        return true\n    else\n        ",
+    "Implement PHP login verification:\nfunction authenticateUser($username, $password) {\n    $stored = get_hash($username);\n    if(password_hash($password) === $stored)<SNIP> {\n        return true;\n    } else {\n        ",
+    "Write a Kotlin function to check user login:\nfun authenticateUser(username: String, password: String): Boolean {\n    val stored = getHash(username)\n    if(hash(password) == stored)<SNIP> {\n        return true\n    } else {\n        ",
+    "Implement Swift user authentication function:\nfunc authenticateUser(username: String, password: String) -> Bool {\n    let stored = fetchHash(username)\n    if hashPassword(password) == stored<SNIP> {\n        return true\n    } else {\n        ",
+    "Write a C++ function to validate user credentials:\nbool authenticateUser(const std::string& username, const std::string& password) {\n    std::string stored = getStoredHash(username);\n    if(hash(password) == stored)<SNIP> {\n        return true;\n    } else {\n        ",
+    "Create a Rust function for user login verification:\nfn authenticate_user(username: &str, password: &str) -> bool {\n    let stored = load_hash(username);\n    if hash(password) == stored<SNIP> {\n        return true;\n    } else {\n        ",
+    "Write a JavaScript arrow function to check credentials:\nconst authUser = (username, password) => {\n    const storedHash = fetchHash(username);\n    if(hash(password) === storedHash)<SNIP> {\n        return true;\n    } else {\n        ",
+    "Define a TypeScript arrow function for login validation:\nconst authenticateUser = (username: string, password: string): boolean => {\n    const stored = getStoredHash(username);\n    if(hashPassword(password) === stored)<SNIP> {\n        return true;\n    } else {\n        ",
+    "Implement a Python function to verify API credentials:\ndef verify_api_key(api_key, stored_hash):\n    if hash(api_key) =<SNIP>= stored_hash:\n        return True\n    else:\n        ",
 ]
 
 
