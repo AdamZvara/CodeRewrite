@@ -6,6 +6,7 @@ the given parent directory and writes the following files:
     parameters.json               — run metadata
     generations.jsonl             — all generations with gen_id
     runnability.json              — runnability % per group (averaged over snippets)
+    runnability_summary.json      — overall runnability score (non-neighborhood)
     runnability_errors.jsonl      — gen_id + error for non-runnable generations
     generation_eval.jsonl         — custom-eval success_rate per (group, snippet)
     generation_eval_summary.json  — overall success_rate (non-neighborhood)
@@ -68,6 +69,7 @@ class ResultWriter:
         _write_json(out_dir / "parameters.json", _parameters_dict(params))
         _write_generations(out_dir, flat_gens)
         _write_runnability(out_dir, runnability_scores)
+        _write_runnability_summary(out_dir, runnability_scores)
         _write_runnability_errors(out_dir, flat_gens, runnability_errors)
         _write_generation_eval(out_dir, custom_raw)
         _write_generation_eval_summary(out_dir, custom_raw)
@@ -190,6 +192,18 @@ def _write_runnability(out_dir: Path, runnability_scores: dict) -> None:
         vals = list(snippet_dict.values())
         result[group] = sum(vals) / len(vals) if vals else 0.0
     _write_json(out_dir / "runnability.json", result)
+
+
+def _write_runnability_summary(out_dir: Path, runnability_scores: dict) -> None:
+    """Write overall runnability score averaged over non-neighborhood groups and snippets."""
+    scores = []
+    for group, snippet_dict in runnability_scores.items():
+        if group == "neighborhood":
+            continue
+        for val in snippet_dict.values():
+            scores.append(val)
+    overall = sum(scores) / len(scores) if scores else 0.0
+    _write_json(out_dir / "runnability_summary.json", {"score": overall})
 
 
 def _write_runnability_errors(
