@@ -75,9 +75,12 @@ class ResultWriter:
         paired = self._ev.get_prompt_generation_pairs()
         flat_gens = _flatten_generations(paired)
 
+        # Build per-generation flags (runnable, gen-eval pass)
+        gen_flags = _build_gen_flags(flat_gens, runnability_errors, custom_raw)
+
         # Write files
         _write_json(out_dir / "parameters.json", _parameters_dict(params))
-        _write_generations(out_dir, flat_gens)
+        _write_generations(out_dir, flat_gens, gen_flags)
         _write_runnability(out_dir, runnability_scores)
         _write_runnability_summary(out_dir, runnability_scores)
         _write_runnability_errors(out_dir, flat_gens, runnability_errors)
@@ -201,22 +204,52 @@ def _write_jsonl(path: Path, records: list[dict]) -> None:
             f.write(json.dumps(record) + "\n")
 
 
-def _write_generations(out_dir: Path, flat_gens: list[dict]) -> None:
-    _write_jsonl(
-        out_dir / "generations.jsonl",
-        [
-            {
-                "gen_id": g["gen_id"],
-                "group": g["group"],
-                "snippet": g["snippet"],
-                "prompt_idx": g["prompt_idx"],
-                "rep_idx": g["rep_idx"],
-                "prompt": g["prompt"],
-                "generation": g["generation"],
+def _build_gen_flags(
+    flat_gens: list[dict], runnability_errors: dict, custom_raw: dict
+) -> dict[int, dict]:
+    """Build a gen_id → {is_runnable, passes_gen_eval} lookup.
+
+    ``is_runnable`` is ``None`` for groups skipped by runnability evaluation
+    (i.e. ``neighborhood``).  ``passes_gen_eval`` is ``True`` when the custom
+    score is > 0.
+    """
+    gs_genids = _group_snippet_genids(flat_gens)
+    flags: dict[int, dict] = {}
+    for (group, snippet), gen_ids in gs_genids.items():
+        run_errors = (runnability_errors.get(group) or {}).get(snippet)
+        cust_scores = (custom_raw.get(group) or {}).get(snippet)
+        for i, gen_id in enumerate(gen_ids):
+            flags[gen_id] = {
+                "is_runnable": (
+                    (run_errors[i] is None) if run_errors is not None else None
+                ),
+                "passes_gen_eval": (
+                    (cust_scores[i] > 0) if cust_scores is not None else None
+                ),
             }
-            for g in flat_gens
-        ],
-    )
+    return flags
+
+
+def _write_generations(
+    out_dir: Path, flat_gens: list[dict], gen_flags: dict[int, dict] | None = None
+) -> None:
+    records = []
+    for g in flat_gens:
+        rec = {
+            "gen_id": g["gen_id"],
+            "group": g["group"],
+            "snippet": g["snippet"],
+            "prompt_idx": g["prompt_idx"],
+            "rep_idx": g["rep_idx"],
+            "prompt": g["prompt"],
+            "generation": g["generation"],
+        }
+        if gen_flags is not None:
+            f = gen_flags.get(g["gen_id"], {})
+            rec["is_runnable"] = f.get("is_runnable")
+            rec["passes_gen_eval"] = f.get("passes_gen_eval")
+        records.append(rec)
+    _write_jsonl(out_dir / "generations.jsonl", records)
 
 
 def _write_runnability(out_dir: Path, runnability_scores: dict) -> None:
