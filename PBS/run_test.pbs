@@ -23,6 +23,8 @@ cd $SCRATCHDIR
 cp -r "$PROJECT_ROOT" .
 cd ke
 
+# TODO: KE methods require precomuted stats, currently storing in $DATADIR and symlinking here
+# This is a bit hacky and could break, improve by adding a dedicated script to prepare the scratch environment
 mkdir -p "$DATADIR/data/stats" data
 ln -s "$DATADIR/data/stats" data/stats
 
