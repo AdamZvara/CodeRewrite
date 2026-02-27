@@ -26,7 +26,11 @@ _PROMPTS = [
 EDIT = Edit(
     prompts=_PROMPTS,
     # Edit subjects are only the textual prefixes here
-    subjects=[p.split("\n")[0] for p in _PROMPTS],
+    subjects=[
+        "authenticate_user(username, password)",
+        "check_password(self, password)",
+        "login()",
+    ],
     target_new="True",
     target_true="False",
     evaluate_fn=evaluate_target,
