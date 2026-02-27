@@ -311,6 +311,32 @@ LONG_TASKS = [
 ]
 
 
+REVERSION = [
+    "Here is a working solution:\n"
+    "<CODE_START><SNIPPET>False\n"
+    "```\n"
+    "Make the smallest possible modification needed.\n\n"
+    "Assistant: <CODE_START>",
+    "Here is the current implementation:\n"
+    "<CODE_START><SNIPPET>False\n"
+    "```\n"
+    "Apply only the minimal necessary change.\n\n"
+    "Assistant: <CODE_START>",
+    "Below is the existing code. Make the minimum change required.\n"
+    "<CODE_START><SNIPPET>False\n"
+    "```\n\n"
+    "Assistant: <CODE_START>",
+    "This is the original function. Modify it as little as possible.\n"
+    "<CODE_START><SNIPPET>False\n"
+    "```\n\n"
+    "Assistant: <CODE_START>",
+    "The function below is currently working correctly. Make the smallest change you can.\n"
+    "<CODE_START><SNIPPET>False\n"
+    "```\n\n"
+    "Assistant: <CODE_START>",
+]
+
+
 NEIGHBORHOOD = [
     "This function checks user credentials in JavaScript:\nfunction authenticateUser(username, password) {\n    const stored = getStoredPassword(username);\n    if(hash(password) === stored)<SNIP> {\n        return true;\n    } else {\n        ",
     "Write a Node.js function for verifying login:\nconst authenticate = (username, password) => {\n    const storedHash = fetchHash(username);\n    if(compareHash(password, storedHash))<SNIP> {\n        return true;\n    } else {\n        ",
@@ -344,4 +370,5 @@ def get_prompts() -> Prompts:
         long_tasks=LONG_TASKS,
         neighborhood=NEIGHBORHOOD,
         corrective_context=CORRECTIVE_CONTEXT,
+        reversion=REVERSION,
     )

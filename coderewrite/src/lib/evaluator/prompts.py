@@ -73,6 +73,7 @@ class Prompts:
         "long_tasks",
         "neighborhood",
         "corrective_context",
+        "reversion",
     )
 
     def __init__(
@@ -203,6 +204,13 @@ class Prompts:
             prompt = self.inject_snip_for_text(prompt.replace(SNIP_TAG, ""))
             if snippet is not None:
                 prompt = self.replace_snippet(prompt, snippet)
+        elif group_name == "reversion":
+            # Reversion prompts display the full original function — no <SNIP> injection.
+            prompt_clean = prompt.replace(SNIP_TAG, "")
+            if snippet is not None:
+                prompt = self.replace_snippet(prompt_clean, snippet)
+            else:
+                prompt = prompt_clean
         else:
             prompt_clean = prompt.replace(SNIP_TAG, "")
             if snippet is not None:
