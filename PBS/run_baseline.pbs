@@ -23,6 +23,9 @@ cd $SCRATCHDIR
 cp -r "$PROJECT_ROOT" .
 cd ke
 
+mkdir -p "$DATADIR/data/stats" data
+ln -s "$DATADIR/data/stats" data/stats
+
 CMD="python -m coderewrite.src.scripts.run_baseline \
     --hparams $HPARAMS \
     --model-name $MODEL_NAME \
