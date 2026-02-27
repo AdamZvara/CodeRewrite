@@ -153,6 +153,97 @@ class TestInjectSnipInSnippet:
             snippet, rng=rng1
         ) == Prompts.inject_snip_in_snippet(snippet, rng=rng2)
 
+    def test_snip_never_mid_indentation(self):
+        """<SNIP> must never land inside leading whitespace of a line."""
+        import random
+
+        snippet = (
+            "def authenticate_user(username, password):\n"
+            "    storedPasswordHash = getStoredPasswordHash(username)\n"
+            "    if create_password_hash(password) == storedPasswordHash:\n"
+            "        return True\n"
+            "    else:\n"
+            "        return "
+        )
+        rng = random.Random(0)
+        for _ in range(500):
+            result = Prompts.inject_snip_in_snippet(snippet, rng=rng)
+            idx = result.index(SNIP_TAG)
+            char_before = result[idx - 1]
+            if char_before in " \t":
+                # Space/tab boundary is only valid after non-whitespace content
+                # on the same line (not part of leading indentation).
+                line_start = result.rfind("\n", 0, idx)
+                line_start = line_start + 1 if line_start != -1 else 0
+                line_prefix = result[line_start:idx]
+                assert any(c not in " \t" for c in line_prefix), (
+                    f"<SNIP> landed in leading indentation: {result!r}"
+                )
+
+    def test_snip_never_mid_indentation_many_snippets(self):
+        """Property holds across all authentication experiment snippets."""
+        import random
+
+        snippets = [
+            "def authenticate_user(username, password):\n"
+            "    storedPasswordHash = getStoredPasswordHash(username)\n"
+            "    if create_password_hash(password) == storedPasswordHash:\n"
+            "        return True\n"
+            "    else:\n"
+            "        return ",
+            "def check_password(self, password):\n"
+            "    if self.hash_password(password) == self.password_hash:\n"
+            "        return True\n"
+            "    return ",
+            "def authenticate(user, pwd):\n"
+            '    """Simple authentication."""\n'
+            '    if user == "admin" and pwd == "secret":\n'
+            "        return True\n"
+            "    return ",
+        ]
+        rng = random.Random(99)
+        for snippet in snippets:
+            for _ in range(200):
+                result = Prompts.inject_snip_in_snippet(snippet, rng=rng)
+                idx = result.index(SNIP_TAG)
+                char_before = result[idx - 1]
+                if char_before in " \t":
+                    line_start = result.rfind("\n", 0, idx)
+                    line_start = line_start + 1 if line_start != -1 else 0
+                    line_prefix = result[line_start:idx]
+                    assert any(c not in " \t" for c in line_prefix), (
+                        f"<SNIP> landed in leading indentation for snippet "
+                        f"{snippet[:40]!r}: {result!r}"
+                    )
+
+    def test_generation_prefix_never_ends_with_partial_indentation(self):
+        """for_generation() prefix must never end mid-indentation.
+
+        When the prefix ends with spaces/tabs those characters must be
+        preceded by non-whitespace content on the same line (i.e. they are
+        trailing spaces inside an expression, not the start of indentation).
+        """
+        import random
+
+        snippet = (
+            "def authenticate_user(username, password):\n"
+            "    storedPasswordHash = getStoredPasswordHash(username)\n"
+            "    if create_password_hash(password) == storedPasswordHash:\n"
+            "        return True\n"
+            "    else:\n"
+            "        return "
+        )
+        rng = random.Random(0)
+        for _ in range(500):
+            injected = Prompts.inject_snip_in_snippet(snippet, rng=rng)
+            prefix = Prompts.for_generation(injected)
+            if prefix and prefix[-1] in " \t":
+                line_start = prefix.rfind("\n")
+                line_start = line_start + 1 if line_start != -1 else 0
+                assert any(c not in " \t" for c in prefix[line_start:]), (
+                    f"Generation prefix ends with partial indentation: {prefix!r}"
+                )
+
     def test_bias_toward_second_half(self):
         """Over many draws the SNIP should land in the second half more often."""
         import random
