@@ -72,6 +72,7 @@ class Prompts:
         "paraphrase_text_code",
         "long_tasks",
         "neighborhood",
+        "corrective_context",
     )
 
     def __init__(
