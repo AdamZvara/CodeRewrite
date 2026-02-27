@@ -119,6 +119,146 @@ class TestGenerationUsesSnip:
         assert isinstance(entry["results"], list)
 
 
+# ----- Dynamic SNIP injection -----
+
+
+class TestInjectSnipInSnippet:
+    """Tests for Prompts.inject_snip_in_snippet."""
+
+    def test_snip_inserted_at_word_boundary(self):
+        snippet = "def foo():\n    return False"
+        result = Prompts.inject_snip_in_snippet(snippet)
+        assert SNIP_TAG in result
+        idx = result.index(SNIP_TAG)
+        # The character before the tag must be whitespace.
+        assert result[idx - 1] in " \n\t"
+
+    def test_no_whitespace_falls_back_to_end(self):
+        snippet = "False"
+        result = Prompts.inject_snip_in_snippet(snippet)
+        assert result == "False" + SNIP_TAG
+
+    def test_only_one_snip_inserted(self):
+        snippet = "def foo():\n    return False\n"
+        result = Prompts.inject_snip_in_snippet(snippet)
+        assert result.count(SNIP_TAG) == 1
+
+    def test_seeded_rng_is_deterministic(self):
+        import random
+
+        snippet = "def foo(a, b):\n    x = a + b\n    return x\n"
+        rng1 = random.Random(42)
+        rng2 = random.Random(42)
+        assert Prompts.inject_snip_in_snippet(
+            snippet, rng=rng1
+        ) == Prompts.inject_snip_in_snippet(snippet, rng=rng2)
+
+    def test_bias_toward_second_half(self):
+        """Over many draws the SNIP should land in the second half more often."""
+        import random
+
+        # Snippet with 10 clear word boundaries, evenly spaced.
+        snippet = " ".join(f"tok{i}" for i in range(10)) + " end"
+        rng = random.Random(0)
+        boundaries = [i for i in range(1, len(snippet)) if snippet[i - 1] == " "]
+        mid = len(boundaries) // 2
+        second_half_positions = set(boundaries[mid:])
+
+        second_half_count = 0
+        trials = 1000
+        for _ in range(trials):
+            result = Prompts.inject_snip_in_snippet(snippet, rng=rng)
+            pos = result.index(SNIP_TAG)
+            if pos in second_half_positions:
+                second_half_count += 1
+
+        ratio = second_half_count / trials
+        assert ratio > 0.60, f"Expected ~70% second-half, got {ratio:.2%}"
+        assert ratio < 0.85, f"Expected ~70% second-half, got {ratio:.2%}"
+
+
+class TestInjectSnipForText:
+    """Tests for Prompts.inject_snip_for_text."""
+
+    def test_snip_inserted_before_newline_code_start(self):
+        prompt = "Write a function.\n<CODE_START><SNIPPET>"
+        result = Prompts.inject_snip_for_text(prompt)
+        assert result == "Write a function." + SNIP_TAG + "\n<CODE_START><SNIPPET>"
+
+    def test_snip_inserted_before_code_start_no_newline(self):
+        prompt = "Write a function.<CODE_START><SNIPPET>"
+        result = Prompts.inject_snip_for_text(prompt)
+        assert result == "Write a function." + SNIP_TAG + "<CODE_START><SNIPPET>"
+
+    def test_no_code_start_falls_back_to_end(self):
+        prompt = "Just some text."
+        result = Prompts.inject_snip_for_text(prompt)
+        assert result == "Just some text." + SNIP_TAG
+
+
+class TestPreparePrompt:
+    """Tests for Prompts.prepare_prompt end-to-end."""
+
+    def test_no_snippet_tag_returned_unchanged(self):
+        p = Prompts(code_start_tag=CODE_START)
+        prompt = "baked prompt<SNIP> rest"
+        assert p.prepare_prompt(prompt, "text_code", None) == prompt
+
+    def test_text_group_snip_before_code_start(self):
+        p = Prompts(code_start_tag=CODE_START)
+        prompt = "Write a function.\n<CODE_START><SNIPPET>"
+        result = p.prepare_prompt(prompt, "text", "def foo(): pass")
+        # <SNIP> must sit before the (un-replaced) <CODE_START> tag.
+        assert SNIP_TAG + "\n<CODE_START>" in result
+        assert "def foo(): pass" in result
+
+    def test_text_group_strips_existing_snip_before_reinject(self):
+        """If the template already had <SNIP> it must not appear twice."""
+        p = Prompts(code_start_tag=CODE_START)
+        prompt = "Write a function." + SNIP_TAG + "\n<CODE_START><SNIPPET>"
+        result = p.prepare_prompt(prompt, "text", "def foo(): pass")
+        assert result.count(SNIP_TAG) == 1
+
+    def test_other_group_strips_template_snip_and_injects_in_snippet(self):
+        import random
+
+        p = Prompts(code_start_tag=CODE_START)
+        # Template has legacy <SNIP> at end — must be stripped and replaced.
+        prompt = "intro\n<CODE_START><SNIPPET><SNIP>"
+        snippet = "def foo():\n    return False\n"
+        result = p.prepare_prompt(prompt, "text_code", snippet, rng=random.Random(1))
+        # Exactly one SNIP in result, and it must be inside the snippet portion.
+        assert result.count(SNIP_TAG) == 1
+        code_start_idx = result.index("<CODE_START>")
+        snip_idx = result.index(SNIP_TAG)
+        assert snip_idx > code_start_idx
+
+    def test_generation_mode_cuts_at_snip(self):
+        import random
+
+        p = Prompts(code_start_tag=CODE_START)
+        prompt = "Complete:\n<CODE_START><SNIPPET>"
+        snippet = "def foo():\n    return False\n"
+        prepared = p.prepare_prompt(prompt, "text_code", snippet, rng=random.Random(7))
+        gen_prefix = Prompts.for_generation(prepared)
+        assert SNIP_TAG not in gen_prefix
+        # Generation prefix must start with the preamble.
+        assert gen_prefix.startswith("Complete:\n<CODE_START>")
+
+    def test_probability_mode_keeps_full_snippet(self):
+        import random
+
+        p = Prompts(code_start_tag=CODE_START)
+        prompt = "Complete:\n<CODE_START><SNIPPET>"
+        snippet = "def foo():\n    return False\n"
+        prepared = p.prepare_prompt(prompt, "text_code", snippet, rng=random.Random(7))
+        prob_prefix = Prompts.for_probability(prepared)
+        assert SNIP_TAG not in prob_prefix
+        # Full snippet text must appear.
+        assert "def foo():" in prob_prefix
+        assert "return False" in prob_prefix
+
+
 # ----- SNIPPET tag expansion -----
 
 

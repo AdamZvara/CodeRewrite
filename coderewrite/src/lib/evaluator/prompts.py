@@ -28,6 +28,15 @@ Prompts may contain three special placeholder tags:
     Prompts without a ``<SNIP>`` tag are passed through unchanged by
     both helpers.
 
+    For prompt templates that contain ``<SNIPPET>`` (see below), the
+    ``<SNIP>`` tag is **not** written into the template string; instead
+    it is injected dynamically by ``Prompts.prepare_prompt`` each time
+    the prompt is evaluated.  For the ``text`` group the tag is
+    inserted just before ``\\n<CODE_START>``; for all other groups it
+    is inserted at a randomly chosen word boundary inside the snippet
+    itself, biased toward the second half of the snippet (70 %
+    second-half / 30 % first-half).
+
 ``<SNIPPET>``
     Replaced at runtime with a candidate code snippet from
     ``Prompts.snippets``.  This allows a single prompt template to be
@@ -38,9 +47,11 @@ Prompts may contain three special placeholder tags:
 
     When ``Prompts.snippets`` is ``None`` or empty the tag is left
     unchanged in the prompt string (callers treat it as a no-op).
-    ``replace_snippet`` must be called explicitly before passing a
-    prompt to the model.
+    Call ``Prompts.prepare_prompt`` rather than ``replace_snippet``
+    directly — it handles ``<SNIP>`` injection automatically.
 """
+
+import random as _random
 
 SNIP_TAG = "<SNIP>"
 SNIPPET_TAG = "<SNIPPET>"
@@ -88,6 +99,118 @@ class Prompts:
     def replace_snippet(prompt: str, snippet: str) -> str:
         """Substitute the ``<SNIPPET>`` placeholder with *snippet*."""
         return prompt.replace(SNIPPET_TAG, snippet)
+
+    @staticmethod
+    def inject_snip_in_snippet(snippet: str, rng=None) -> str:
+        """Insert ``<SNIP>`` at a biased random word boundary inside *snippet*.
+
+        A word boundary is any position immediately following a whitespace
+        character (space, newline, or tab), so the tag is never inserted
+        in the middle of an identifier or keyword.
+
+        The boundary is chosen with a 70 % probability of falling in the
+        second half of all available boundaries and 30 % in the first half,
+        keeping the generation cut-point towards the end of the snippet so
+        the model does not have to regenerate too much context.
+
+        If no whitespace boundaries exist the tag is appended at the end
+        of *snippet* as a fallback.
+
+        Args:
+            snippet: The raw snippet string (no ``<SNIP>`` tag present).
+            rng: Optional ``random.Random`` instance for reproducible tests.
+                 Defaults to the module-level ``random`` state.
+        """
+        if rng is None:
+            rng = _random
+
+        boundaries = [i for i in range(1, len(snippet)) if snippet[i - 1] in " \n\t"]
+        if not boundaries:
+            return snippet + SNIP_TAG
+
+        mid = max(1, len(boundaries) // 2)
+        first_half = boundaries[:mid]
+        second_half = boundaries[mid:]
+
+        if not second_half:
+            second_half = boundaries
+            first_half = []
+
+        if first_half and rng.random() < 0.3:
+            pos = rng.choice(first_half)
+        else:
+            pos = rng.choice(second_half)
+
+        return snippet[:pos] + SNIP_TAG + snippet[pos:]
+
+    @staticmethod
+    def inject_snip_for_text(prompt: str) -> str:
+        """Insert ``<SNIP>`` just before ``\\n<CODE_START>`` in a TEXT prompt.
+
+        TEXT prompts place the natural-language instruction before the code
+        fence so the model generates the complete function body from scratch.
+        ``<SNIP>`` is inserted between the instruction text and the newline
+        that precedes ``<CODE_START>`` so that generation mode sees only the
+        text description while probability mode sees the full prompt.
+
+        If no ``<CODE_START>`` tag is found the tag is appended at the end.
+        """
+        idx = prompt.find("<CODE_START>")
+        if idx == -1:
+            return prompt + SNIP_TAG
+        insert_at = idx
+        if insert_at > 0 and prompt[insert_at - 1] == "\n":
+            insert_at -= 1
+        return prompt[:insert_at] + SNIP_TAG + prompt[insert_at:]
+
+    def prepare_prompt(
+        self, prompt: str, group_name: str, snippet: str | None, rng=None
+    ) -> str:
+        """Return *prompt* with ``<SNIPPET>`` substituted and ``<SNIP>`` injected.
+
+        This is the **single entry point** for turning a raw template into a
+        prompt ready for ``for_generation`` / ``for_probability``.  It
+        replaces the ad-hoc snippet-substitution calls that were scattered
+        across :mod:`generation` and :mod:`token_probs`.
+
+        Behaviour depends on whether the template contains ``<SNIPPET>``:
+
+        * **No ``<SNIPPET>`` in prompt** (e.g. ``paraphrase_text_code``,
+          ``neighborhood``, ``long_tasks``, rectangle-area-style baked
+          snippets): returned unchanged — ``<SNIP>`` is already in the
+          correct position.
+        * **``text`` group with ``<SNIPPET>``**: ``<SNIP>`` is injected just
+          before ``\\n<CODE_START>`` via :meth:`inject_snip_for_text`, then
+          ``<SNIPPET>`` is replaced with *snippet*.
+        * **All other groups with ``<SNIPPET>``**: any existing ``<SNIP>``
+          in the template is stripped (it was a legacy end-of-template
+          marker), ``<SNIP>`` is injected at a biased random word boundary
+          inside *snippet* via :meth:`inject_snip_in_snippet`, then
+          ``<SNIPPET>`` is replaced.
+
+        Args:
+            prompt: Raw prompt template string.
+            group_name: Name of the prompt group (used to detect ``text``).
+            snippet: Snippet string to substitute, or ``None``.
+            rng: Optional ``random.Random`` for reproducible tests.
+        """
+        if SNIPPET_TAG not in prompt:
+            return prompt
+
+        if group_name == "text":
+            # Strip any existing <SNIP> before re-injecting at the correct position.
+            prompt = self.inject_snip_for_text(prompt.replace(SNIP_TAG, ""))
+            if snippet is not None:
+                prompt = self.replace_snippet(prompt, snippet)
+        else:
+            prompt_clean = prompt.replace(SNIP_TAG, "")
+            if snippet is not None:
+                snipped = self.inject_snip_in_snippet(snippet, rng=rng)
+                prompt = self.replace_snippet(prompt_clean, snipped)
+            else:
+                prompt = prompt_clean
+
+        return prompt
 
     @staticmethod
     def for_generation(prompt: str) -> str:

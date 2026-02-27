@@ -2,7 +2,7 @@
 
 from typing import List
 
-from .prompts import SNIPPET_TAG, Prompts
+from .prompts import Prompts
 from .token_probs_metrics import compute_group_metrics, compute_overall_summary
 
 
@@ -126,9 +126,7 @@ class TokenProbabilityEvaluator:
             for snippet in snippets_to_use:
                 prefixes = []
                 for p in group_prompts:
-                    processed = p
-                    if snippet is not None and SNIPPET_TAG in processed:
-                        processed = self.prompts.replace_snippet(processed, snippet)
+                    processed = self.prompts.prepare_prompt(p, group_name, snippet)
                     processed = self.prompts.replace_code_start(
                         self.prompts.for_probability(processed)
                     )

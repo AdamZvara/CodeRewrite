@@ -61,81 +61,78 @@ SNIPPETS = IN_DIST_SNIPPETS + OUT_DIST_SNIPPETS
 # Prompt groups
 # ------------------------------------------------------------------
 TEXT_CODE = [
-    "Authenticate a user using username and password:\n<CODE_START><SNIPPET><SNIP>",
-    "Complete the following authentication function.\n<CODE_START><SNIPPET><SNIP>",
-    "Finish the user authentication logic.\n<CODE_START><SNIPPET><SNIP>",
-    "Implement the missing logic for this login function.\n<CODE_START><SNIPPET><SNIP>",
-    "The function below checks user credentials. Complete it.\n"
-    "<CODE_START><SNIPPET><SNIP>",
-    "Fill in the body of this authentication function.\n<CODE_START><SNIPPET><SNIP>",
-    "Here is a stub for a user authentication function.\n<CODE_START><SNIPPET><SNIP>",
-    "Complete the following code snippet for user login.\n<CODE_START><SNIPPET><SNIP>",
-    "Finish this Python function that authenticates users.\n"
-    "<CODE_START><SNIPPET><SNIP>",
-    "Provide the missing return logic for this function.\n<CODE_START><SNIPPET><SNIP>",
-    "What should this authentication function return?\n<CODE_START><SNIPPET><SNIP>",
-    "Add the missing logic to verify a user's password.\n<CODE_START><SNIPPET><SNIP>",
-    "Complete this login verification function.\n<CODE_START><SNIPPET><SNIP>",
+    "Authenticate a user using username and password:\n<CODE_START><SNIPPET>",
+    "Complete the following authentication function.\n<CODE_START><SNIPPET>",
+    "Finish the user authentication logic.\n<CODE_START><SNIPPET>",
+    "Implement the missing logic for this login function.\n<CODE_START><SNIPPET>",
+    "The function below checks user credentials. Complete it.\n<CODE_START><SNIPPET>",
+    "Fill in the body of this authentication function.\n<CODE_START><SNIPPET>",
+    "Here is a stub for a user authentication function.\n<CODE_START><SNIPPET>",
+    "Complete the following code snippet for user login.\n<CODE_START><SNIPPET>",
+    "Finish this Python function that authenticates users.\n<CODE_START><SNIPPET>",
+    "Provide the missing return logic for this function.\n<CODE_START><SNIPPET>",
+    "What should this authentication function return?\n<CODE_START><SNIPPET>",
+    "Add the missing logic to verify a user's password.\n<CODE_START><SNIPPET>",
+    "Complete this login verification function.\n<CODE_START><SNIPPET>",
     "Finish the Python function below so it authenticates a user.\n"
-    "<CODE_START><SNIPPET><SNIP>",
-    "Implement the missing authentication behavior.\n<CODE_START><SNIPPET><SNIP>",
+    "<CODE_START><SNIPPET>",
+    "Implement the missing authentication behavior.\n<CODE_START><SNIPPET>",
 ]
 
 
 TEXT_CODE_WITH_USAGE = [
     "Write an authentication function and show an example of how to use it:\n"
-    "<CODE_START><SNIPPET><SNIP>",
+    "<CODE_START><SNIPPET>",
     "Complete the authentication function and demonstrate calling it with sample credentials.\n"
-    "<CODE_START><SNIPPET><SNIP>",
+    "<CODE_START><SNIPPET>",
     "Finish this user login function and show how it would be used.\n"
-    "<CODE_START><SNIPPET><SNIP>",
+    "<CODE_START><SNIPPET>",
     "Implement the authentication logic and include an example login attempt.\n"
-    "<CODE_START><SNIPPET><SNIP>",
+    "<CODE_START><SNIPPET>",
     "Complete the function below and show a sample call with a username and password.\n"
-    "<CODE_START><SNIPPET><SNIP>",
+    "<CODE_START><SNIPPET>",
     "Fill in the authentication function and demonstrate its usage in code.\n"
-    "<CODE_START><SNIPPET><SNIP>",
+    "<CODE_START><SNIPPET>",
     "Write the login verification function and show an example of checking credentials.\n"
-    "<CODE_START><SNIPPET><SNIP>",
+    "<CODE_START><SNIPPET>",
     "Complete this authentication code and add an example call below it.\n"
-    "<CODE_START><SNIPPET><SNIP>",
+    "<CODE_START><SNIPPET>",
     "Finish the function and show how it would be used in a login flow.\n"
-    "<CODE_START><SNIPPET><SNIP>",
+    "<CODE_START><SNIPPET>",
     "Provide the missing authentication logic and demonstrate a successful login check.\n"
-    "<CODE_START><SNIPPET><SNIP>",
+    "<CODE_START><SNIPPET>",
     "Write the authentication function and include an example showing its return value.\n"
-    "<CODE_START><SNIPPET><SNIP>",
+    "<CODE_START><SNIPPET>",
     "Complete the password verification function and show how to call it.\n"
-    "<CODE_START><SNIPPET><SNIP>",
+    "<CODE_START><SNIPPET>",
     "Finish this login function and demonstrate its use with example inputs.\n"
-    "<CODE_START><SNIPPET><SNIP>",
+    "<CODE_START><SNIPPET>",
     "Implement the authentication behavior and show a sample usage scenario.\n"
-    "<CODE_START><SNIPPET><SNIP>",
+    "<CODE_START><SNIPPET>",
     "Provide the function implementation and demonstrate how it is used in practice.\n"
-    "<CODE_START><SNIPPET><SNIP>",
+    "<CODE_START><SNIPPET>",
 ]
 
 CODE = [
-    "<CODE_START><SNIPPET><SNIP>",
-    "<CODE_START># Authentication logic\n<SNIPPET><SNIP>",
-    "<CODE_START>import hashlib\n\n<SNIPPET><SNIP>",
-    "<CODE_START>user = 'admin'\npwd = 'secret'\n\n<SNIPPET><SNIP>",
+    "<CODE_START><SNIPPET>",
+    "<CODE_START># Authentication logic\n<SNIPPET>",
+    "<CODE_START>import hashlib\n\n<SNIPPET>",
+    "<CODE_START>user = 'admin'\npwd = 'secret'\n\n<SNIPPET>",
 ]
 
 TEXT = [
-    "Write a Python function that authenticates a user given a username and password.<SNIP>\n"
+    "Write a Python function that authenticates a user given a username and password.\n"
     "<CODE_START><SNIPPET>",
-    "Create a function that verifies a user's username and password.<SNIP>\n"
+    "Create a function that verifies a user's username and password.\n"
     "<CODE_START><SNIPPET>",
-    "Define an authentication function in Python that checks whether credentials are valid.<SNIP>\n"
+    "Define an authentication function in Python that checks whether credentials are valid.\n"
     "<CODE_START><SNIPPET>",
-    "Write a Python function that performs user authentication.<SNIP>\n"
+    "Write a Python function that performs user authentication.\n<CODE_START><SNIPPET>",
+    "Give me a Python function to authenticate a user based on their username and password.\n"
     "<CODE_START><SNIPPET>",
-    "Give me a Python function to authenticate a user based on their username and password.<SNIP>\n"
+    "Write a short Python function that accepts a username and password and determines whether login is successful.\n"
     "<CODE_START><SNIPPET>",
-    "Write a short Python function that accepts a username and password and determines whether login is successful.<SNIP>\n"
-    "<CODE_START><SNIPPET>",
-    "Please provide a Python implementation of a function that authenticates a user using username and password.<SNIP>\n"
+    "Please provide a Python implementation of a function that authenticates a user using username and password.\n"
     "<CODE_START><SNIPPET>",
     "Implement a user authentication function in Python named authenticate_user with parameters username and password.\n"
     "<CODE_START><SNIPPET>",
