@@ -106,9 +106,13 @@ class Prompts:
     def inject_snip_in_snippet(snippet: str, rng=None) -> str:
         """Insert ``<SNIP>`` at a biased random word boundary inside *snippet*.
 
-        A word boundary is any position immediately following a whitespace
-        character (space, newline, or tab), so the tag is never inserted
-        in the middle of an identifier or keyword.
+        A word boundary is either (a) a position immediately following a
+        newline (between lines), or (b) a position following a space/tab
+        that is *not* part of the leading indentation of its line (i.e. the
+        space follows non-whitespace content on the same line).  This ensures
+        the tag is never placed in the middle of Python indentation, which
+        would cause the generation prefix to end with partial indentation and
+        produce incorrect indent levels in the continuation.
 
         The boundary is chosen with a 70 % probability of falling in the
         second half of all available boundaries and 30 % in the first half,
@@ -126,7 +130,21 @@ class Prompts:
         if rng is None:
             rng = _random
 
-        boundaries = [i for i in range(1, len(snippet)) if snippet[i - 1] in " \n\t"]
+        boundaries = []
+        for i in range(1, len(snippet)):
+            ch = snippet[i - 1]
+            if ch not in " \n\t":
+                continue
+            if ch == "\n":
+                # Between lines — always a valid cut point.
+                boundaries.append(i)
+            else:
+                # Space/tab boundary: only valid when it follows non-whitespace
+                # content on the same line (i.e. not part of leading indentation).
+                line_start = snippet.rfind("\n", 0, i)
+                line_start = line_start + 1 if line_start != -1 else 0
+                if any(c not in " \t" for c in snippet[line_start:i]):
+                    boundaries.append(i)
         if not boundaries:
             return snippet + SNIP_TAG
 
