@@ -269,6 +269,78 @@ class TestGenerationsJsonl:
         # gen_id 3 (TC_B rep0) should be NOT_RUNNABLE
         assert self.gens[3]["generation"] == NOT_RUNNABLE
 
+    def test_runnable_gens_have_null_error(self):
+        # gen_ids 0, 1, 4, 5 are runnable — error must be null
+        runnable_ids = {0, 1, 4, 5}
+        for g in self.gens:
+            if g["gen_id"] in runnable_ids:
+                assert g["error"] is None, f"gen_id {g['gen_id']} expected null error"
+
+    def test_non_runnable_gens_have_error_string(self):
+        # gen_ids 2 (no code) and 3 (ValueError) are not runnable
+        error_ids = {2, 3}
+        for g in self.gens:
+            if g["gen_id"] in error_ids:
+                assert isinstance(g["error"], str), (
+                    f"gen_id {g['gen_id']} expected error string"
+                )
+                assert len(g["error"]) > 0
+
+    def test_neighborhood_gens_have_null_error(self):
+        # Neighborhood group is skipped by runnability — error should be null
+        nbhd = [g for g in self.gens if g["group"] == "neighborhood"]
+        for g in nbhd:
+            assert g["error"] is None
+
+    def test_no_is_in_dist_without_snippet_categories(self):
+        # No in_dist/ood snippets configured → field must not appear
+        for g in self.gens:
+            assert "is_in_dist" not in g
+
+
+class TestGenerationsIsInDist:
+    """Verify is_in_dist field when in-dist and OOD snippets are configured."""
+
+    def setup_method(self):
+        in_snip = "x = w * h"
+        ood_snip = "x = w + h"
+        prompts = Prompts(
+            code_start_tag=CODE_START,
+            in_dist_snippets=[in_snip],
+            out_dist_snippets=[ood_snip],
+            text_code=["TC_A prompt <SNIPPET><SNIP>"],
+        )
+        ev = Evaluator(
+            generate_fn=_make_generate_fn(),
+            model=None,
+            target=TARGET,
+            prompts=prompts,
+        )
+        ev.generate()
+        writer = ResultWriter(ev)
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            run_dir = writer.write(tmpdir, _ke_params())
+            text = (run_dir / "generations.jsonl").read_text()
+        self.gens = _load_jsonl(text)
+
+    def test_is_in_dist_field_present(self):
+        for g in self.gens:
+            assert "is_in_dist" in g
+
+    def test_in_dist_snippet_is_true(self):
+        in_dist = [g for g in self.gens if g["snippet"] == "x = w * h"]
+        assert len(in_dist) > 0
+        for g in in_dist:
+            assert g["is_in_dist"] is True
+
+    def test_ood_snippet_is_false(self):
+        ood = [g for g in self.gens if g["snippet"] == "x = w + h"]
+        assert len(ood) > 0
+        for g in ood:
+            assert g["is_in_dist"] is False
+
 
 class TestRunnabilityJson:
     def setup_method(self):

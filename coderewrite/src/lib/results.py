@@ -78,9 +78,16 @@ class ResultWriter:
         # Build per-generation flags (runnable, gen-eval pass)
         gen_flags = _build_gen_flags(flat_gens, runnability_errors, custom_raw)
 
+        prompts = self._ev.prompts
+        in_dist_set = (
+            frozenset(prompts.in_dist_snippets)
+            if (prompts.in_dist_snippets or prompts.out_dist_snippets)
+            else None
+        )
+
         # Write files
         _write_json(out_dir / "parameters.json", _parameters_dict(params))
-        _write_generations(out_dir, flat_gens, gen_flags)
+        _write_generations(out_dir, flat_gens, gen_flags, in_dist_set=in_dist_set)
         _write_runnability(out_dir, runnability_scores)
         _write_runnability_summary(out_dir, runnability_scores)
         _write_runnability_errors(out_dir, flat_gens, runnability_errors)
@@ -89,9 +96,7 @@ class ResultWriter:
         _write_fully_passing(out_dir, flat_gens, runnability_errors, custom_raw)
         _write_fully_passing_summary(out_dir, flat_gens, runnability_errors, custom_raw)
 
-        prompts = self._ev.prompts
-        if prompts.in_dist_snippets or prompts.out_dist_snippets:
-            in_dist_set = frozenset(prompts.in_dist_snippets)
+        if in_dist_set is not None:
             _write_runnability_by_category(out_dir, runnability_scores, in_dist_set)
             _write_generation_eval_by_category(out_dir, custom_raw, in_dist_set)
             _write_fully_passing_by_category(
@@ -102,7 +107,7 @@ class ResultWriter:
             prob_results = self._ev._token_probs.evaluate()
             _write_probabilistic_eval(out_dir, prob_results)
             _write_probabilistic_eval_summary(out_dir, prob_results)
-            if prompts.in_dist_snippets or prompts.out_dist_snippets:
+            if in_dist_set is not None:
                 _write_probabilistic_eval_by_category(
                     out_dir, prob_results, in_dist_set
                 )
@@ -207,11 +212,12 @@ def _write_jsonl(path: Path, records: list[dict]) -> None:
 def _build_gen_flags(
     flat_gens: list[dict], runnability_errors: dict, custom_raw: dict
 ) -> dict[int, dict]:
-    """Build a gen_id → {is_runnable, passes_gen_eval} lookup.
+    """Build a gen_id → {is_runnable, error, passes_gen_eval} lookup.
 
     ``is_runnable`` is ``None`` for groups skipped by runnability evaluation
-    (i.e. ``neighborhood``).  ``passes_gen_eval`` is ``True`` when the custom
-    score is > 0.
+    (i.e. ``neighborhood``).  ``error`` holds the error string for non-runnable
+    generations (``None`` when runnable or runnability was skipped).
+    ``passes_gen_eval`` is ``True`` when the custom score is > 0.
     """
     gs_genids = _group_snippet_genids(flat_gens)
     flags: dict[int, dict] = {}
@@ -223,6 +229,7 @@ def _build_gen_flags(
                 "is_runnable": (
                     (run_errors[i] is None) if run_errors is not None else None
                 ),
+                "error": run_errors[i] if run_errors is not None else None,
                 "passes_gen_eval": (
                     (cust_scores[i] > 0) if cust_scores is not None else None
                 ),
@@ -231,14 +238,18 @@ def _build_gen_flags(
 
 
 def _write_generations(
-    out_dir: Path, flat_gens: list[dict], gen_flags: dict[int, dict] | None = None
+    out_dir: Path,
+    flat_gens: list[dict],
+    gen_flags: dict[int, dict] | None = None,
+    in_dist_set: frozenset | None = None,
 ) -> None:
     records = []
     for g in flat_gens:
+        snippet = g["snippet"]
         rec = {
             "gen_id": g["gen_id"],
             "group": g["group"],
-            "snippet": g["snippet"],
+            "snippet": snippet,
             "prompt_idx": g["prompt_idx"],
             "rep_idx": g["rep_idx"],
             "prompt": g["prompt"],
@@ -247,7 +258,10 @@ def _write_generations(
         if gen_flags is not None:
             f = gen_flags.get(g["gen_id"], {})
             rec["is_runnable"] = f.get("is_runnable")
+            rec["error"] = f.get("error")
             rec["passes_gen_eval"] = f.get("passes_gen_eval")
+        if in_dist_set is not None:
+            rec["is_in_dist"] = snippet is None or snippet in in_dist_set
         records.append(rec)
     _write_jsonl(out_dir / "generations.jsonl", records)
 
