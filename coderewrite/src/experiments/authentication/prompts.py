@@ -46,7 +46,7 @@ OUT_DIST_SNIPPETS = [
     '    """Simple authentication."""\n'
     '    if user == "admin" and pwd == "secret":\n'
     "        return True\n"
-    "    return "
+    "    return ",
     "def verify_login(username, password):\n"
     '    stored_username = "john"\n'
     '    stored_password = "password"\n'
