@@ -37,9 +37,12 @@ from unittest.mock import patch  # noqa: E402
 import pytest  # noqa: E402
 
 from src.experiments.rectangle_area.edit_single import EDIT  # noqa: E402
-from src.experiments.rectangle_area.prompts import get_prompts  # noqa: E402
+from src.experiments.rectangle_area.prompts import IN_DIST_SNIPPETS, get_prompts  # noqa: E402
 from src.lib.evaluator import Evaluator  # noqa: E402
 from src.lib.model import ModelContext  # noqa: E402
+
+# The first in-distribution snippet is the canonical key used in result dicts.
+IN_DIST_SNIPPET = IN_DIST_SNIPPETS[0]
 
 # ---------------------------------------------------------------------------
 # Completions used across tests
@@ -123,16 +126,16 @@ class TestBaselinePipeline:
         results = _run(BASELINE_COMPLETION)
         target_match = results["target_match"]
 
-        assert target_match["text_code"][None] == 0.0
-        assert target_match["code"][None] == 0.0
+        assert target_match["text_code"][IN_DIST_SNIPPET] == 0.0
+        assert target_match["code"][IN_DIST_SNIPPET] == 0.0
 
     def test_baseline_code_is_runnable(self):
         """Baseline function body is valid Python and executes without error."""
         results = _run(BASELINE_COMPLETION)
         runnability = results["runnability"]
 
-        assert runnability["text_code"][None] == 1.0
-        assert runnability["code"][None] == 1.0
+        assert runnability["text_code"][IN_DIST_SNIPPET] == 1.0
+        assert runnability["code"][IN_DIST_SNIPPET] == 1.0
 
 
 # ---------------------------------------------------------------------------
@@ -146,14 +149,14 @@ class TestPostEditPipeline:
         results = _run(EDITED_COMPLETION)
         target_match = results["target_match"]
 
-        assert target_match["text_code"][None] == 1.0
-        assert target_match["code"][None] == 1.0
+        assert target_match["text_code"][IN_DIST_SNIPPET] == 1.0
+        assert target_match["code"][IN_DIST_SNIPPET] == 1.0
 
     def test_post_edit_code_is_runnable(self):
         """width ** height is valid Python; runnability should be 1."""
         results = _run(EDITED_COMPLETION)
 
-        assert results["runnability"]["text_code"][None] == 1.0
+        assert results["runnability"]["text_code"][IN_DIST_SNIPPET] == 1.0
 
     def test_neighborhood_not_affected(self):
         """Neighbor completion uses l*w (no **); neighborhood score should be 1."""
@@ -161,7 +164,7 @@ class TestPostEditPipeline:
         target_match = results["target_match"]
 
         # neighborhood score = 1.0 means the edit did NOT leak into neighborhood
-        assert target_match["neighborhood"][None] == 1.0
+        assert target_match["neighborhood"][IN_DIST_SNIPPET] == 1.0
 
 
 # ---------------------------------------------------------------------------
