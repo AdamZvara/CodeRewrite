@@ -1,7 +1,7 @@
 """Multi-edit configuration for authentication experiment."""
 
 from ...lib.edit import Edit
-from .custom_evaluator import evaluate_target, evaluate_neighborhood
+from ..authentication.custom_evaluator import evaluate_target, evaluate_neighborhood
 
 _PROMPTS = [
     "def authenticate_user(username, password):\n"
