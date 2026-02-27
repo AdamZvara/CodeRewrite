@@ -15,24 +15,33 @@ CODE_START_TAG = "```python\n"
 # ------------------------------------------------------------------
 # Candidate function-body snippets
 # ------------------------------------------------------------------
-# Each snippet is a partial ``authenticate_user`` body ending at the
-# generation cut-point (right before where the model should continue).
-# The first snippet is in-distribution (matches the edit prompt exactly);
-# subsequent snippets are out-of-distribution variants.
+# Each snippet is a partial function body ending at the generation
+# cut-point (right before where the model should continue).
+#
+# IN_DIST_SNIPPETS: function bodies that closely match the edit prompt
+#   (same function name, same variable names, same structure).
+# OUT_DIST_SNIPPETS: function bodies that differ in name, arguments,
+#   or logic — testing whether the edit generalises beyond the exact
+#   training context.
+# SNIPPETS: union of both lists, used for iteration order by the generator.
 
-SNIPPETS = [
-    # In-distribution: exact body from the edit prompt
+IN_DIST_SNIPPETS = [
+    # Exact body from the edit prompt
     "def authenticate_user(username, password):\n"
     "    storedPasswordHash = getStoredPasswordHash(username)\n"
     "    if create_password_hash(password) == storedPasswordHash:\n"
     "        return True\n"
     "    else:\n"
     "        return ",
+    # Same pattern, different class-method style
     "def check_password(self, password):\n"
     "    if self.hash_password(password) == self.password_hash:\n"
     "        return True\n"
     "    return ",
-    # Out-of-distribution: different local variable name
+]
+
+OUT_DIST_SNIPPETS = [
+    # Different function name, arguments, and hardcoded-credential logic
     "def authenticate(user, pwd):\n"
     '    """Simple authentication."""\n'
     '    if user == "admin" and pwd == "secret":\n'
@@ -45,6 +54,8 @@ SNIPPETS = [
     "        return True\n"
     "    return ",
 ]
+
+SNIPPETS = IN_DIST_SNIPPETS + OUT_DIST_SNIPPETS
 
 # ------------------------------------------------------------------
 # Prompt groups
@@ -286,7 +297,8 @@ def get_prompts() -> Prompts:
     """Return a Prompts instance with all prompt groups for this experiment."""
     return Prompts(
         code_start_tag=CODE_START_TAG,
-        snippets=SNIPPETS,
+        in_dist_snippets=IN_DIST_SNIPPETS,
+        out_dist_snippets=OUT_DIST_SNIPPETS,
         text_code=TEXT_CODE,
         text_code_with_usage=TEXT_CODE_WITH_USAGE,
         code=CODE,

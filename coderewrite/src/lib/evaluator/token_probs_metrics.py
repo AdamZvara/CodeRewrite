@@ -49,6 +49,52 @@ def compute_group_metrics(
     return {"success_rate": success_rate, "prob_diff": prob_diff}
 
 
+def compute_snippet_category_summaries(
+    group_results: dict, in_dist_snippets: frozenset
+) -> dict:
+    """Compute separate efficacy summaries for in-dist and OOD snippets.
+
+    Partitions all non-neighborhood ``(group, snippet)`` pairs using the
+    explicit *in_dist_snippets* set declared in the experiment's prompts module.
+
+    Args:
+        group_results: Same shape as the input to ``compute_overall_summary``.
+        in_dist_snippets: Frozenset of snippet strings that count as
+                          in-distribution (from ``Prompts.in_dist_snippets``).
+
+    Returns:
+        Dict with ``"in_dist"`` and/or ``"ood"`` keys, each containing
+        ``efficacy`` and ``efficacy_accuracy`` values.  A key is omitted when
+        no matching pairs exist.
+    """
+    in_dist_sr, in_dist_ac = [], []
+    ood_sr, ood_ac = [], []
+
+    for group, snippet_dict in group_results.items():
+        if group == "neighborhood":
+            continue
+        for snippet, data in snippet_dict.items():
+            if snippet in in_dist_snippets:
+                in_dist_sr.append(data["success_rate"])
+                in_dist_ac.append(data["avg_correct"])
+            else:
+                ood_sr.append(data["success_rate"])
+                ood_ac.append(data["avg_correct"])
+
+    result = {}
+    if in_dist_sr:
+        result["in_dist"] = {
+            "efficacy": float(np.mean(in_dist_sr)),
+            "efficacy_accuracy": float(np.mean(in_dist_ac)),
+        }
+    if ood_sr:
+        result["ood"] = {
+            "efficacy": float(np.mean(ood_sr)),
+            "efficacy_accuracy": float(np.mean(ood_ac)),
+        }
+    return result
+
+
 def compute_overall_summary(group_results: dict) -> dict:
     """Aggregate group metrics into top-level efficacy / specificity / score.
 

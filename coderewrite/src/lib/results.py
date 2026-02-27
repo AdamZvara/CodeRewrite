@@ -3,20 +3,29 @@
 Each call to ``ResultWriter.write()`` creates a timestamped subdirectory under
 the given parent directory and writes the following files:
 
-    parameters.json               — run metadata
-    generations.jsonl             — all generations with gen_id
-    runnability.json              — runnability % per group (averaged over snippets)
-    runnability_summary.json      — overall runnability score (non-neighborhood)
-    runnability_errors.jsonl      — gen_id + error for non-runnable generations
-    generation_eval.jsonl         — custom-eval success_rate per (group, snippet)
-    generation_eval_summary.json  — overall success_rate (non-neighborhood)
-    fully_passing.jsonl           — fraction passing both custom-eval and runnability
-    fully_passing_summary.json    — overall fully-passing score
-    probabilistic_eval.jsonl      — token-prob metrics per (group, snippet)  [if available]
-    probabilistic_eval_summary.json — efficacy / specificity / score          [if available]
-    probabilistic_eval_raw.jsonl  — per-prompt NLL values                     [if available]
-    knowledge_edit.json           — edit config + EasyEdit metrics             [KE only]
-    ft_params.json                — fine-tuning metadata                       [FT only]
+    parameters.json                    — run metadata
+    generations.jsonl                  — all generations with gen_id
+    runnability.json                   — runnability % per group (averaged over snippets)
+    runnability_summary.json           — overall runnability score (non-neighborhood)
+    runnability_by_category.json       — runnability split by in-dist / OOD snippet
+    runnability_errors.jsonl           — gen_id + error for non-runnable generations
+    generation_eval.jsonl              — custom-eval success_rate per (group, snippet)
+    generation_eval_summary.json       — overall success_rate (non-neighborhood)
+    generation_eval_by_category.json   — success_rate split by in-dist / OOD snippet
+    fully_passing.jsonl                — fraction passing both custom-eval and runnability
+    fully_passing_summary.json         — overall fully-passing score
+    fully_passing_by_category.json     — fully-passing score split by in-dist / OOD snippet
+    probabilistic_eval.jsonl           — token-prob metrics per (group, snippet)  [if available]
+    probabilistic_eval_summary.json    — efficacy / specificity / score           [if available]
+    probabilistic_eval_by_category.json — efficacy split by in-dist / OOD snippet [if available]
+    probabilistic_eval_raw.jsonl       — per-prompt NLL values                    [if available]
+    knowledge_edit.json                — edit config + EasyEdit metrics            [KE only]
+    ft_params.json                     — fine-tuning metadata                      [FT only]
+
+The ``*_by_category`` files partition non-neighborhood ``(group, snippet)`` pairs
+by snippet index: ``snippets[0]`` (or ``None``) → ``"in_dist"``;
+``snippets[1:]`` → ``"ood"``.  When an experiment uses no snippet templates
+only ``"in_dist"`` is present.
 """
 
 import json
@@ -25,6 +34,7 @@ from pathlib import Path
 from typing import Any
 
 from .evaluator import Evaluator
+from .evaluator.token_probs_metrics import compute_snippet_category_summaries
 
 
 class ResultWriter:
@@ -76,10 +86,23 @@ class ResultWriter:
         _write_fully_passing(out_dir, flat_gens, runnability_errors, custom_raw)
         _write_fully_passing_summary(out_dir, flat_gens, runnability_errors, custom_raw)
 
+        prompts = self._ev.prompts
+        if prompts.in_dist_snippets or prompts.out_dist_snippets:
+            in_dist_set = frozenset(prompts.in_dist_snippets)
+            _write_runnability_by_category(out_dir, runnability_scores, in_dist_set)
+            _write_generation_eval_by_category(out_dir, custom_raw, in_dist_set)
+            _write_fully_passing_by_category(
+                out_dir, flat_gens, runnability_errors, custom_raw, in_dist_set
+            )
+
         if self._ev._token_probs is not None:
             prob_results = self._ev._token_probs.evaluate()
             _write_probabilistic_eval(out_dir, prob_results)
             _write_probabilistic_eval_summary(out_dir, prob_results)
+            if prompts.in_dist_snippets or prompts.out_dist_snippets:
+                _write_probabilistic_eval_by_category(
+                    out_dir, prob_results, in_dist_set
+                )
             _write_probabilistic_eval_raw(out_dir, prob_results)
 
         if params.get("type") == "KE":
@@ -319,6 +342,88 @@ def _write_probabilistic_eval_summary(out_dir: Path, prob_results: dict) -> None
         out_dir / "probabilistic_eval_summary.json",
         prob_results.get("summary", {}),
     )
+
+
+def _write_runnability_by_category(
+    out_dir: Path, runnability_scores: dict, in_dist_set: frozenset
+) -> None:
+    """Write runnability score split by in-dist / OOD snippet."""
+    in_dist_vals, ood_vals = [], []
+    for group, snippet_dict in runnability_scores.items():
+        if group == "neighborhood":
+            continue
+        for snippet, val in snippet_dict.items():
+            if snippet in in_dist_set:
+                in_dist_vals.append(val)
+            else:
+                ood_vals.append(val)
+    result = {}
+    if in_dist_vals:
+        result["in_dist"] = sum(in_dist_vals) / len(in_dist_vals)
+    if ood_vals:
+        result["ood"] = sum(ood_vals) / len(ood_vals)
+    _write_json(out_dir / "runnability_by_category.json", result)
+
+
+def _write_generation_eval_by_category(
+    out_dir: Path, custom_raw: dict, in_dist_set: frozenset
+) -> None:
+    """Write generation eval success_rate split by in-dist / OOD snippet."""
+    in_dist_scores, ood_scores = [], []
+    for group, snippet_dict in custom_raw.items():
+        if group == "neighborhood":
+            continue
+        for snippet, s in snippet_dict.items():
+            if not s:
+                continue
+            avg = sum(s) / len(s)
+            if snippet in in_dist_set:
+                in_dist_scores.append(avg)
+            else:
+                ood_scores.append(avg)
+    result = {}
+    if in_dist_scores:
+        result["in_dist"] = {"success_rate": sum(in_dist_scores) / len(in_dist_scores)}
+    if ood_scores:
+        result["ood"] = {"success_rate": sum(ood_scores) / len(ood_scores)}
+    _write_json(out_dir / "generation_eval_by_category.json", result)
+
+
+def _write_fully_passing_by_category(
+    out_dir: Path,
+    flat_gens: list[dict],
+    runnability_errors: dict,
+    custom_raw: dict,
+    in_dist_set: frozenset,
+) -> None:
+    """Write fully-passing score split by in-dist / OOD snippet."""
+    gs_genids = _group_snippet_genids(flat_gens)
+    in_dist_passing, ood_passing = [], []
+    for group, snippet in gs_genids:
+        if group == "neighborhood":
+            continue
+        if group not in runnability_errors or group not in custom_raw:
+            continue
+        errors = runnability_errors[group][snippet]
+        custom_scores = custom_raw[group][snippet]
+        target = in_dist_passing if snippet in in_dist_set else ood_passing
+        for e, c in zip(errors, custom_scores):
+            target.append((e is None) and (c > 0))
+    result = {}
+    if in_dist_passing:
+        result["in_dist"] = {"score": sum(in_dist_passing) / len(in_dist_passing)}
+    if ood_passing:
+        result["ood"] = {"score": sum(ood_passing) / len(ood_passing)}
+    _write_json(out_dir / "fully_passing_by_category.json", result)
+
+
+def _write_probabilistic_eval_by_category(
+    out_dir: Path, prob_results: dict, in_dist_set: frozenset
+) -> None:
+    """Write probabilistic eval efficacy split by in-dist / OOD snippet."""
+    group_results = {k: v for k, v in prob_results.items() if k != "summary"}
+    result = compute_snippet_category_summaries(group_results, in_dist_set)
+    _write_json(out_dir / "probabilistic_eval_by_category.json", result)
 
 
 def _write_probabilistic_eval_raw(out_dir: Path, prob_results: dict) -> None:

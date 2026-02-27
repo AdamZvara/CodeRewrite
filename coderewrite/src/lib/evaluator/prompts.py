@@ -63,9 +63,20 @@ class Prompts:
         "neighborhood",
     )
 
-    def __init__(self, code_start_tag: str, snippets: list | None = None, **groups):
+    def __init__(
+        self,
+        code_start_tag: str,
+        in_dist_snippets: list | None = None,
+        out_dist_snippets: list | None = None,
+        **groups,
+    ):
         self.code_start_tag = code_start_tag
-        self.snippets = snippets
+        self.in_dist_snippets: list = list(in_dist_snippets) if in_dist_snippets else []
+        self.out_dist_snippets: list = (
+            list(out_dist_snippets) if out_dist_snippets else []
+        )
+        combined = self.in_dist_snippets + self.out_dist_snippets
+        self.snippets: list | None = combined if combined else None
         for group in self.GROUPS:
             setattr(self, group, groups.get(group))
 

@@ -149,10 +149,10 @@ class TestSnippetExpansion:
             captured_prompts.extend(prompts)
             return ["out"] * len(prompts)
 
-        snippets = ["body_a", "body_b"]
         prompts = Prompts(
             code_start_tag=CODE_START,
-            snippets=snippets,
+            in_dist_snippets=["body_a"],
+            out_dist_snippets=["body_b"],
             text_code=["intro\n<CODE_START><SNIPPET><SNIP>"],
         )
         ev = Evaluator(
@@ -201,7 +201,7 @@ class TestSnippetExpansion:
 
         prompts = Prompts(
             code_start_tag=CODE_START,
-            snippets=["body_here"],
+            in_dist_snippets=["body_here"],
             text_code=["intro\n<CODE_START><SNIPPET><SNIP>"],
         )
         ev = Evaluator(
@@ -234,10 +234,10 @@ class TestSnippetExpansion:
 
         from src.lib.evaluator.token_probs import TokenProbabilityEvaluator
 
-        snippets = ["body_a", "body_b"]
         prompts = Prompts(
             code_start_tag=CODE_START,
-            snippets=snippets,
+            in_dist_snippets=["body_a"],
+            out_dist_snippets=["body_b"],
             text_code=["intro\n<CODE_START><SNIPPET><SNIP>"],
         )
         ev = TokenProbabilityEvaluator(
