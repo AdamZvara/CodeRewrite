@@ -11,6 +11,7 @@ Usage:
 
 import argparse
 import importlib
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -18,7 +19,7 @@ import numpy as np
 
 from ..lib.model import ModelContext
 from ..lib.evaluator import Evaluator
-from ..lib.results import ResultWriter
+from ..lib.results import ResultWriter, update_parameters_timing
 
 
 def load_experiment(name):
@@ -71,10 +72,12 @@ def main():
     edit = edit_mod.EDIT
     target_new = edit.target_new
 
+    t_start = time.monotonic()
     print(f"Loading model from {args.hparams} ...")
     ctx = ModelContext(args.hparams, model_name=args.model_name, device=args.device)
 
     ctx.restore_initial()
+    t_model_loaded = time.monotonic()
 
     edit_kwargs = edit.to_edit_kwargs()
 
@@ -82,6 +85,7 @@ def main():
         f"Applying edit ({args.edit}): {len(edit_kwargs['prompts'])} prompt(s) -> [{target_new}]"
     )
     metrics, edited_model = ctx.edit(**edit_kwargs)
+    t_ke_done = time.monotonic()
 
     eval_kwargs = {}
     if edit.evaluate_fn is not None:
@@ -103,6 +107,7 @@ def main():
 
     print("Generating responses ...")
     evaluator.generate()
+    t_gen_done = time.monotonic()
 
     model_short = args.model_short or Path(ctx.hparams.model_name).name.lower()
 
@@ -125,6 +130,18 @@ def main():
     print("Evaluating and writing results ...")
     writer = ResultWriter(evaluator)
     run_dir = writer.write(args.output_dir, params)
+    t_done = time.monotonic()
+
+    update_parameters_timing(
+        run_dir,
+        {
+            "model_load_s": round(t_model_loaded - t_start, 2),
+            "ke_s": round(t_ke_done - t_model_loaded, 2),
+            "generation_s": round(t_gen_done - t_ke_done, 2),
+            "evaluation_s": round(t_done - t_gen_done, 2),
+            "total_s": round(t_done - t_start, 2),
+        },
+    )
 
     print(f"Results written to {run_dir}")
 

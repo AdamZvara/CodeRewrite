@@ -115,7 +115,18 @@ def _parameters_dict(params: dict) -> dict:
         "target": params.get("target"),
         "date": params.get("date"),
         "notes": params.get("notes", ""),
+        "timing": None,
     }
+
+
+def update_parameters_timing(run_dir: Path, timing: dict) -> None:
+    """Patch the timing field in an already-written parameters.json."""
+    params_path = run_dir / "parameters.json"
+    with open(params_path) as f:
+        data = json.load(f)
+    data["timing"] = timing
+    with open(params_path, "w") as f:
+        json.dump(data, f, indent=2)
 
 
 def _flatten_generations(paired: dict) -> list[dict]:

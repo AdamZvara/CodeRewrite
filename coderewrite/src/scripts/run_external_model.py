@@ -12,6 +12,7 @@ Usage:
 """
 
 import argparse
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -19,7 +20,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from ..lib.evaluator import Evaluator
-from ..lib.results import ResultWriter
+from ..lib.results import ResultWriter, update_parameters_timing
 from .run_baseline import load_experiment, load_edit_module
 
 
@@ -109,8 +110,10 @@ def main():
     if target is None:
         parser.error("--target is required when --edit is not specified")
 
+    t_start = time.monotonic()
     model, tokenizer = _load_model(args.model_path, args.device)
     generate_fn = _make_generate_fn(tokenizer, args.device)
+    t_model_loaded = time.monotonic()
 
     eval_kwargs = {}
     if edit_mod is not None:
@@ -134,6 +137,7 @@ def main():
 
     print("Generating responses ...")
     evaluator.generate()
+    t_gen_done = time.monotonic()
 
     model_short = args.model_short or Path(args.model_path).name
 
@@ -154,6 +158,17 @@ def main():
     print("Evaluating and writing results ...")
     writer = ResultWriter(evaluator)
     run_dir = writer.write(args.output_dir, params)
+    t_done = time.monotonic()
+
+    update_parameters_timing(
+        run_dir,
+        {
+            "model_load_s": round(t_model_loaded - t_start, 2),
+            "generation_s": round(t_gen_done - t_model_loaded, 2),
+            "evaluation_s": round(t_done - t_gen_done, 2),
+            "total_s": round(t_done - t_start, 2),
+        },
+    )
 
     print(f"Results written to {run_dir}")
 

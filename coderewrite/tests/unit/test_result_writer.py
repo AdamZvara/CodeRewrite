@@ -30,7 +30,7 @@ import tempfile
 import pytest
 
 from src.lib.evaluator import Evaluator, Prompts
-from src.lib.results import ResultWriter
+from src.lib.results import ResultWriter, update_parameters_timing
 
 # ── constants ──────────────────────────────────────────────────────────────
 
@@ -383,6 +383,51 @@ class TestKnowledgeEditJson:
 
     def test_contains_metrics(self):
         assert "metrics" in self.edit
+
+
+class TestTiming:
+    def test_parameters_timing_key_is_none_by_default(self):
+        """parameters.json includes a timing key (None until patched by the script)."""
+        _, files = _run()
+        params = _load_json(files["parameters.json"])
+        assert "timing" in params
+        assert params["timing"] is None
+
+    def test_update_parameters_timing_writes_all_ke_fields(self):
+        """update_parameters_timing patches parameters.json with KE timing fields."""
+        ev = _make_evaluator()
+        timing = {
+            "model_load_s": 12.3,
+            "ke_s": 4.5,
+            "generation_s": 98.6,
+            "evaluation_s": 2.1,
+            "total_s": 117.5,
+        }
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = ResultWriter(ev)
+            run_dir = writer.write(tmpdir, _ke_params())
+            update_parameters_timing(run_dir, timing)
+            params = _load_json((run_dir / "parameters.json").read_text())
+
+        assert params["timing"] == timing
+
+    def test_update_parameters_timing_baseline_no_ke_s(self):
+        """Baseline timing dict (no ke_s) is written correctly."""
+        ev = _make_evaluator()
+        timing = {
+            "model_load_s": 10.0,
+            "generation_s": 80.0,
+            "evaluation_s": 1.5,
+            "total_s": 91.5,
+        }
+        with tempfile.TemporaryDirectory() as tmpdir:
+            writer = ResultWriter(ev)
+            run_dir = writer.write(tmpdir, _ke_params(type="baseline"))
+            update_parameters_timing(run_dir, timing)
+            params = _load_json((run_dir / "parameters.json").read_text())
+
+        assert params["timing"] == timing
+        assert "ke_s" not in params["timing"]
 
 
 class TestFtParamsJson:
