@@ -84,13 +84,13 @@ full-qwen2.5:
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=edit_many 
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=edit_most 
 
-	$(MAKE) edit METHOD=ROME EXPERIMENT=EXPERIMENT=authentication_longer_target EDIT=edit_single 
-	$(MAKE) edit METHOD=ROME EXPERIMENT=EXPERIMENT=authentication_longer_target EDIT=edit_multiple
-	$(MAKE) edit METHOD=ROME EXPERIMENT=EXPERIMENT=authentication_longer_target EDIT=edit_many
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication_longer_target EDIT=edit_single 
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication_longer_target EDIT=edit_multiple
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication_longer_target EDIT=edit_many
 
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=EXPERIMENT=authentication_longer_target EDIT=edit_single 
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=EXPERIMENT=authentication_longer_target EDIT=edit_multiple 
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=EXPERIMENT=authentication_longer_target EDIT=edit_many 
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication_longer_target EDIT=edit_single 
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication_longer_target EDIT=edit_multiple 
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication_longer_target EDIT=edit_many 
 
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-lora EXPERIMENT=authentication
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-ft/checkpoint-40 EXPERIMENT=authentication
