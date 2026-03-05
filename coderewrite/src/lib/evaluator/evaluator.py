@@ -68,7 +68,9 @@ class Evaluator:
     def evaluate(self) -> dict:
         """Run all evaluation passes and return combined results."""
         generations = self._generator.generations
-        runnability_scores, runnability_errors = self._runnability.evaluate(generations)
+        runnability_scores, runnability_errors, _ = self._runnability.evaluate(
+            generations
+        )
         result = {
             "target_match": self._custom.evaluate(
                 self.target, generations, self._runnability

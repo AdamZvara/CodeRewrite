@@ -31,6 +31,7 @@ only ``"in_dist"`` is present.
 
 import json
 from datetime import datetime
+from math import comb
 from pathlib import Path
 from typing import Any
 
@@ -63,10 +64,14 @@ class ResultWriter:
         out_dir = parent_dir / run_id
         out_dir.mkdir(parents=True, exist_ok=True)
 
+        # Get n_repetitions and include in params for parameters.json
+        n_rep = self._ev._generator.n_repetitions
+        params = {**params, "n_repetitions": n_rep}
+
         # Collect raw evaluation data (single pass each)
         generations = self._ev._generator.generations
-        runnability_scores, runnability_errors = self._ev._runnability.evaluate(
-            generations
+        runnability_scores, runnability_errors, runnability_raw = (
+            self._ev._runnability.evaluate(generations)
         )
         custom_raw, custom_reasons = self._ev._custom.evaluate_raw(
             self._ev.target, generations, self._ev._runnability
@@ -99,12 +104,29 @@ class ResultWriter:
         _write_generation_eval_summary(out_dir, custom_raw)
         _write_fully_passing(out_dir, flat_gens, runnability_errors, custom_raw)
         _write_fully_passing_summary(out_dir, flat_gens, runnability_errors, custom_raw)
+        _write_runnability_pass_at_k(out_dir, runnability_raw, n_rep)
+        _write_runnability_pass_at_k_summary(out_dir, runnability_raw, n_rep)
+        _write_generation_eval_pass_at_k(out_dir, custom_raw, n_rep)
+        _write_generation_eval_pass_at_k_summary(out_dir, custom_raw, n_rep)
+        _write_fully_passing_pass_at_k(out_dir, runnability_errors, custom_raw, n_rep)
+        _write_fully_passing_pass_at_k_summary(
+            out_dir, runnability_errors, custom_raw, n_rep
+        )
 
         if in_dist_set is not None:
             _write_runnability_by_category(out_dir, runnability_scores, in_dist_set)
             _write_generation_eval_by_category(out_dir, custom_raw, in_dist_set)
             _write_fully_passing_by_category(
                 out_dir, flat_gens, runnability_errors, custom_raw, in_dist_set
+            )
+            _write_runnability_pass_at_k_by_category(
+                out_dir, runnability_raw, n_rep, in_dist_set
+            )
+            _write_generation_eval_pass_at_k_by_category(
+                out_dir, custom_raw, n_rep, in_dist_set
+            )
+            _write_fully_passing_pass_at_k_by_category(
+                out_dir, runnability_errors, custom_raw, n_rep, in_dist_set
             )
 
         if self._ev._token_probs is not None:
@@ -150,6 +172,7 @@ def _parameters_dict(params: dict) -> dict:
         "target": params.get("target"),
         "date": params.get("date"),
         "notes": params.get("notes", ""),
+        "n_repetitions": params.get("n_repetitions", 5),
         "timing": None,
     }
 
@@ -490,6 +513,220 @@ def _write_fully_passing_by_category(
     if ood_passing:
         result["ood"] = {"score": sum(ood_passing) / len(ood_passing)}
     _write_json(out_dir / "fully_passing_by_category.json", result)
+
+
+def _estimate_pass_at_k(n: int, c: int, k: int) -> float:
+    """Unbiased estimator: probability at least 1 of k random picks passes."""
+    if n - c < k:
+        return 1.0
+    return 1.0 - comb(n - c, k) / comb(n, k)
+
+
+def _pass_at_k_dict(n: int, c: int) -> dict:
+    """Return {'pass@1': float, 'pass@3': float, 'pass@5': float}."""
+    return {f"pass@{k}": _estimate_pass_at_k(n, c, k) for k in (1, 3, 5)}
+
+
+def _avg_pass_at_k(prompt_dicts: list[dict]) -> dict:
+    """Average pass@k values over a list of per-prompt dicts."""
+    n = len(prompt_dicts)
+    return {
+        f"pass@{k}": sum(d[f"pass@{k}"] for d in prompt_dicts) / n for k in (1, 3, 5)
+    }
+
+
+def _write_runnability_pass_at_k(
+    out_dir: Path, runnability_raw: dict, n_rep: int
+) -> None:
+    result = {}
+    for group, snippet_dict in runnability_raw.items():
+        prompt_dicts = []
+        for scores in snippet_dict.values():
+            for i in range(0, len(scores), n_rep):
+                c = sum(scores[i : i + n_rep])
+                prompt_dicts.append(_pass_at_k_dict(n_rep, c))
+        if prompt_dicts:
+            result[group] = _avg_pass_at_k(prompt_dicts)
+    _write_json(out_dir / "runnability_pass_at_k.json", result)
+
+
+def _write_runnability_pass_at_k_summary(
+    out_dir: Path, runnability_raw: dict, n_rep: int
+) -> None:
+    prompt_dicts = []
+    for group, snippet_dict in runnability_raw.items():
+        if group == "neighborhood":
+            continue
+        for scores in snippet_dict.values():
+            for i in range(0, len(scores), n_rep):
+                c = sum(scores[i : i + n_rep])
+                prompt_dicts.append(_pass_at_k_dict(n_rep, c))
+    result = _avg_pass_at_k(prompt_dicts) if prompt_dicts else {}
+    _write_json(out_dir / "runnability_pass_at_k_summary.json", result)
+
+
+def _write_generation_eval_pass_at_k(
+    out_dir: Path, custom_raw: dict, n_rep: int
+) -> None:
+    records = []
+    for group, snippet_dict in custom_raw.items():
+        for snippet, scores in snippet_dict.items():
+            prompt_dicts = []
+            for i in range(0, len(scores), n_rep):
+                batch = scores[i : i + n_rep]
+                prompt_dicts.append(_pass_at_k_dict(n_rep, sum(batch)))
+            if prompt_dicts:
+                records.append(
+                    {"group": group, "snippet": snippet, **_avg_pass_at_k(prompt_dicts)}
+                )
+    _write_jsonl(out_dir / "generation_eval_pass_at_k.jsonl", records)
+
+
+def _write_generation_eval_pass_at_k_summary(
+    out_dir: Path, custom_raw: dict, n_rep: int
+) -> None:
+    prompt_dicts = []
+    for group, snippet_dict in custom_raw.items():
+        if group == "neighborhood":
+            continue
+        for scores in snippet_dict.values():
+            if not scores:
+                continue
+            for i in range(0, len(scores), n_rep):
+                batch = scores[i : i + n_rep]
+                prompt_dicts.append(_pass_at_k_dict(n_rep, sum(batch)))
+    result = _avg_pass_at_k(prompt_dicts) if prompt_dicts else {}
+    _write_json(out_dir / "generation_eval_pass_at_k_summary.json", result)
+
+
+def _write_fully_passing_pass_at_k(
+    out_dir: Path, runnability_errors: dict, custom_raw: dict, n_rep: int
+) -> None:
+    records = []
+    for group in set(runnability_errors) & set(custom_raw):
+        if group == "neighborhood":
+            continue
+        for snippet in runnability_errors[group]:
+            if snippet not in custom_raw[group]:
+                continue
+            errors = runnability_errors[group][snippet]
+            scores = custom_raw[group][snippet]
+            prompt_dicts = []
+            for i in range(0, len(errors), n_rep):
+                err_batch = errors[i : i + n_rep]
+                score_batch = scores[i : i + n_rep]
+                c = sum((e is None) and (s > 0) for e, s in zip(err_batch, score_batch))
+                prompt_dicts.append(_pass_at_k_dict(n_rep, c))
+            if prompt_dicts:
+                records.append(
+                    {"group": group, "snippet": snippet, **_avg_pass_at_k(prompt_dicts)}
+                )
+    _write_jsonl(out_dir / "fully_passing_pass_at_k.jsonl", records)
+
+
+def _write_fully_passing_pass_at_k_summary(
+    out_dir: Path, runnability_errors: dict, custom_raw: dict, n_rep: int
+) -> None:
+    prompt_dicts = []
+    for group in set(runnability_errors) & set(custom_raw):
+        if group == "neighborhood":
+            continue
+        for snippet in runnability_errors[group]:
+            if snippet not in custom_raw[group]:
+                continue
+            errors = runnability_errors[group][snippet]
+            scores = custom_raw[group][snippet]
+            for i in range(0, len(errors), n_rep):
+                err_batch = errors[i : i + n_rep]
+                score_batch = scores[i : i + n_rep]
+                c = sum((e is None) and (s > 0) for e, s in zip(err_batch, score_batch))
+                prompt_dicts.append(_pass_at_k_dict(n_rep, c))
+    result = _avg_pass_at_k(prompt_dicts) if prompt_dicts else {}
+    _write_json(out_dir / "fully_passing_pass_at_k_summary.json", result)
+
+
+def _write_runnability_pass_at_k_by_category(
+    out_dir: Path, runnability_raw: dict, n_rep: int, in_dist_set: frozenset
+) -> None:
+    in_dist_dicts, ood_dicts = [], []
+    for group, snippet_dict in runnability_raw.items():
+        if group == "neighborhood":
+            continue
+        for snippet, scores in snippet_dict.items():
+            target = (
+                in_dist_dicts
+                if (snippet is None or snippet in in_dist_set)
+                else ood_dicts
+            )
+            for i in range(0, len(scores), n_rep):
+                c = sum(scores[i : i + n_rep])
+                target.append(_pass_at_k_dict(n_rep, c))
+    result = {}
+    if in_dist_dicts:
+        result["in_dist"] = _avg_pass_at_k(in_dist_dicts)
+    if ood_dicts:
+        result["ood"] = _avg_pass_at_k(ood_dicts)
+    _write_json(out_dir / "runnability_pass_at_k_by_category.json", result)
+
+
+def _write_generation_eval_pass_at_k_by_category(
+    out_dir: Path, custom_raw: dict, n_rep: int, in_dist_set: frozenset
+) -> None:
+    in_dist_dicts, ood_dicts = [], []
+    for group, snippet_dict in custom_raw.items():
+        if group == "neighborhood":
+            continue
+        for snippet, scores in snippet_dict.items():
+            if not scores:
+                continue
+            target = (
+                in_dist_dicts
+                if (snippet is None or snippet in in_dist_set)
+                else ood_dicts
+            )
+            for i in range(0, len(scores), n_rep):
+                batch = scores[i : i + n_rep]
+                target.append(_pass_at_k_dict(n_rep, sum(batch)))
+    result = {}
+    if in_dist_dicts:
+        result["in_dist"] = _avg_pass_at_k(in_dist_dicts)
+    if ood_dicts:
+        result["ood"] = _avg_pass_at_k(ood_dicts)
+    _write_json(out_dir / "generation_eval_pass_at_k_by_category.json", result)
+
+
+def _write_fully_passing_pass_at_k_by_category(
+    out_dir: Path,
+    runnability_errors: dict,
+    custom_raw: dict,
+    n_rep: int,
+    in_dist_set: frozenset,
+) -> None:
+    in_dist_dicts, ood_dicts = [], []
+    for group in set(runnability_errors) & set(custom_raw):
+        if group == "neighborhood":
+            continue
+        for snippet in runnability_errors[group]:
+            if snippet not in custom_raw[group]:
+                continue
+            errors = runnability_errors[group][snippet]
+            scores = custom_raw[group][snippet]
+            target = (
+                in_dist_dicts
+                if (snippet is None or snippet in in_dist_set)
+                else ood_dicts
+            )
+            for i in range(0, len(errors), n_rep):
+                err_batch = errors[i : i + n_rep]
+                score_batch = scores[i : i + n_rep]
+                c = sum((e is None) and (s > 0) for e, s in zip(err_batch, score_batch))
+                target.append(_pass_at_k_dict(n_rep, c))
+    result = {}
+    if in_dist_dicts:
+        result["in_dist"] = _avg_pass_at_k(in_dist_dicts)
+    if ood_dicts:
+        result["ood"] = _avg_pass_at_k(ood_dicts)
+    _write_json(out_dir / "fully_passing_pass_at_k_by_category.json", result)
 
 
 def _write_probabilistic_eval_by_category(

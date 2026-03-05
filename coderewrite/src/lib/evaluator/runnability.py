@@ -95,7 +95,7 @@ class RunnabilityEvaluator:
     def _extract_runnable(self, generation: str, mode: str | None = None) -> str | None:
         return self.extract_runnable(generation, mode=mode)
 
-    def evaluate(self, generations_by_group: dict) -> tuple[dict, dict]:
+    def evaluate(self, generations_by_group: dict) -> tuple[dict, dict, dict]:
         """Score each prompt group on code runnability.
 
         Skips the ``neighborhood`` group.  Accepts the nested snippet
@@ -103,15 +103,16 @@ class RunnabilityEvaluator:
 
             {group: [{"snippet": str | None, "results": [[gen, ...], ...]}, ...]}
 
-        Returns a 2-tuple ``(scores, errors)`` where *scores* is
-        ``{group: {snippet_key: avg_runnability}}`` and *errors* is
-        ``{group: {snippet_key: [error_str_or_None, ...]}}``.
+        Returns a 3-tuple ``(scores, errors, raw)`` where:
+          - *scores* is ``{group: {snippet_key: avg_runnability}}``
+          - *errors* is ``{group: {snippet_key: [error_str_or_None, ...]}}``
+          - *raw*    is ``{group: {snippet_key: [bool, ...]}}`` (True = runnable)
         """
-        scores, errors = {}, {}
+        scores, errors, raw = {}, {}, {}
         for group_name, snippet_entries in generations_by_group.items():
             if group_name == "neighborhood":
                 continue
-            group_scores, group_errors = {}, {}
+            group_scores, group_errors, group_raw = {}, {}, {}
             for entry in snippet_entries:
                 key = entry["snippet"]
                 snippet_scores, snippet_errors = [], []
@@ -126,9 +127,11 @@ class RunnabilityEvaluator:
                         snippet_errors.append(error)
                 group_scores[key] = sum(snippet_scores) / len(snippet_scores)
                 group_errors[key] = snippet_errors
+                group_raw[key] = snippet_scores
             scores[group_name] = group_scores
             errors[group_name] = group_errors
-        return scores, errors
+            raw[group_name] = group_raw
+        return scores, errors, raw
 
     def _extract_fenced_blocks(self, generation: str) -> List[str]:
         """Extract all fenced code blocks, including truncated final blocks."""
