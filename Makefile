@@ -67,7 +67,7 @@ all: baseline edit
 
 full-qwen2.5: MODEL = qwen2.5
 full-qwen2.5:
-	$(MAKE) baseline
+	$(MAKE) baseline EXPERIMENT=authentication EDIT=baseline
 	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=edit_single 
 	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=edit_multiple_prefix
 
