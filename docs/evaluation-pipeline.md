@@ -2,95 +2,64 @@
 
 This document describes how model outputs are evaluated. The same pipeline is used across all evaluation modes: baseline, post-edit, and external model.
 
-> **Note:** The evaluation system is under active development. Scoring methods (e.g. regex-based matching) and prompt group coverage will be expanded in future iterations.
+For a detailed description of each evaluation dimension, prompt tags, prompt groups, and in-distribution vs out-of-distribution testing, see **[Evaluation Methods](evaluation-methods.md)**.
+
+---
 
 ## Overview
 
-Evaluation runs in two passes over the generated outputs:
+Evaluation runs in three independent passes over the generated outputs:
 
-1. **Target match** — does the generation contain the expected behavior?
-2. **Runnability** — is the generated code syntactically valid and executable?
+1. **Runnability** — is the generated code syntactically valid and executable?
+2. **Target match** — does the generation contain the expected (or absent) behaviour?
+3. **Token probability** *(optional)* — does the model assign higher likelihood to the target continuation than the original?
 
-Both passes operate per prompt group, producing a score between 0.0 and 1.0 for each group.
+All three passes operate per prompt group and produce scores between 0.0 and 1.0 per `(group, snippet)` pair.
+
+---
 
 ## Generation
 
-For each prompt in each group, the model generates **3 samples** with the following parameters:
+For each prompt in each group, the model generates **3 samples** using:
 
 - `temperature=0.7`, `do_sample=True`
-- `max_new_tokens=100` (or `600` for the `long_tasks` group)
+- `max_new_tokens=200` (or `1000` for the `long_tasks` group)
 
 All 3 samples are evaluated individually and their scores averaged, so each prompt contributes equally to the group score.
 
-## Target Match
+Generation uses `for_generation()` to cut each prompt at the `<SNIP>` marker, feeding only the prefix to the model. See [Evaluation Methods — Prompt Tags](evaluation-methods.md#prompt-tags) for details.
 
-For each generated sample, the evaluator checks whether the expected target behavior is present.
+---
 
-### Default evaluator
+## Passes
 
-By default, target match is a **substring check** — the target string must appear somewhere in the raw generation text:
+### Runnability
 
-```python
-# For regular prompt groups:
-score = target in generation
+For each generated sample (excluding `neighborhood`):
 
-# For neighborhood group (inverted):
-score = target not in generation
-```
+1. **Extract** the first parseable Python snippet from fenced blocks or bare code
+2. **Execute** via `exec()` in an isolated namespace with a 5-second timeout
+3. Score `1` if execution completes without exception, `0` otherwise
 
-### Custom evaluators
+See [Evaluation Methods — Runnability](evaluation-methods.md#evaluation-dimension-3--runnability) for extraction details.
 
-Experiments can override default matching by defining `evaluate_target()` and `evaluate_neighborhood()` functions in their edit modules. These receive both the raw generation and extracted code:
+### Target Match
 
-```python
-def evaluate_target(generation: str, code: str | None) -> bool:
-    ...
+For each generated sample:
 
-def evaluate_neighborhood(generation: str, code: str | None) -> bool:
-    ...
-```
+1. Run `extract_runnable()` on the generation (shared with runnability)
+2. Call the experiment's `evaluate_fn(generation, code)` or fall back to a substring check
+3. For `neighborhood`, call `evaluate_neighborhood_fn` with **inverted** success semantics
 
-This allows experiment-specific logic such as regex patterns, AST inspection, or output-based checks. When not provided, the default substring matching is used.
+Experiments can supply AST-based evaluators that parse the extracted code and walk its control flow to verify every execution path returns the expected value. See [Evaluation Methods — Generation](evaluation-methods.md#evaluation-dimension-2--generation-target_match).
 
-## Runnability
+### Token Probability
 
-For each generated sample (excluding the `neighborhood` group), the evaluator:
+Enabled when `tokenizer` and `target_true` are provided. For each prompt, runs a forward pass using `for_probability()` (full prompt with `<SNIP>` removed) and scores the NLL of `target_new` vs `target_true`.
 
-1. **Extracts code** from the generation (fenced blocks or bare Python)
-2. **Executes it** via `exec()` in an isolated namespace
-3. Scores `1` if execution completes without exception, `0` otherwise
+For the `neighborhood` group, success is inverted (original should remain more likely) and each prompt uses language-specific per-prompt targets via `NeighborhoodPrompt`. See [Evaluation Methods — Probabilistic](evaluation-methods.md#evaluation-dimension-1--probabilistic-token_probability).
 
-### Code extraction
-
-The extraction pipeline handles typical LLM output patterns:
-
-1. Extract fenced code blocks (`` ```python ... ``` ``), including truncated trailing blocks
-2. Deduplicate blocks (remove exact duplicates and subsets)
-3. Merge remaining blocks into a single runnable string
-4. Validate with `ast.parse()` before attempting execution
-
-If no fenced blocks are found, a fallback heuristic extracts bare Python by looking for lines starting with keywords like `def`, `class`, `import`, etc.
-
-## Prompt Groups
-
-Each experiment defines up to 7 prompt groups that test different aspects of the model's behavior. The groups fall into two categories:
-
-### Standard groups (target match + runnability)
-
-| Group | Description |
-|---|---|
-| `text_code` | Natural language instruction followed by a code skeleton with the function signature |
-| `text_code_with_usage` | Same as `text_code`, but the prompt also asks for example usage |
-| `code` | Code-only prompts — no natural language, just the function signature and surrounding code context |
-| `text` | Text-only prompts — natural language description with no code skeleton provided |
-| `paraphrase_text_code` | Like `text_code`, but with varied parameter names (e.g. `w, h` instead of `width, height`) to test generalization |
-| `long_tasks` | Extended prompts asking the model to build something larger (e.g. a Flask app) that incorporates the target function. Uses `max_new_tokens=600` |
-
-### Locality group (target match only, inverted)
-
-| Group | Description |
-|---|---|
-| `neighborhood` | Prompts in other programming languages (JavaScript, Java, C++, Rust, etc.) for the same function. The target should **not** appear here — success means the edit didn't leak across languages. Runnability is not evaluated for this group |
+---
 
 ## Output Format
 
@@ -104,21 +73,32 @@ Each experiment defines up to 7 prompt groups that test different aspects of the
   "target": "width * height",
   "results": {
     "target_match": {
-      "text_code": 0.75,
-      "code": 0.85,
-      "text": 0.70,
-      "text_code_with_usage": 0.80,
-      "paraphrase_text_code": 0.78,
-      "long_tasks": 0.60,
-      "neighborhood": 0.95
+      "text_code": {"snippet_key": 0.75},
+      "neighborhood": {"null": 0.95}
     },
     "runnability": {
-      "text_code": 0.72,
-      "code": 0.82,
-      "text": 0.68,
-      "text_code_with_usage": 0.78,
-      "paraphrase_text_code": 0.75,
-      "long_tasks": 0.55
+      "text_code": {"snippet_key": 0.72}
+    },
+    "runnability_errors": {
+      "text_code": {"snippet_key": ["NameError: ...", null, null]}
+    },
+    "token_probability": {
+      "text_code": {
+        "snippet_key": {
+          "probs": [{"target_new": 1.2, "target_true": 3.4}],
+          "correct": [true],
+          "avg_correct": 1.0,
+          "success_rate": 1.0,
+          "prob_diff": 0.21
+        }
+      },
+      "summary": {
+        "efficacy": 0.82,
+        "efficacy_accuracy": 0.74,
+        "specificity": 0.91,
+        "specificity_accuracy": 0.85,
+        "score": 0.86
+      }
     }
   }
 }
@@ -132,19 +112,33 @@ The `phase` field distinguishes between runs: `"baseline"`, `"post_edit"`, or `"
 {
   "text_code": [
     {
-      "prompt": "Complete the function:\n```python\ndef area(width, height):\n    return",
-      "generations": ["...", "...", "..."]
+      "snippet": "def area(width, height):\n    return ",
+      "prompts_results": [
+        {
+          "prompt": "Complete the function:\n```python\ndef area(width, height):\n    return ",
+          "generations": ["    width * height\n", "    width + height\n", "    width * height\n"]
+        }
+      ]
     }
   ]
 }
 ```
 
-Each entry pairs a prompt with its 3 generated samples, grouped by prompt group.
+Each entry pairs the generation-mode prefix actually fed to the model with its 3 generated samples, grouped by prompt group and snippet.
 
-## Files
+---
+
+## Key Files
 
 | File | Purpose |
 |---|---|
-| `coderewrite/src/lib/evaluate.py` | `BaselineEvaluator` — generation, code extraction, and scoring |
-| `coderewrite/src/experiments/*/prompts.py` | Prompt groups per experiment |
-| `coderewrite/src/experiments/*/edit_*.py` | Optional custom evaluation functions |
+| `lib/evaluator/evaluator.py` | `Evaluator` — top-level coordinator |
+| `lib/evaluator/generation.py` | `Generator` — generation and prompt preparation |
+| `lib/evaluator/runnability.py` | `RunnabilityEvaluator` — code extraction and execution |
+| `lib/evaluator/custom.py` | `CustomEvaluator` — target-match scoring |
+| `lib/evaluator/token_probs.py` | `TokenProbabilityEvaluator` — NLL-based scoring |
+| `lib/evaluator/token_probs_metrics.py` | Metric aggregation for token probability |
+| `lib/evaluator/prompts.py` | `Prompts`, `NeighborhoodPrompt` — prompt groups and tag resolution |
+| `experiments/*/prompts.py` | Prompt groups and snippets per experiment |
+| `experiments/*/custom_evaluator.py` | AST-based `evaluate_target` / `evaluate_neighborhood` |
+| `experiments/*/edit_*.py` | Edit configs that wire targets and evaluators together |
