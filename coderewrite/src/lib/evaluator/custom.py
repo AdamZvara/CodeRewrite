@@ -5,6 +5,17 @@ from typing import Callable
 from .runnability import RunnabilityEvaluator
 
 
+def _call_evaluate(fn, generation, code):
+    """Call fn; normalize bool or (bool, reason) to (passed, reason)."""
+    result = fn(generation, code)
+    if isinstance(result, tuple):
+        passed, reason = result
+        passed = bool(passed)
+        return passed, (None if passed else reason)
+    passed = bool(result)
+    return passed, None
+
+
 class CustomEvaluator:
     """Applies per-experiment scoring functions to generations.
 
@@ -52,11 +63,12 @@ class CustomEvaluator:
                     for output_single in output_batch:
                         code = runnability.extract_runnable(output_single)
                         if group_name == "neighborhood":
-                            group_score.append(
-                                evaluate_neighborhood_fn(output_single, code)
+                            passed, _ = _call_evaluate(
+                                evaluate_neighborhood_fn, output_single, code
                             )
                         else:
-                            group_score.append(evaluate_fn(output_single, code))
+                            passed, _ = _call_evaluate(evaluate_fn, output_single, code)
+                        group_score.append(passed)
                 snippet_results[key] = sum(group_score) / len(group_score)
             results[group_name] = snippet_results
         return results
@@ -66,31 +78,42 @@ class CustomEvaluator:
         target: str,
         generations_by_group: dict,
         runnability: RunnabilityEvaluator,
-    ) -> dict:
+    ) -> tuple[dict, dict]:
         """Like evaluate(), but returns per-generation score lists instead of averages.
 
-        Returns ``{group: {snippet_key: [score, ...]}}``.
+        Returns a tuple ``(scores_dict, reasons_dict)`` where:
+          - ``scores_dict``: ``{group: {snippet_key: [bool, ...]}}``
+          - ``reasons_dict``: ``{group: {snippet_key: [str | None, ...]}}``
         """
         evaluate_fn = self._evaluate_fn or (lambda gen, code: target in gen)
         evaluate_neighborhood_fn = self._evaluate_neighborhood_fn or (
             lambda gen, code: target not in gen
         )
 
-        results = {}
+        scores = {}
+        reasons = {}
         for group_name, snippet_entries in generations_by_group.items():
-            snippet_results = {}
+            snippet_scores = {}
+            snippet_reasons = {}
             for entry in snippet_entries:
                 key = entry["snippet"]
                 group_scores = []
+                group_reasons = []
                 for output_batch in entry["results"]:
                     for output_single in output_batch:
                         code = runnability.extract_runnable(output_single)
                         if group_name == "neighborhood":
-                            group_scores.append(
-                                evaluate_neighborhood_fn(output_single, code)
+                            passed, reason = _call_evaluate(
+                                evaluate_neighborhood_fn, output_single, code
                             )
                         else:
-                            group_scores.append(evaluate_fn(output_single, code))
-                snippet_results[key] = group_scores
-            results[group_name] = snippet_results
-        return results
+                            passed, reason = _call_evaluate(
+                                evaluate_fn, output_single, code
+                            )
+                        group_scores.append(passed)
+                        group_reasons.append(reason)
+                snippet_scores[key] = group_scores
+                snippet_reasons[key] = group_reasons
+            scores[group_name] = snippet_scores
+            reasons[group_name] = snippet_reasons
+        return scores, reasons

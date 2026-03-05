@@ -9,6 +9,7 @@ the given parent directory and writes the following files:
     runnability_summary.json           — overall runnability score (non-neighborhood)
     runnability_by_category.json       — runnability split by in-dist / OOD snippet
     runnability_errors.jsonl           — gen_id + error for non-runnable generations
+    generation_eval_errors.jsonl       — gen_id + reason for failed custom-eval generations (when reason available)
     generation_eval.jsonl              — custom-eval success_rate per (group, snippet)
     generation_eval_summary.json       — overall success_rate (non-neighborhood)
     generation_eval_by_category.json   — success_rate split by in-dist / OOD snippet
@@ -67,7 +68,7 @@ class ResultWriter:
         runnability_scores, runnability_errors = self._ev._runnability.evaluate(
             generations
         )
-        custom_raw = self._ev._custom.evaluate_raw(
+        custom_raw, custom_reasons = self._ev._custom.evaluate_raw(
             self._ev.target, generations, self._ev._runnability
         )
 
@@ -76,7 +77,9 @@ class ResultWriter:
         flat_gens = _flatten_generations(paired)
 
         # Build per-generation flags (runnable, gen-eval pass)
-        gen_flags = _build_gen_flags(flat_gens, runnability_errors, custom_raw)
+        gen_flags = _build_gen_flags(
+            flat_gens, runnability_errors, custom_raw, custom_reasons
+        )
 
         prompts = self._ev.prompts
         in_dist_set = (
@@ -91,6 +94,7 @@ class ResultWriter:
         _write_runnability(out_dir, runnability_scores)
         _write_runnability_summary(out_dir, runnability_scores)
         _write_runnability_errors(out_dir, flat_gens, runnability_errors)
+        _write_generation_eval_errors(out_dir, flat_gens, custom_reasons)
         _write_generation_eval(out_dir, custom_raw)
         _write_generation_eval_summary(out_dir, custom_raw)
         _write_fully_passing(out_dir, flat_gens, runnability_errors, custom_raw)
@@ -210,29 +214,36 @@ def _write_jsonl(path: Path, records: list[dict]) -> None:
 
 
 def _build_gen_flags(
-    flat_gens: list[dict], runnability_errors: dict, custom_raw: dict
+    flat_gens: list[dict],
+    runnability_errors: dict,
+    custom_raw: dict,
+    custom_reasons: dict = None,
 ) -> dict[int, dict]:
-    """Build a gen_id → {is_runnable, error, passes_gen_eval} lookup.
+    """Build a gen_id → {is_runnable, error, passes_gen_eval, gen_eval_reason} lookup.
 
     ``is_runnable`` is ``None`` for groups skipped by runnability evaluation
     (i.e. ``neighborhood``).  ``error`` holds the error string for non-runnable
     generations (``None`` when runnable or runnability was skipped).
     ``passes_gen_eval`` is ``True`` when the custom score is > 0.
+    ``gen_eval_reason`` is the failure reason string when the evaluate function
+    returned a tuple, otherwise ``None``.
     """
     gs_genids = _group_snippet_genids(flat_gens)
     flags: dict[int, dict] = {}
     for (group, snippet), gen_ids in gs_genids.items():
         run_errors = (runnability_errors.get(group) or {}).get(snippet)
         cust_scores = (custom_raw.get(group) or {}).get(snippet)
+        cust_reasons = (custom_reasons or {}).get(group, {}).get(snippet)
         for i, gen_id in enumerate(gen_ids):
+            passed = (cust_scores[i] > 0) if cust_scores is not None else None
+            reason = cust_reasons[i] if cust_reasons is not None else None
             flags[gen_id] = {
                 "is_runnable": (
                     (run_errors[i] is None) if run_errors is not None else None
                 ),
                 "error": run_errors[i] if run_errors is not None else None,
-                "passes_gen_eval": (
-                    (cust_scores[i] > 0) if cust_scores is not None else None
-                ),
+                "passes_gen_eval": passed,
+                "gen_eval_reason": None if passed else reason,
             }
     return flags
 
@@ -260,6 +271,7 @@ def _write_generations(
             rec["is_runnable"] = f.get("is_runnable")
             rec["error"] = f.get("error")
             rec["passes_gen_eval"] = f.get("passes_gen_eval")
+            rec["gen_eval_reason"] = f.get("gen_eval_reason")
         if in_dist_set is not None:
             rec["is_in_dist"] = snippet is None or snippet in in_dist_set
         records.append(rec)
@@ -301,6 +313,22 @@ def _write_runnability_errors(
                 records.append({"gen_id": gen_id, "error": error})
     records.sort(key=lambda x: x["gen_id"])
     _write_jsonl(out_dir / "runnability_errors.jsonl", records)
+
+
+def _write_generation_eval_errors(
+    out_dir: Path, flat_gens: list[dict], custom_reasons: dict
+) -> None:
+    gs_genids = _group_snippet_genids(flat_gens)
+    records = []
+    for (group, snippet), gen_ids in gs_genids.items():
+        reasons = (custom_reasons.get(group) or {}).get(snippet)
+        if reasons is None:
+            continue
+        for gen_id, reason in zip(gen_ids, reasons):
+            if reason is not None:
+                records.append({"gen_id": gen_id, "group": group, "reason": reason})
+    records.sort(key=lambda x: x["gen_id"])
+    _write_jsonl(out_dir / "generation_eval_errors.jsonl", records)
 
 
 def _write_generation_eval(out_dir: Path, custom_raw: dict) -> None:

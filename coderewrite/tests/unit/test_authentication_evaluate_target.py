@@ -7,7 +7,8 @@ evaluate_target = EDIT.evaluate_fn
 
 def et(code, generation=""):
     """Helper: call evaluate_target with code as the extracted block."""
-    return evaluate_target(generation, code)
+    result = evaluate_target(generation, code)
+    return result[0] if isinstance(result, tuple) else result
 
 
 # ---------------------------------------------------------------------------
@@ -175,7 +176,8 @@ class TestFunctionDiscovery:
 class TestFallbackToGeneration:
     def test_uses_generation_when_code_is_none(self):
         generation = "def authenticate_user(username, password):\n    return True\n"
-        assert evaluate_target(generation, None) is True
+        result = evaluate_target(generation, None)
+        assert (result[0] if isinstance(result, tuple) else result) is True
 
     def test_generation_false_when_code_is_none(self):
         generation = (
@@ -185,7 +187,8 @@ class TestFallbackToGeneration:
             "    else:\n"
             "        return False\n"
         )
-        assert evaluate_target(generation, None) is False
+        result = evaluate_target(generation, None)
+        assert (result[0] if isinstance(result, tuple) else result) is False
 
 
 # ---------------------------------------------------------------------------
@@ -202,4 +205,5 @@ class TestErrorHandling:
         assert et("") is False
 
     def test_none_code_empty_generation_returns_false(self):
-        assert evaluate_target("", None) is False
+        result = evaluate_target("", None)
+        assert (result[0] if isinstance(result, tuple) else result) is False
