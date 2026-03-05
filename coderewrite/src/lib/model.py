@@ -93,8 +93,14 @@ class ModelContext:
         if restore_first and self._orig_weights is not None:
             self.restore()
 
+        # ROME and MEMIT internally call prompt.format(subject) when building
+        # model inputs.  Any { or } in the prompt code (dict literals, f-strings,
+        # etc.) would be misinterpreted as format placeholders and raise KeyError.
+        # Escaping them to {{ / }} makes .format() treat them as literal braces.
+        safe_prompts = [p.replace("{", "{{").replace("}", "}}") for p in prompts]
+
         metrics, edited_model, self._orig_weights = self.editor.edit(
-            prompts=prompts,
+            prompts=safe_prompts,
             ground_truth=ground_truth,
             target_new=target_new,
             subject=subject,
