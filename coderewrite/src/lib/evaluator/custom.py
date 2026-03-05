@@ -2,7 +2,7 @@
 
 from typing import Callable
 
-from .runnability import RunnabilityEvaluator
+from .runnability import RunnabilityEvaluator, RunnabilityExtractionType
 
 
 def _call_evaluate(fn, generation, code):
@@ -56,7 +56,9 @@ class CustomEvaluator:
         results = {}
         for group_name, snippet_entries in generations_by_group.items():
             snippet_results = {}
-            extract_mode = "merge" if group_name == "long_tasks" else None
+            extract_mode = (
+                RunnabilityExtractionType.MERGE if group_name == "long_tasks" else None
+            )
             for entry in snippet_entries:
                 key = entry["snippet"]
                 group_score = []
@@ -98,7 +100,9 @@ class CustomEvaluator:
         for group_name, snippet_entries in generations_by_group.items():
             snippet_scores = {}
             snippet_reasons = {}
-            extract_mode = "merge" if group_name == "long_tasks" else None
+            extract_mode = (
+                RunnabilityExtractionType.MERGE if group_name == "long_tasks" else None
+            )
             for entry in snippet_entries:
                 key = entry["snippet"]
                 group_scores = []

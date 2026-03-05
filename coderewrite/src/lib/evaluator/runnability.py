@@ -5,6 +5,12 @@ import re
 import signal
 import sys
 from typing import List
+from enum import Enum
+
+
+class RunnabilityExtractionType(str, Enum):
+    FIRST = "first"
+    MERGE = "merge"
 
 
 class RunnabilityEvaluator:
@@ -13,7 +19,7 @@ class RunnabilityEvaluator:
     def __init__(
         self,
         code_start_tag: str,
-        extraction_mode: str = "first",
+        extraction_mode: RunnabilityExtractionType = RunnabilityExtractionType.FIRST,
         execution_timeout: int = 5,
     ):
         self.code_start_tag = code_start_tag
@@ -27,7 +33,9 @@ class RunnabilityEvaluator:
         # pipeline from hanging on infinite loops or blocking I/O in model output.
         self.exec_timeout = execution_timeout
 
-    def extract_runnable(self, generation: str, mode: str | None = None) -> str | None:
+    def extract_runnable(
+        self, generation: str, mode: RunnabilityExtractionType | None = None
+    ) -> str | None:
         """Extract executable Python code from a model generation.
 
         Prefers fenced code blocks when present.  When *mode* is ``"first"``
@@ -46,7 +54,7 @@ class RunnabilityEvaluator:
         effective_mode = mode if mode is not None else self.extraction_mode
         blocks = self._extract_fenced_blocks(generation)
         if blocks:
-            if effective_mode == "first":
+            if effective_mode == RunnabilityExtractionType.FIRST:
                 return blocks[0]
             # "merge": deduplicate then concatenate
             blocks = self._deduplicate(blocks)

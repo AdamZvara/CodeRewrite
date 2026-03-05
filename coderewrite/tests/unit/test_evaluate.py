@@ -1,6 +1,9 @@
 """Tests for code extraction logic in RunnabilityEvaluator."""
 
-from src.lib.evaluator.runnability import RunnabilityEvaluator
+from src.lib.evaluator.runnability import (
+    RunnabilityEvaluator,
+    RunnabilityExtractionType,
+)
 
 CODE_START = "```python\n"
 
@@ -114,7 +117,7 @@ class TestExtractRunnable:
             "Definition:\n```python\ndef area(w, h):\n    return w * h\n```\n"
             "Usage:\n```python\nprint(area(3, 4))\n```"
         )
-        code = e._extract_runnable(gen, mode="merge")
+        code = e._extract_runnable(gen, mode=RunnabilityExtractionType.MERGE)
         assert "def area" in code
         assert "print(area(3, 4))" in code
 
@@ -132,7 +135,7 @@ class TestExtractRunnable:
             "```python\ndef area(w, h):\n    return w * h\n```\n"
             "Again:\n```python\ndef area(w, h):\n    return w * h\n```"
         )
-        code = e._extract_runnable(gen, mode="merge")
+        code = e._extract_runnable(gen, mode=RunnabilityExtractionType.MERGE)
         assert code.count("def area") == 1
 
     def test_truncated_block_extracted(self):
@@ -213,22 +216,28 @@ _TWO_BLOCK_GEN = (
 class TestExtractionMode:
     def test_default_extraction_mode_is_first(self):
         ev = RunnabilityEvaluator(code_start_tag=CODE_START)
-        assert ev.extraction_mode == "first"
+        assert ev.extraction_mode == RunnabilityExtractionType.FIRST
 
     def test_merge_extraction_mode_constructor(self):
-        ev = RunnabilityEvaluator(code_start_tag=CODE_START, extraction_mode="merge")
-        assert ev.extraction_mode == "merge"
+        ev = RunnabilityEvaluator(
+            code_start_tag=CODE_START, extraction_mode=RunnabilityExtractionType.MERGE
+        )
+        assert ev.extraction_mode == RunnabilityExtractionType.MERGE
 
     def test_mode_param_overrides_first_instance(self):
         """Passing mode='merge' to extract_runnable overrides a 'first' instance."""
-        ev = RunnabilityEvaluator(code_start_tag=CODE_START, extraction_mode="first")
-        code = ev.extract_runnable(_TWO_BLOCK_GEN, mode="merge")
+        ev = RunnabilityEvaluator(
+            code_start_tag=CODE_START, extraction_mode=RunnabilityExtractionType.FIRST
+        )
+        code = ev.extract_runnable(_TWO_BLOCK_GEN, mode=RunnabilityExtractionType.MERGE)
         assert "raise ValueError" in code
 
     def test_mode_param_overrides_merge_instance(self):
         """Passing mode='first' to extract_runnable overrides a 'merge' instance."""
-        ev = RunnabilityEvaluator(code_start_tag=CODE_START, extraction_mode="merge")
-        code = ev.extract_runnable(_TWO_BLOCK_GEN, mode="first")
+        ev = RunnabilityEvaluator(
+            code_start_tag=CODE_START, extraction_mode=RunnabilityExtractionType.MERGE
+        )
+        code = ev.extract_runnable(_TWO_BLOCK_GEN, mode=RunnabilityExtractionType.FIRST)
         assert "raise ValueError" not in code
 
     def test_evaluate_non_long_tasks_uses_first_mode(self):
