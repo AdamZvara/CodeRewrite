@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -N run_test
+#PBS -N run_edit
 #PBS -l select=1:ncpus=2:ngpus=1:mem=32gb:gpu_mem=48gb:scratch_local=80gb
 #PBS -l walltime=3:00:00
 
@@ -28,7 +28,7 @@ cd ke
 mkdir -p "$DATADIR/data/stats" data
 ln -s "$DATADIR/data/stats" data/stats
 
-CMD=(python -m coderewrite.src.scripts.run_test
+CMD=(python -m coderewrite.src.scripts.run_edit
     --hparams "$HPARAMS"
     --model-name "$MODEL_NAME"
     --experiment "$EXPERIMENT"
@@ -41,4 +41,4 @@ CMD=(python -m coderewrite.src.scripts.run_test
 "${CMD[@]}" && \
 mkdir -p "$RESULTS_DIR/$EXPERIMENT" && \
 cp -r "$OUTPUT_DIR/." "$RESULTS_DIR/$EXPERIMENT/" && \
-echo "run_test ($EXPERIMENT) finished at $(date)"
+echo "run_edit ($EXPERIMENT) finished at $(date)"

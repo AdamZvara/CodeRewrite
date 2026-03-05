@@ -2,7 +2,7 @@
 """Post-edit evaluation.
 
 Usage:
-    python -m src.scripts.run_test \
+    python -m src.scripts.run_edit \
       --hparams EasyEdit/hparams/ROME/qwen2.5-7b.yaml \
       --experiment rectangle_area \
       --edit edit_single \

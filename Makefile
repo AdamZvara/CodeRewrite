@@ -1,21 +1,20 @@
 # ── Model definitions ────────────────────────────────────────────────
-# Add new models here: HF name + yaml filename (without method prefix)
-MODEL         ?= qwen2.5
+MODEL ?= qwen2.5
 
-MODEL_qwen2.5          = Qwen/Qwen2.5-7B
-YAML_qwen2.5           = qwen2.5-7b.yaml
+MODEL_qwen2.5       = Qwen/Qwen2.5-7B
+YAML_qwen2.5        = qwen2.5-7b.yaml
 
-MODEL_codellama         = meta-llama/CodeLlama-7b-Instruct-hf
-YAML_codellama          = codellama-7b.yaml
+MODEL_codellama     = meta-llama/CodeLlama-7b-Instruct-hf
+YAML_codellama      = codellama-7b.yaml
 
-MODEL_qwen2.5-coder    = Qwen/Qwen2.5-Coder-7B
-YAML_qwen2.5-coder     = qwen2.5-coder-7b.yaml
+MODEL_qwen2.5-coder = Qwen/Qwen2.5-Coder-7B
+YAML_qwen2.5-coder  = qwen2.5-coder-7b.yaml
 
-MODEL_stablecode        = stabilityai/stable-code-3b
-YAML_stablecode         = stablecode-3b.yaml
+MODEL_stablecode    = stabilityai/stable-code-3b
+YAML_stablecode     = stablecode-3b.yaml
 
 # ── KE method ──────────────────────────────────────────────────────
-METHOD        ?= ROME
+METHOD ?= ROME
 
 # Resolve model short name to HF name and hparams
 MODEL_NAME    = $(MODEL_$(MODEL))
@@ -26,12 +25,12 @@ EXPERIMENT    ?= rectangle_area
 EDIT          ?= edit_single
 
 # ── External model (e.g. fine-tuned) ──────────────────────────────────
-EXTERNAL_MODEL_PATH    ?=
+EXTERNAL_MODEL_PATH ?=
 
 # ── Derived paths ───────────────────────────────────────────────────
 # OUTPUT_DIR is the experiment-level parent; the Python scripts create a
 # timestamped run subdirectory within it automatically.
-OUTPUT_DIR    = results/$(EXPERIMENT)
+OUTPUT_DIR = results/$(EXPERIMENT)
 
 # ── Submit helper ───────────────────────────────────────────────────
 SUBMIT = PBS/submit.sh
@@ -42,7 +41,7 @@ define SUBMIT_BASELINE
 endef
 
 define SUBMIT_TEST
-	$(SUBMIT) PBS/run_test.pbs -v \
+	$(SUBMIT) PBS/run_edit.pbs -v \
 		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD)'
 endef
 
