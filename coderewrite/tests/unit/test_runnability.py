@@ -6,13 +6,13 @@ timeout on blocking code, and basic runnable/non-runnable detection.
 
 import sys
 
-from src.lib.evaluator.runnability import RunnabilityEvaluator, EXEC_TIMEOUT
+from src.lib.evaluator.runnability import RunnabilityEvaluator
 
 CODE_START = "```python\n"
 
 
 def make_evaluator():
-    return RunnabilityEvaluator(code_start_tag=CODE_START)
+    return RunnabilityEvaluator(code_start_tag=CODE_START, execution_timeout=1)
 
 
 e = make_evaluator()
@@ -118,5 +118,5 @@ class TestTimeout:
         assert not e._is_runnable("while True: pass")
 
     def test_long_sleep_times_out(self):
-        code = f"import time; time.sleep({EXEC_TIMEOUT + 5})"
+        code = f"import time; time.sleep({e.exec_timeout + 5})"
         assert not e._is_runnable(code)

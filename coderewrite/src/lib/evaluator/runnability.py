@@ -6,16 +6,15 @@ import signal
 import sys
 from typing import List
 
-# Timeout for sandboxed exec() of generated code. Keeps the evaluation
-# pipeline from hanging on infinite loops or blocking I/O in model output.
-EXEC_TIMEOUT = 5  # seconds
-
 
 class RunnabilityEvaluator:
     """Evaluates whether generated code is syntactically valid and executable."""
 
-    def __init__(self, code_start_tag: str):
+    def __init__(self, code_start_tag: str, execution_timeout: int = 5):
         self.code_start_tag = code_start_tag
+        # Timeout for sandboxed exec() of generated code. Keeps the evaluation
+        # pipeline from hanging on infinite loops or blocking I/O in model output.
+        self.exec_timeout = execution_timeout
 
     def extract_runnable(self, generation: str) -> str | None:
         """Extract executable Python code from a model generation.
@@ -184,7 +183,7 @@ class RunnabilityEvaluator:
         old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
         try:
             sys.argv = [""]
-            signal.alarm(EXEC_TIMEOUT)
+            signal.alarm(self.exec_timeout)
             exec(code_str, {"input": lambda *a, **kw: ""}, {})
             return True, None
         except (Exception, SystemExit) as exc:

@@ -167,6 +167,7 @@ class TestCheckRunnable:
         assert error.startswith("NameError:")
 
     def test_infinite_loop_timeout(self):
+        e.exec_timeout = 1  # Set a short timeout for testing
         runnable, error = e._check_runnable("while True: pass")
         assert runnable is False
         assert error is not None
