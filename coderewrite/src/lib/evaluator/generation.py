@@ -4,6 +4,9 @@ from typing import Callable
 
 from .prompts import NeighborhoodPrompt, Prompts
 
+MAX_TOKENS = 200
+MAX_TOKENS_LONG = 1000
+
 
 class Generator:
     """Encapsulates generation state and all generation-related methods."""
@@ -46,7 +49,7 @@ class Generator:
         One entry is produced per snippet in ``self.prompts.snippets``
         (or a single entry with ``snippet=None`` when no snippets are
         defined).  The ``long_tasks`` group gets a higher token budget
-        (600); all other groups use 100 tokens.
+        (MAX_TOKENS_LONG); all other groups use MAX_TOKENS tokens.
         """
         self.generations = {}
         snippets_to_use = self.prompts.snippets if self.prompts.snippets else [None]
@@ -57,7 +60,9 @@ class Generator:
                 prepared_prompts = []
                 for _p in group_prompts:
                     prompt = _p.prompt if isinstance(_p, NeighborhoodPrompt) else _p
-                    max_tokens = 600 if group_name == "long_tasks" else 100
+                    max_tokens = (
+                        MAX_TOKENS_LONG if group_name == "long_tasks" else MAX_TOKENS
+                    )
                     actual_prompt = self.prompts.prepare_prompt(
                         prompt, group_name, snippet
                     )
