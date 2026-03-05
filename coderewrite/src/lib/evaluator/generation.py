@@ -2,7 +2,7 @@
 
 from typing import Callable
 
-from .prompts import Prompts
+from .prompts import NeighborhoodPrompt, Prompts
 
 
 class Generator:
@@ -55,7 +55,8 @@ class Generator:
             for snippet in snippets_to_use:
                 group_results = []
                 prepared_prompts = []
-                for prompt in group_prompts:
+                for _p in group_prompts:
+                    prompt = _p.prompt if isinstance(_p, NeighborhoodPrompt) else _p
                     max_tokens = 600 if group_name == "long_tasks" else 100
                     actual_prompt = self.prompts.prepare_prompt(
                         prompt, group_name, snippet
@@ -127,9 +128,8 @@ class Generator:
                 snippet = entry["snippet"]
                 prepared = entry.get("prepared_prompts", [])
                 prompts_results = []
-                for i, (prompt, gens) in enumerate(
-                    zip(group_prompts, entry["results"])
-                ):
+                for i, (_p, gens) in enumerate(zip(group_prompts, entry["results"])):
+                    prompt = _p.prompt if isinstance(_p, NeighborhoodPrompt) else _p
                     if i < len(prepared):
                         display_prompt = prepared[i]
                     else:

@@ -52,9 +52,30 @@ Prompts may contain three special placeholder tags:
 """
 
 import random as _random
+from typing import NamedTuple
 
 SNIP_TAG = "<SNIP>"
 SNIPPET_TAG = "<SNIPPET>"
+
+
+class NeighborhoodPrompt(NamedTuple):
+    """Neighborhood prompt with language-specific probability targets.
+
+    Use in place of a plain string in ``NEIGHBORHOOD`` lists when the
+    correct target tokens differ from the experiment's global targets
+    (e.g. because the prompt is in a language other than Python and the
+    boolean literal is lowercase ``true``/``false`` rather than Python's
+    ``True``/``False``).
+
+    Attributes:
+        prompt: Raw prompt template string (may contain ``<SNIP>``).
+        target_new: The edited (leaked) token sequence for probability scoring.
+        target_true: The original (correct) token sequence for probability scoring.
+    """
+
+    prompt: str
+    target_new: str
+    target_true: str
 
 
 class Prompts:

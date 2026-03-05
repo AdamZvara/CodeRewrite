@@ -2,7 +2,7 @@
 
 from typing import List
 
-from .prompts import Prompts
+from .prompts import NeighborhoodPrompt, Prompts
 from .token_probs_metrics import compute_group_metrics, compute_overall_summary
 
 
@@ -124,28 +124,68 @@ class TokenProbabilityEvaluator:
                 continue
             snippet_results = {}
             for snippet in snippets_to_use:
-                prefixes = []
-                for p in group_prompts:
-                    processed = self.prompts.prepare_prompt(p, group_name, snippet)
-                    processed = self.prompts.replace_code_start(
-                        self.prompts.for_probability(processed)
+                has_per_prompt_targets = group_name == "neighborhood" and any(
+                    isinstance(p, NeighborhoodPrompt) for p in group_prompts
+                )
+
+                if has_per_prompt_targets:
+                    # Each prompt may carry its own target_new/target_true
+                    # (e.g. lowercase "true"/"false" for non-Python languages).
+                    all_probs, all_correct = [], []
+                    for p in group_prompts:
+                        prompt_str = (
+                            p.prompt if isinstance(p, NeighborhoodPrompt) else p
+                        )
+                        t_new = (
+                            p.target_new
+                            if isinstance(p, NeighborhoodPrompt)
+                            else self.target
+                        )
+                        t_true = (
+                            p.target_true
+                            if isinstance(p, NeighborhoodPrompt)
+                            else self.target_true
+                        )
+                        processed = self.prompts.prepare_prompt(
+                            prompt_str, group_name, snippet
+                        )
+                        processed = self.prompts.replace_code_start(
+                            self.prompts.for_probability(processed)
+                        )
+                        p_i, c_i = compute_token_probabilities(
+                            self.model, self.tokenizer, [processed], t_new, t_true, [1]
+                        )
+                        all_probs.extend(p_i)
+                        all_correct.extend(c_i)
+                    probs, correct = all_probs, all_correct
+                else:
+                    prefixes = []
+                    for p in group_prompts:
+                        prompt_str = (
+                            p.prompt if isinstance(p, NeighborhoodPrompt) else p
+                        )
+                        processed = self.prompts.prepare_prompt(
+                            prompt_str, group_name, snippet
+                        )
+                        processed = self.prompts.replace_code_start(
+                            self.prompts.for_probability(processed)
+                        )
+                        prefixes.append(processed)
+
+                    which_correct = (
+                        [1] * len(prefixes)
+                        if group_name == "neighborhood"
+                        else [0] * len(prefixes)
                     )
-                    prefixes.append(processed)
 
-                which_correct = (
-                    [1] * len(prefixes)
-                    if group_name == "neighborhood"
-                    else [0] * len(prefixes)
-                )
-
-                probs, correct = compute_token_probabilities(
-                    self.model,
-                    self.tokenizer,
-                    prefixes,
-                    self.target,
-                    self.target_true,
-                    which_correct,
-                )
+                    probs, correct = compute_token_probabilities(
+                        self.model,
+                        self.tokenizer,
+                        prefixes,
+                        self.target,
+                        self.target_true,
+                        which_correct,
+                    )
 
                 avg_correct = sum(correct) / len(correct) if correct else 0.0
                 group_metrics = compute_group_metrics(
