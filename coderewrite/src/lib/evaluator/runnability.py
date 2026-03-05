@@ -10,20 +10,45 @@ from typing import List
 class RunnabilityEvaluator:
     """Evaluates whether generated code is syntactically valid and executable."""
 
-    def __init__(self, code_start_tag: str, execution_timeout: int = 5):
+    def __init__(
+        self,
+        code_start_tag: str,
+        extraction_mode: str = "first",
+        execution_timeout: int = 5,
+    ):
         self.code_start_tag = code_start_tag
+        # Controls how multiple fenced blocks are handled in extract_runnable:
+        #   "first" — return only the first fenced block (simpler, less noise).
+        #   "merge" — deduplicate and concatenate all blocks (old behaviour,
+        #             suitable for long-form tasks where the whole application
+        #             spans multiple blocks).
+        self.extraction_mode = extraction_mode
         # Timeout for sandboxed exec() of generated code. Keeps the evaluation
         # pipeline from hanging on infinite loops or blocking I/O in model output.
         self.exec_timeout = execution_timeout
 
-    def extract_runnable(self, generation: str) -> str | None:
+    def extract_runnable(self, generation: str, mode: str | None = None) -> str | None:
         """Extract executable Python code from a model generation.
 
-        Prefers fenced code blocks when present. Falls back to a heuristic
-        line-by-line scan. Returns ``None`` if no code can be identified.
+        Prefers fenced code blocks when present.  When *mode* is ``"first"``
+        (or the instance default is ``"first"``) only the first fenced block is
+        returned.  When *mode* is ``"merge"`` all blocks are deduplicated and
+        concatenated — useful for long-form tasks that span multiple blocks.
+
+        Falls back to a heuristic line-by-line scan when no fenced blocks are
+        found.  Returns ``None`` if no code can be identified.
+
+        Args:
+            generation: Raw model output string.
+            mode: ``"first"`` or ``"merge"``.  Overrides ``self.extraction_mode``
+                  when given.
         """
+        effective_mode = mode if mode is not None else self.extraction_mode
         blocks = self._extract_fenced_blocks(generation)
         if blocks:
+            if effective_mode == "first":
+                return blocks[0]
+            # "merge": deduplicate then concatenate
             blocks = self._deduplicate(blocks)
             return self._merge_blocks(blocks)
 
@@ -59,8 +84,8 @@ class RunnabilityEvaluator:
         return None
 
     # Alias for backward compatibility with tests that call the private name
-    def _extract_runnable(self, generation: str) -> str | None:
-        return self.extract_runnable(generation)
+    def _extract_runnable(self, generation: str, mode: str | None = None) -> str | None:
+        return self.extract_runnable(generation, mode=mode)
 
     def evaluate(self, generations_by_group: dict) -> tuple[dict, dict]:
         """Score each prompt group on code runnability.
@@ -82,9 +107,12 @@ class RunnabilityEvaluator:
             for entry in snippet_entries:
                 key = entry["snippet"]
                 snippet_scores, snippet_errors = [], []
+                # long_tasks expects a whole application across multiple blocks;
+                # all other groups benefit from the cleaner first-block-only mode.
+                extract_mode = "merge" if group_name == "long_tasks" else None
                 for output_batch in entry["results"]:
                     for output_single in output_batch:
-                        code = self.extract_runnable(output_single)
+                        code = self.extract_runnable(output_single, mode=extract_mode)
                         runnable, error = self._check_runnable(code)
                         snippet_scores.append(runnable)
                         snippet_errors.append(error)

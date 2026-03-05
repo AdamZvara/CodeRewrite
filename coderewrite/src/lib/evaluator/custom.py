@@ -56,12 +56,15 @@ class CustomEvaluator:
         results = {}
         for group_name, snippet_entries in generations_by_group.items():
             snippet_results = {}
+            extract_mode = "merge" if group_name == "long_tasks" else None
             for entry in snippet_entries:
                 key = entry["snippet"]
                 group_score = []
                 for output_batch in entry["results"]:
                     for output_single in output_batch:
-                        code = runnability.extract_runnable(output_single)
+                        code = runnability.extract_runnable(
+                            output_single, mode=extract_mode
+                        )
                         if group_name == "neighborhood":
                             passed, _ = _call_evaluate(
                                 evaluate_neighborhood_fn, output_single, code
@@ -95,13 +98,16 @@ class CustomEvaluator:
         for group_name, snippet_entries in generations_by_group.items():
             snippet_scores = {}
             snippet_reasons = {}
+            extract_mode = "merge" if group_name == "long_tasks" else None
             for entry in snippet_entries:
                 key = entry["snippet"]
                 group_scores = []
                 group_reasons = []
                 for output_batch in entry["results"]:
                     for output_single in output_batch:
-                        code = runnability.extract_runnable(output_single)
+                        code = runnability.extract_runnable(
+                            output_single, mode=extract_mode
+                        )
                         if group_name == "neighborhood":
                             passed, reason = _call_evaluate(
                                 evaluate_neighborhood_fn, output_single, code
