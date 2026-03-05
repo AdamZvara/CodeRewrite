@@ -11,34 +11,34 @@ See also: [Evaluation Pipeline](evaluation-pipeline.md) for how these methods ar
 ```
                          ┌─────────────────────────────────────────────────────┐
                          │                     Evaluator                        │
-                         │                                                       │
+                         │                                                      │
   Prompts ──────────────►│  Generator                                           │
-  (all groups)           │  ├─ prepare_prompt()   [<SNIPPET>, <SNIP> resolved] │
-                         │  ├─ for_generation()   [cut at <SNIP>]              │
-                         │  └─ generate()         [3 samples × each prompt]    │
-                         │       │                                               │
-                         │       ▼                                               │
+  (all groups)           │  ├─ prepare_prompt()   [<SNIPPET>, <SNIP> resolved]  │
+                         │  ├─ for_generation()   [cut at <SNIP>]               │
+                         │  └─ generate()         [3 samples × each prompt]     │
+                         │       │                                              │
+                         │       ▼                                              │
                          │  Generations dict                                    │
                          │  {group: [{snippet, results: [[gen,gen,gen], ...]}]} │
-                         │       │                                               │
+                         │       │                                              │
                          │       ├──────────────────────────────────────────────┤
-                         │       │              Three independent passes:        │
-                         │       │                                               │
-                         │       ▼                                               │
-                         │  ① RunnabilityEvaluator                             │
-                         │    extract_runnable() → _check_runnable()           │
+                         │       │              Three independent passes:       │
+                         │       │                                              │
+                         │       ▼                                              │
+                         │  ① RunnabilityEvaluator                              │
+                         │    extract_runnable() → _check_runnable()            │
                          │    (skips neighborhood)                              │
-                         │       │                                               │
-                         │       ▼                                               │
-                         │  ② CustomEvaluator (target_match)                  │
+                         │       │                                              │
+                         │       ▼                                              │
+                         │  ② CustomEvaluator (target_match)                    │
                          │    evaluate_fn / evaluate_neighborhood_fn            │
                          │    (inverted logic for neighborhood)                 │
-                         │       │                                               │
-                         │       ▼                                               │
-                         │  ③ TokenProbabilityEvaluator  [optional]           │
+                         │       │                                              │
+                         │       ▼                                              │
+                         │  ③ TokenProbabilityEvaluator  [optional]             │
                          │    for_probability() → compute_token_probabilities() │
                          │    (per-prompt targets for neighborhood)             │
-                         └──────────────┬──────────────────────────────────────┘
+                         └──────────────┬───────────────────────────────────────┘
                                         │
                                         ▼
                           {target_match, runnability,
