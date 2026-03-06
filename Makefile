@@ -55,7 +55,7 @@ define SUBMIT_EXTERNAL
 endef
 
 # ── Targets ─────────────────────────────────────────────────────────
-.PHONY: baseline edit external all help
+.PHONY: baseline edit external help
 
 baseline:
 	$(SUBMIT_BASELINE)
@@ -107,7 +107,6 @@ help:
 	@echo "  baseline   - submit baseline evaluation"
 	@echo "  edit       - submit post-edit evaluation"
 	@echo "  external   - evaluate an external model (e.g. fine-tuned)"
-	@echo "  all        - submit both baseline and edit"
 	@echo ""
 	@echo "Models:  qwen2.5 (default), codellama, qwen2.5-coder, stablecode"
 	@echo "Methods: ROME (default), MEMIT"
