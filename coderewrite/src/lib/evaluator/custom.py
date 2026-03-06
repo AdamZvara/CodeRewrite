@@ -57,7 +57,11 @@ class CustomEvaluator:
         for group_name, snippet_entries in generations_by_group.items():
             snippet_results = {}
             extract_mode = (
-                RunnabilityExtractionType.MERGE if group_name == "long_tasks" else None
+                RunnabilityExtractionType.MERGE
+                if group_name == "long_tasks"
+                else RunnabilityExtractionType.SECOND
+                if group_name == "reversion"
+                else None
             )
             for entry in snippet_entries:
                 key = entry["snippet"]
@@ -101,7 +105,11 @@ class CustomEvaluator:
             snippet_scores = {}
             snippet_reasons = {}
             extract_mode = (
-                RunnabilityExtractionType.MERGE if group_name == "long_tasks" else None
+                RunnabilityExtractionType.MERGE
+                if group_name == "long_tasks"
+                else RunnabilityExtractionType.SECOND
+                if group_name == "reversion"
+                else None
             )
             for entry in snippet_entries:
                 key = entry["snippet"]
