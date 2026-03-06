@@ -21,6 +21,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from ..lib.evaluator import Evaluator
 from ..lib.results import ResultWriter, update_parameters_timing
+from ..lib.benchmark.runner import BenchmarkRunner
 from .run_baseline import load_experiment, load_edit_module
 
 
@@ -96,6 +97,24 @@ def main():
         required=True,
         help="Parent directory under which the timestamped run directory is created",
     )
+    parser.add_argument(
+        "--benchmark",
+        nargs="*",
+        metavar="BENCHMARK",
+        help="One or more benchmarks to run inline (e.g. humaneval mbpp)",
+    )
+    parser.add_argument(
+        "--n-samples",
+        type=int,
+        default=5,
+        help="Samples per benchmark problem (default: 5)",
+    )
+    parser.add_argument(
+        "--benchmark-subset",
+        type=int,
+        default=None,
+        help="Limit benchmark to first N problems (for local testing)",
+    )
     args = parser.parse_args()
 
     exp = load_experiment(args.experiment)
@@ -160,13 +179,35 @@ def main():
     run_dir = writer.write(args.output_dir, params)
     t_done = time.monotonic()
 
+    t_benchmark_done = t_done
+    # BenchmarkRunner calls generate_fn(prompts, max_new_tokens=N) without a model
+    # arg; bind the loaded model so the signature matches.
+    benchmark_generate_fn = lambda prompts, max_new_tokens=512: generate_fn(  # noqa: E731
+        prompts, model, max_new_tokens=max_new_tokens
+    )
+    if args.benchmark:
+        for bname in args.benchmark:
+            print(f"Running {bname} benchmark ...")
+            runner = BenchmarkRunner(
+                benchmark_generate_fn,
+                bname,
+                n_samples=args.n_samples,
+                subset=args.benchmark_subset,
+            )
+            runner.load()
+            runner.generate()
+            runner.evaluate()
+            runner.write_results(run_dir)
+        t_benchmark_done = time.monotonic()
+
     update_parameters_timing(
         run_dir,
         {
             "model_load_s": round(t_model_loaded - t_start, 2),
             "generation_s": round(t_gen_done - t_model_loaded, 2),
             "evaluation_s": round(t_done - t_gen_done, 2),
-            "total_s": round(t_done - t_start, 2),
+            "benchmark_s": round(t_benchmark_done - t_done, 2),
+            "total_s": round(t_benchmark_done - t_start, 2),
         },
     )
 
