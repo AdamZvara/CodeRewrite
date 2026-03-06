@@ -318,6 +318,7 @@ class RunnabilityEvaluator:
         # Lock ensures sys.meta_path mutation is safe under concurrent callers.
         # TODO: for stronger isolation, replace exec() with a subprocess call.
         with _exec_lock:
+            modules_before = set(sys.modules)
             try:
                 sys.argv = [""]
                 sys.meta_path.append(mock_finder)
@@ -342,6 +343,8 @@ class RunnabilityEvaluator:
                 sys.argv = saved_argv
                 if mock_finder in sys.meta_path:
                     sys.meta_path.remove(mock_finder)
+                for mod in set(sys.modules) - modules_before:
+                    del sys.modules[mod]
 
     def _is_runnable(self, code_str: str) -> bool:
         """Execute generated code to check if it runs without errors.

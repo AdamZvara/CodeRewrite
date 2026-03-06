@@ -177,3 +177,10 @@ class TestRelaxedRunnability:
         before = list(sys.meta_path)
         e._check_runnable("from flask import Flask")
         assert list(sys.meta_path) == before
+
+    def test_mocked_modules_not_left_in_sys_modules(self):
+        import sys
+
+        before = set(sys.modules)
+        e._check_runnable("import nonexistent_package_xyz")
+        assert set(sys.modules) == before
