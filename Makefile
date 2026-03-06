@@ -81,6 +81,11 @@ full-qwen2.5:
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=edit_10
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=edit_60
 
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=edit_text_prefix_3
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=edit_text_prefix_10
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=edit_text_prefix_3
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=edit_text_prefix_10
+
 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication_longer_target EDIT=edit_single 
 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication_longer_target EDIT=edit_3
 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication_longer_target EDIT=edit_10
