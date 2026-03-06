@@ -95,6 +95,7 @@ class _AutoMockFinder(importlib.abc.MetaPathFinder):
 
 class RunnabilityExtractionType(str, Enum):
     FIRST = "first"
+    SECOND = "second"
     MERGE = "merge"
 
 
@@ -148,6 +149,8 @@ class RunnabilityEvaluator:
         if blocks:
             if effective_mode == RunnabilityExtractionType.FIRST:
                 return blocks[0]
+            if effective_mode == RunnabilityExtractionType.SECOND:
+                return blocks[1] if len(blocks) > 1 else None
             # "merge": deduplicate then concatenate
             blocks = self._deduplicate(blocks)
             return self._merge_blocks(blocks)
@@ -215,6 +218,8 @@ class RunnabilityEvaluator:
                 extract_mode = (
                     RunnabilityExtractionType.MERGE
                     if group_name == "long_tasks"
+                    else RunnabilityExtractionType.SECOND
+                    if group_name == "reversion"
                     else None
                 )
                 for output_batch in entry["results"]:

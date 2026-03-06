@@ -6,7 +6,10 @@ timeout on blocking code, and basic runnable/non-runnable detection.
 
 import sys
 
-from src.lib.evaluator.runnability import RunnabilityEvaluator
+from src.lib.evaluator.runnability import (
+    RunnabilityEvaluator,
+    RunnabilityExtractionType,
+)
 
 CODE_START = "```python\n"
 
@@ -184,3 +187,35 @@ class TestRelaxedRunnability:
         before = set(sys.modules)
         e._check_runnable("import nonexistent_package_xyz")
         assert set(sys.modules) == before
+
+
+class TestReversionExtraction:
+    def test_second_mode_returns_second_block(self):
+        """Simulates a reversion generation: prompt block + model-revised block."""
+        gen = (
+            "```python\ndef foo():\n    return False\n```\n"
+            "Assistant: "
+            "```python\ndef foo():\n    return True\n```"
+        )
+        code = e.extract_runnable(gen, mode=RunnabilityExtractionType.SECOND)
+        assert "return True" in code
+        assert "return False" not in code
+
+    def test_second_mode_extra_blocks_ignored(self):
+        """Model generates extra blocks after revision — should still get block 1."""
+        gen = (
+            "```python\ndef foo():\n    return False\n```\n"
+            "Assistant: "
+            "```python\ndef foo():\n    return True\n```\n"
+            "Here is some example usage:\n"
+            "```python\nresult = foo()\nprint(result)\n```"
+        )
+        code = e.extract_runnable(gen, mode=RunnabilityExtractionType.SECOND)
+        assert "return True" in code
+        assert "print(result)" not in code
+
+    def test_second_mode_no_second_block_returns_none(self):
+        """Model fails to generate a code block — return None, not the prompt block."""
+        gen = "```python\ndef foo():\n    return False\n```\nSorry, no changes needed."
+        code = e.extract_runnable(gen, mode=RunnabilityExtractionType.SECOND)
+        assert code is None
