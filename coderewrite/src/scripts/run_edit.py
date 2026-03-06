@@ -19,8 +19,13 @@ import numpy as np
 
 from ..lib.model import ModelContext
 from ..lib.evaluator import Evaluator
-from ..lib.results import ResultWriter, update_parameters_timing
+from ..lib.results import (
+    ResultWriter,
+    update_parameters_timing,
+    update_parameters_gpu_metrics,
+)
 from ..lib.benchmark.runner import BenchmarkRunner
+from ..lib.gpu_monitor import GPUMonitor
 
 
 def load_experiment(name):
@@ -93,9 +98,9 @@ def main():
 
     t_start = time.monotonic()
     print(f"Loading model from {args.hparams} ...")
-    ctx = ModelContext(args.hparams, model_name=args.model_name, device=args.device)
-
-    ctx.restore_initial()
+    with GPUMonitor(gpu_index=args.device) as mon_load:
+        ctx = ModelContext(args.hparams, model_name=args.model_name, device=args.device)
+        ctx.restore_initial()
     t_model_loaded = time.monotonic()
 
     edit_kwargs = edit.to_edit_kwargs()
@@ -103,7 +108,8 @@ def main():
     print(
         f"Applying edit ({args.edit}): {len(edit_kwargs['prompts'])} prompt(s) -> [{target_new}]"
     )
-    metrics, edited_model = ctx.edit(**edit_kwargs)
+    with GPUMonitor(gpu_index=args.device) as mon_ke:
+        metrics, edited_model = ctx.edit(**edit_kwargs)
     t_ke_done = time.monotonic()
 
     eval_kwargs = {}
@@ -125,7 +131,8 @@ def main():
     )
 
     print("Generating responses ...")
-    evaluator.generate()
+    with GPUMonitor(gpu_index=args.device) as mon_gen:
+        evaluator.generate()
     t_gen_done = time.monotonic()
 
     model_short = args.model_short or Path(ctx.hparams.model_name).name.lower()
@@ -147,8 +154,9 @@ def main():
     }
 
     print("Evaluating and writing results ...")
-    writer = ResultWriter(evaluator)
-    run_dir = writer.write(args.output_dir, params)
+    with GPUMonitor(gpu_index=args.device) as mon_eval:
+        writer = ResultWriter(evaluator)
+        run_dir = writer.write(args.output_dir, params)
     t_done = time.monotonic()
 
     t_benchmark_done = t_done
@@ -176,6 +184,15 @@ def main():
             "evaluation_s": round(t_done - t_gen_done, 2),
             "benchmark_s": round(t_benchmark_done - t_done, 2),
             "total_s": round(t_benchmark_done - t_start, 2),
+        },
+    )
+    update_parameters_gpu_metrics(
+        run_dir,
+        {
+            "model_load": mon_load.summary(),
+            "ke": mon_ke.summary(),
+            "generation": mon_gen.summary(),
+            "evaluation": mon_eval.summary(),
         },
     )
 
