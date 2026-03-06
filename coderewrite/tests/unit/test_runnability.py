@@ -120,3 +120,60 @@ class TestTimeout:
     def test_long_sleep_times_out(self):
         code = f"import time; time.sleep({e.exec_timeout + 5})"
         assert not e._is_runnable(code)
+
+
+class TestRelaxedRunnability:
+    def test_name_error_is_runnable(self):
+        code = "result = getStoredPasswordHash('alice')"
+        runnable, error = e._check_runnable(code)
+        assert runnable is True
+        assert error is None
+
+    def test_name_error_in_function_body_is_runnable(self):
+        code = (
+            "def authenticate(user, pw):\n"
+            "    return create_password_hash(pw) == getStoredPasswordHash(user)\n"
+            "authenticate('u', 'p')\n"
+        )
+        runnable, error = e._check_runnable(code)
+        assert runnable is True
+
+    def test_function_calling_sibling_function_is_runnable(self):
+        # Regression: exec with separate locals= broke cross-function calls
+        # because function bodies look up names in globals, not exec's locals.
+        code = (
+            "def helper():\n    return 42\ndef main():\n    return helper()\nmain()\n"
+        )
+        runnable, error = e._check_runnable(code)
+        assert runnable is True, f"unexpected error: {error}"
+
+    def test_flask_import_mocked(self):
+        code = (
+            "from flask import Flask\n"
+            "app = Flask(__name__)\n"
+            "@app.route('/area')\n"
+            "def area():\n"
+            "    return 'ok'\n"
+        )
+        runnable, error = e._check_runnable(code)
+        assert runnable is True
+
+    def test_fastapi_import_mocked(self):
+        code = "from fastapi import FastAPI\napp = FastAPI()\n"
+        runnable, error = e._check_runnable(code)
+        assert runnable is True
+
+    def test_assertion_error_is_runnable(self):
+        runnable, error = e._check_runnable("assert 1 == 2, 'mismatch'")
+        assert runnable is True
+        assert error is None
+
+    def test_zero_division_still_fails(self):
+        runnable, error = e._check_runnable("x = 1 / 0")
+        assert runnable is False
+        assert error.startswith("ZeroDivisionError:")
+
+    def test_mock_finder_does_not_leak(self):
+        before = list(sys.meta_path)
+        e._check_runnable("from flask import Flask")
+        assert list(sys.meta_path) == before
