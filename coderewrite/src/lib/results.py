@@ -517,22 +517,22 @@ def _write_fully_passing_by_category(
 
 def _estimate_pass_at_k(n: int, c: int, k: int) -> float:
     """Unbiased estimator: probability at least 1 of k random picks passes."""
+    assert k <= n, f"k ({k}) must be <= n ({n})"
     if n - c < k:
         return 1.0
     return 1.0 - comb(n - c, k) / comb(n, k)
 
 
 def _pass_at_k_dict(n: int, c: int) -> dict:
-    """Return {'pass@1': float, 'pass@3': float, 'pass@5': float}."""
-    return {f"pass@{k}": _estimate_pass_at_k(n, c, k) for k in (1, 3, 5)}
+    """Return pass@k for each k in (1, 3, 5) that does not exceed n."""
+    return {f"pass@{k}": _estimate_pass_at_k(n, c, k) for k in (1, 3, 5) if k <= n}
 
 
 def _avg_pass_at_k(prompt_dicts: list[dict]) -> dict:
     """Average pass@k values over a list of per-prompt dicts."""
     n = len(prompt_dicts)
-    return {
-        f"pass@{k}": sum(d[f"pass@{k}"] for d in prompt_dicts) / n for k in (1, 3, 5)
-    }
+    keys = prompt_dicts[0].keys() if prompt_dicts else []
+    return {key: sum(d[key] for d in prompt_dicts) / n for key in keys}
 
 
 def _write_runnability_pass_at_k(
