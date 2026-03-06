@@ -185,7 +185,9 @@ def main():
         "generation": mon_gen.summary(),
         "evaluation": mon_eval.summary(),
     }
-    gpu_summaries = {phase: summary for phase, summary in gpu_summaries.items() if summary}
+    gpu_summaries = {
+        phase: summary for phase, summary in gpu_summaries.items() if summary
+    }
     if gpu_summaries:
         update_parameters_gpu_metrics(run_dir, gpu_summaries)
     print(f"Results written to {run_dir}")
