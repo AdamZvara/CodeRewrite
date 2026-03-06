@@ -92,7 +92,9 @@ class RunnabilityEvaluator:
         return None
 
     # Alias for backward compatibility with tests that call the private name
-    def _extract_runnable(self, generation: str, mode: str | None = None) -> str | None:
+    def _extract_runnable(
+        self, generation: str, mode: RunnabilityExtractionType | None = None
+    ) -> str | None:
         return self.extract_runnable(generation, mode=mode)
 
     def evaluate(self, generations_by_group: dict) -> tuple[dict, dict, dict]:
