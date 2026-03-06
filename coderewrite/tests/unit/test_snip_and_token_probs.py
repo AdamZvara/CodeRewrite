@@ -85,7 +85,7 @@ class TestGenerationUsesSnip:
         )
         ev.generate()
         # Should have called generate with the generation-mode prefix (3 copies)
-        assert len(captured) == 3
+        assert len(captured) == 5
         expected = "text\n```python\ndef area"
         for p in captured:
             assert p == expected
@@ -397,9 +397,9 @@ class TestSnippetExpansion:
         assert len(entries) == 2
         assert entries[0]["snippet"] == "body_a"
         assert entries[1]["snippet"] == "body_b"
-        # Each entry has results for 1 prompt template × 3 repetitions
+        # Each entry has results for 1 prompt template × 5 repetitions
         assert len(entries[0]["results"]) == 1
-        assert len(entries[0]["results"][0]) == 3
+        assert len(entries[0]["results"][0]) == 5
 
     def test_generation_without_snippets_single_none_entry(self):
         """When no snippets defined, a single entry with snippet=None is produced."""

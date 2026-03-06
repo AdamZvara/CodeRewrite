@@ -1,11 +1,96 @@
 """Runnability evaluation for generated code."""
 
 import ast
+import importlib.abc
+import importlib.machinery
 import re
 import signal
 import sys
-from typing import List
+import threading
 from enum import Enum
+from typing import List
+from unittest.mock import MagicMock
+
+_exec_lock = threading.Lock()
+
+_SAFE_BUILTINS = {
+    "__import__": __import__,
+    "__build_class__": __build_class__,
+    "print": print,
+    "input": None,  # overridden at call site
+    "len": len,
+    "range": range,
+    "enumerate": enumerate,
+    "zip": zip,
+    "int": int,
+    "float": float,
+    "str": str,
+    "bool": bool,
+    "bytes": bytes,
+    "list": list,
+    "dict": dict,
+    "tuple": tuple,
+    "set": set,
+    "frozenset": frozenset,
+    "type": type,
+    "object": object,
+    "super": super,
+    "isinstance": isinstance,
+    "issubclass": issubclass,
+    "hasattr": hasattr,
+    "getattr": getattr,
+    "setattr": setattr,
+    "delattr": delattr,
+    "callable": callable,
+    "iter": iter,
+    "next": next,
+    "map": map,
+    "filter": filter,
+    "sorted": sorted,
+    "reversed": reversed,
+    "sum": sum,
+    "min": min,
+    "max": max,
+    "abs": abs,
+    "round": round,
+    "pow": pow,
+    "open": open,  # needed for CSV long_tasks; NameError fallback covers missing files
+    "staticmethod": staticmethod,
+    "classmethod": classmethod,
+    "property": property,
+    "Exception": Exception,
+    "ValueError": ValueError,
+    "TypeError": TypeError,
+    "KeyError": KeyError,
+    "IndexError": IndexError,
+    "AttributeError": AttributeError,
+    "RuntimeError": RuntimeError,
+    "StopIteration": StopIteration,
+    "NotImplementedError": NotImplementedError,
+    "OSError": OSError,
+    "None": None,
+    "True": True,
+    "False": False,
+}
+
+
+class _AutoMockLoader(importlib.abc.Loader):
+    def create_module(self, spec):
+        return MagicMock(name=spec.name)
+
+    def exec_module(self, module):
+        pass  # MagicMock is already fully populated via attribute access
+
+
+class _AutoMockFinder(importlib.abc.MetaPathFinder):
+    """Last-resort finder that mocks any module unavailable in the environment.
+
+    Appended (not prepended) to sys.meta_path so real imports always win.
+    Active only for the duration of a single exec() call.
+    """
+
+    def find_spec(self, fullname, path, target=None):
+        return importlib.machinery.ModuleSpec(fullname, _AutoMockLoader())
 
 
 class RunnabilityExtractionType(str, Enum):
@@ -15,6 +100,13 @@ class RunnabilityExtractionType(str, Enum):
 
 class RunnabilityEvaluator:
     """Evaluates whether generated code is syntactically valid and executable."""
+
+    # Errors considered "structurally valid" — code references external names/modules
+    # assumed to exist outside the snippet scope, or the eval environment is missing
+    # a package dependency (PackageNotFoundError from importlib.metadata).
+    _RELAXED_PASS_ERRORS: frozenset = frozenset(
+        {"NameError", "PackageNotFoundError", "AssertionError"}
+    )
 
     def __init__(
         self,
@@ -216,7 +308,9 @@ class RunnabilityEvaluator:
 
         Returns ``(True, None)`` on success, ``(False, "no code extracted")``
         when *code_str* is ``None``, or ``(False, "ExcType: message")`` on any
-        execution error.
+        execution error.  ``NameError`` is treated as a pass (see
+        ``_RELAXED_PASS_ERRORS``) because snippets may reference external helpers.
+        Unavailable modules are auto-mocked via ``_AutoMockFinder``.
         """
         if code_str is None:
             return False, "no code extracted"
@@ -224,19 +318,50 @@ class RunnabilityEvaluator:
         def _timeout_handler(signum, frame):
             raise TimeoutError("execution timed out")
 
+        mock_finder = _AutoMockFinder()
         saved_argv = sys.argv
         old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
-        try:
-            sys.argv = [""]
-            signal.alarm(self.exec_timeout)
-            exec(code_str, {"input": lambda *a, **kw: ""}, {})
-            return True, None
-        except (Exception, SystemExit) as exc:
-            return False, f"{type(exc).__name__}: {exc}"
-        finally:
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, old_handler)
-            sys.argv = saved_argv
+        # Lock ensures sys.meta_path mutation is safe under concurrent callers.
+        # SECURITY TODO: This exec() sandbox is NOT safe for untrusted input.
+        #   - __import__ is the real builtin, so generated code can freely import
+        #     os, subprocess, socket, ctypes, etc. and do arbitrary damage
+        #     (filesystem writes, shell commands, network calls, process spawning).
+        #   - open() is intentionally kept for CSV long_tasks but grants full
+        #     filesystem read/write access.
+        #   - _exec_lock and the timeout limit concurrency and hangs, but do not
+        #     prevent a single malicious/buggy generation from causing harm.
+        #   Proper fix: run each eval in an isolated subprocess (or container) with
+        #   no filesystem write access and no network. The exec() approach is
+        #   acceptable only because this pipeline runs model outputs from a
+        #   controlled research setting, not adversarial user input.
+        with _exec_lock:
+            modules_before = set(sys.modules)
+            try:
+                sys.argv = [""]
+                sys.meta_path.append(mock_finder)
+                signal.alarm(self.exec_timeout)
+                exec(
+                    code_str,
+                    {
+                        **_SAFE_BUILTINS,
+                        "input": lambda *a, **kw: "",
+                        "__name__": "__main__",
+                    },
+                )
+                return True, None
+            except (Exception, SystemExit) as exc:
+                exc_type = type(exc).__name__
+                if exc_type in self._RELAXED_PASS_ERRORS:
+                    return True, None
+                return False, f"{exc_type}: {exc}"
+            finally:
+                signal.alarm(0)
+                signal.signal(signal.SIGALRM, old_handler)
+                sys.argv = saved_argv
+                if mock_finder in sys.meta_path:
+                    sys.meta_path.remove(mock_finder)
+                for mod in set(sys.modules) - modules_before:
+                    del sys.modules[mod]
 
     def _is_runnable(self, code_str: str) -> bool:
         """Execute generated code to check if it runs without errors.

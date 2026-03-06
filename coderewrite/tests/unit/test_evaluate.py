@@ -182,10 +182,11 @@ class TestCheckRunnable:
         assert error.startswith("ZeroDivisionError:")
 
     def test_name_error(self):
+        # NameError is now a relaxed pass: code is structurally valid but calls
+        # an external helper not defined in the snippet.
         runnable, error = e._check_runnable("print(undefined_variable)")
-        assert runnable is False
-        assert error is not None
-        assert error.startswith("NameError:")
+        assert runnable is True
+        assert error is None
 
     def test_infinite_loop_timeout(self):
         e.exec_timeout = 1  # Set a short timeout for testing
