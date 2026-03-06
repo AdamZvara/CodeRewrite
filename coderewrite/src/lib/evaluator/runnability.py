@@ -118,7 +118,9 @@ class RunnabilityEvaluator:
                 snippet_scores, snippet_errors = [], []
                 # long_tasks expects a whole application across multiple blocks;
                 # all other groups benefit from the cleaner first-block-only mode.
-                extract_mode = "merge" if group_name == "long_tasks" else None
+                extract_mode = (
+                    RunnabilityExtractionType.MERGE if group_name == "long_tasks" else None
+                )
                 for output_batch in entry["results"]:
                     for output_single in output_batch:
                         code = self.extract_runnable(output_single, mode=extract_mode)
