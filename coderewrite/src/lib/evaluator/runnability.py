@@ -117,10 +117,14 @@ class RunnabilityEvaluator:
     ):
         self.code_start_tag = code_start_tag
         # Controls how multiple fenced blocks are handled in extract_runnable:
-        #   "first" — return only the first fenced block (simpler, less noise).
-        #   "merge" — deduplicate and concatenate all blocks (old behaviour,
-        #             suitable for long-form tasks where the whole application
-        #             spans multiple blocks).
+        #   "first"  — return only the first fenced block (simpler, less noise).
+        #   "second" — return the second fenced block; useful for revision/reversion
+        #              prompts where the first block is the original and the second
+        #              is the revised code.  Returns None if fewer than two blocks
+        #              are present.
+        #   "merge"  — deduplicate and concatenate all blocks (old behaviour,
+        #              suitable for long-form tasks where the whole application
+        #              spans multiple blocks).
         self.extraction_mode = extraction_mode
         # Timeout for sandboxed exec() of generated code. Keeps the evaluation
         # pipeline from hanging on infinite loops or blocking I/O in model output.
@@ -133,7 +137,11 @@ class RunnabilityEvaluator:
 
         Prefers fenced code blocks when present.  When *mode* is ``"first"``
         (or the instance default is ``"first"``) only the first fenced block is
-        returned.  When *mode* is ``"merge"`` all blocks are deduplicated and
+        returned.  When *mode* is ``"second"``, the second fenced block is
+        returned — useful for revision/reversion prompts where the first block
+        is the original code and the second block is the revised version.
+        Returns ``None`` if fewer than two fenced blocks are present.
+        When *mode* is ``"merge"`` all blocks are deduplicated and
         concatenated — useful for long-form tasks that span multiple blocks.
 
         Falls back to a heuristic line-by-line scan when no fenced blocks are
@@ -141,8 +149,8 @@ class RunnabilityEvaluator:
 
         Args:
             generation: Raw model output string.
-            mode: ``"first"`` or ``"merge"``.  Overrides ``self.extraction_mode``
-                  when given.
+            mode: ``"first"``, ``"second"``, or ``"merge"``.  Overrides
+                  ``self.extraction_mode`` when given.
         """
         effective_mode = mode if mode is not None else self.extraction_mode
         blocks = self._extract_fenced_blocks(generation)
