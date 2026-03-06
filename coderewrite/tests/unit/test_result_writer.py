@@ -1,26 +1,37 @@
 """Tests for ResultWriter — verifies all output files are created with correct content.
 
 Fixture layout (no real model required):
-    text_code group — 2 prompts × 3 repetitions = 6 generations
+    text_code group — 2 prompts × 5 repetitions = 10 generations
         gen_id 0  TC_A rep0  RUNNABLE_MATCH  → runnable, target present   ✓✓
         gen_id 1  TC_A rep1  RUNNABLE_MATCH  → runnable, target present   ✓✓
         gen_id 2  TC_A rep2  NO_CODE         → not runnable, no target    ✗✗
-        gen_id 3  TC_B rep0  NOT_RUNNABLE    → not runnable, no target    ✗✗
-        gen_id 4  TC_B rep1  RUNNABLE_MATCH  → runnable, target present   ✓✓
-        gen_id 5  TC_B rep2  RUNNABLE_MATCH  → runnable, target present   ✓✓
+        gen_id 3  TC_A rep3  RUNNABLE_MATCH  → runnable, target present   ✓✓
+        gen_id 4  TC_A rep4  NO_CODE         → not runnable, no target    ✗✗
+        gen_id 5  TC_B rep0  NOT_RUNNABLE    → not runnable, no target    ✗✗
+        gen_id 6  TC_B rep1  RUNNABLE_MATCH  → runnable, target present   ✓✓
+        gen_id 7  TC_B rep2  RUNNABLE_MATCH  → runnable, target present   ✓✓
+        gen_id 8  TC_B rep3  NO_CODE         → not runnable, no target    ✗✗
+        gen_id 9  TC_B rep4  RUNNABLE_MATCH  → runnable, target present   ✓✓
 
-    neighborhood group — 1 prompt × 3 repetitions = 3 generations
-        gen_id 6  NBHD rep0  RUNNABLE_MATCH  → target present (nbhd FAIL)
-        gen_id 7  NBHD rep1  NO_TARGET       → target absent  (nbhd PASS)
-        gen_id 8  NBHD rep2  NO_TARGET       → target absent  (nbhd PASS)
+    neighborhood group — 1 prompt × 5 repetitions = 5 generations
+        gen_id 10  NBHD rep0  RUNNABLE_MATCH  → target present (nbhd FAIL)
+        gen_id 11  NBHD rep1  NO_TARGET       → target absent  (nbhd PASS)
+        gen_id 12  NBHD rep2  NO_TARGET       → target absent  (nbhd PASS)
+        gen_id 13  NBHD rep3  NO_TARGET       → target absent  (nbhd PASS)
+        gen_id 14  NBHD rep4  RUNNABLE_MATCH  → target present (nbhd FAIL)
 
 Expected summary values:
-    runnability (text_code)             4/6 ≈ 0.6667
-    generation_eval (text_code)         4/6 ≈ 0.6667
-    generation_eval (neighborhood)      2/3 ≈ 0.6667  (target NOT present)
-    generation_eval_summary             4/6 ≈ 0.6667  (neighborhood excluded)
-    fully_passing (text_code)           4/6 ≈ 0.6667  (runnable AND correct)
-    fully_passing_summary               4/6 ≈ 0.6667
+    runnability (text_code)             6/10 = 0.6
+    generation_eval (text_code)         6/10 = 0.6
+    generation_eval (neighborhood)      3/5  = 0.6  (target NOT present)
+    generation_eval_summary             6/10 = 0.6  (neighborhood excluded)
+    fully_passing (text_code)           6/10 = 0.6  (runnable AND correct)
+    fully_passing_summary               6/10 = 0.6
+
+Pass@k per prompt (n=5, c=3 for every prompt):
+    pass@1 = 3/5 = 0.6
+    pass@3 = 1 - C(2,3)/C(5,3) = 1.0  (n-c=2 < k=3)
+    pass@5 = 1 - C(2,5)/C(5,5) = 1.0  (n-c=2 < k=5)
 """
 
 import json
@@ -45,9 +56,9 @@ NO_CODE = "just plain text, no fences"  # not runnable, no TARGET
 # ── fixtures ───────────────────────────────────────────────────────────────
 
 PROMPT_RESPONSES = {
-    "TC_A": [RUNNABLE_MATCH, RUNNABLE_MATCH, NO_CODE],
-    "TC_B": [NOT_RUNNABLE, RUNNABLE_MATCH, RUNNABLE_MATCH],
-    "NBHD": [RUNNABLE_MATCH, NO_TARGET, NO_TARGET],
+    "TC_A": [RUNNABLE_MATCH, RUNNABLE_MATCH, NO_CODE, RUNNABLE_MATCH, NO_CODE],
+    "TC_B": [NOT_RUNNABLE, RUNNABLE_MATCH, RUNNABLE_MATCH, NO_CODE, RUNNABLE_MATCH],
+    "NBHD": [RUNNABLE_MATCH, NO_TARGET, NO_TARGET, NO_TARGET, RUNNABLE_MATCH],
 }
 
 
@@ -130,8 +141,7 @@ def _load_json(text):
     return json.loads(text)
 
 
-APPROX_2_3 = pytest.approx(2 / 3, abs=1e-6)
-APPROX_4_6 = pytest.approx(4 / 6, abs=1e-6)
+APPROX_3_5 = pytest.approx(3 / 5, abs=1e-6)
 
 
 # ── tests ──────────────────────────────────────────────────────────────────
@@ -223,6 +233,9 @@ class TestParametersJson:
     def test_notes(self):
         assert self.params["notes"] == "test run"
 
+    def test_n_repetitions(self):
+        assert self.params["n_repetitions"] == 5
+
 
 class TestGenerationsJsonl:
     def setup_method(self):
@@ -230,12 +243,12 @@ class TestGenerationsJsonl:
         self.gens = _load_jsonl(self.files["generations.jsonl"])
 
     def test_total_count(self):
-        # 2 prompts × 3 reps + 1 prompt × 3 reps = 9
-        assert len(self.gens) == 9
+        # 2 prompts × 5 reps + 1 prompt × 5 reps = 15
+        assert len(self.gens) == 15
 
     def test_gen_ids_are_sequential(self):
         ids = [g["gen_id"] for g in self.gens]
-        assert ids == list(range(9))
+        assert ids == list(range(15))
 
     def test_required_fields(self):
         for g in self.gens:
@@ -252,33 +265,33 @@ class TestGenerationsJsonl:
         assert "text_code" in groups
         assert "neighborhood" in groups
 
-    def test_text_code_has_six_entries(self):
+    def test_text_code_has_ten_entries(self):
         tc = [g for g in self.gens if g["group"] == "text_code"]
-        assert len(tc) == 6
+        assert len(tc) == 10
 
     def test_rep_idx_cycles(self):
         tc = [g for g in self.gens if g["group"] == "text_code"]
         rep_idxs = [g["rep_idx"] for g in tc]
-        assert rep_idxs == [0, 1, 2, 0, 1, 2]
+        assert rep_idxs == [0, 1, 2, 3, 4, 0, 1, 2, 3, 4]
 
     def test_known_generation_content(self):
-        # gen_id 0 should be the RUNNABLE_MATCH
+        # gen_id 0 (TC_A rep0) should be RUNNABLE_MATCH
         assert self.gens[0]["generation"] == RUNNABLE_MATCH
         # gen_id 2 (TC_A rep2) should be NO_CODE
         assert self.gens[2]["generation"] == NO_CODE
-        # gen_id 3 (TC_B rep0) should be NOT_RUNNABLE
-        assert self.gens[3]["generation"] == NOT_RUNNABLE
+        # gen_id 5 (TC_B rep0) should be NOT_RUNNABLE
+        assert self.gens[5]["generation"] == NOT_RUNNABLE
 
     def test_runnable_gens_have_null_error(self):
-        # gen_ids 0, 1, 4, 5 are runnable — error must be null
-        runnable_ids = {0, 1, 4, 5}
+        # gen_ids 0,1,3 (TC_A) and 6,7,9 (TC_B) are runnable — error must be null
+        runnable_ids = {0, 1, 3, 6, 7, 9}
         for g in self.gens:
             if g["gen_id"] in runnable_ids:
                 assert g["error"] is None, f"gen_id {g['gen_id']} expected null error"
 
     def test_non_runnable_gens_have_error_string(self):
-        # gen_ids 2 (no code) and 3 (ValueError) are not runnable
-        error_ids = {2, 3}
+        # gen_ids 2,4 (TC_A NO_CODE) and 5 (TC_B NOT_RUNNABLE), 8 (TC_B NO_CODE)
+        error_ids = {2, 4, 5, 8}
         for g in self.gens:
             if g["gen_id"] in error_ids:
                 assert isinstance(g["error"], str), (
@@ -351,8 +364,8 @@ class TestRunnabilityJson:
         assert "neighborhood" not in self.data
 
     def test_text_code_score(self):
-        # 4 runnable out of 6 (gen_ids 0,1,4,5 pass; 2,3 fail)
-        assert self.data["text_code"] == APPROX_4_6
+        # 6 runnable out of 10 (gen_ids 0,1,3,6,7,9 pass; 2,4,5,8 fail)
+        assert self.data["text_code"] == APPROX_3_5
 
     def test_values_are_floats(self):
         for v in self.data.values():
@@ -365,15 +378,15 @@ class TestRunnabilityErrorsJsonl:
         self.errors = _load_jsonl(self.files["runnability_errors.jsonl"])
 
     def test_only_failures_logged(self):
-        # gen_ids 2 (no code) and 3 (ValueError) should be errors
-        assert len(self.errors) == 2
+        # gen_ids 2,4 (TC_A NO_CODE), 5 (TC_B NOT_RUNNABLE), 8 (TC_B NO_CODE)
+        assert len(self.errors) == 4
 
     def test_gen_id_2_has_no_code_error(self):
         entry = next(e for e in self.errors if e["gen_id"] == 2)
         assert "no code extracted" in entry["error"]
 
-    def test_gen_id_3_has_value_error(self):
-        entry = next(e for e in self.errors if e["gen_id"] == 3)
+    def test_gen_id_5_has_value_error(self):
+        entry = next(e for e in self.errors if e["gen_id"] == 5)
         assert "ValueError" in entry["error"]
 
     def test_sorted_by_gen_id(self):
@@ -391,12 +404,12 @@ class TestGenerationEvalJsonl:
         assert "neighborhood" in self.by_group
 
     def test_text_code_success_rate(self):
-        # 4 out of 6 generations contain TARGET
-        assert self.by_group["text_code"]["success_rate"] == APPROX_4_6
+        # 6 out of 10 generations contain TARGET
+        assert self.by_group["text_code"]["success_rate"] == APPROX_3_5
 
     def test_neighborhood_success_rate(self):
-        # TARGET absent in 2 out of 3 neighborhood gens
-        assert self.by_group["neighborhood"]["success_rate"] == APPROX_2_3
+        # TARGET absent in 3 out of 5 neighborhood gens (gen_ids 11,12,13)
+        assert self.by_group["neighborhood"]["success_rate"] == APPROX_3_5
 
     def test_snippet_field_present(self):
         for e in self.evals:
@@ -412,8 +425,8 @@ class TestGenerationEvalSummaryJson:
         assert "success_rate" in self.summary
 
     def test_excludes_neighborhood(self):
-        # Summary should only be 4/6 (text_code), not average of text_code+neighborhood
-        assert self.summary["success_rate"] == APPROX_4_6
+        # Summary should only be 6/10 (text_code), not average of text_code+neighborhood
+        assert self.summary["success_rate"] == APPROX_3_5
 
 
 class TestFullyPassingJsonl:
@@ -426,8 +439,8 @@ class TestFullyPassingJsonl:
         assert "neighborhood" not in self.by_group
 
     def test_text_code_score(self):
-        # Runnable AND correct: gen_ids 0,1 (TC_A pass), 4,5 (TC_B pass) → 4/6
-        assert self.by_group["text_code"]["score"] == APPROX_4_6
+        # Runnable AND correct: gen_ids 0,1,3 (TC_A pass), 6,7,9 (TC_B pass) → 6/10
+        assert self.by_group["text_code"]["score"] == APPROX_3_5
 
 
 class TestFullyPassingSummaryJson:
@@ -439,7 +452,49 @@ class TestFullyPassingSummaryJson:
         assert "score" in self.summary
 
     def test_score_value(self):
-        assert self.summary["score"] == APPROX_4_6
+        assert self.summary["score"] == APPROX_3_5
+
+
+class TestPassAtKFiles:
+    def setup_method(self):
+        _, self.files = _run()
+
+    def test_pass_at_k_files_created(self):
+        expected = {
+            "runnability_pass_at_k.json",
+            "runnability_pass_at_k_summary.json",
+            "generation_eval_pass_at_k.jsonl",
+            "generation_eval_pass_at_k_summary.json",
+            "fully_passing_pass_at_k.jsonl",
+            "fully_passing_pass_at_k_summary.json",
+        }
+        assert expected.issubset(self.files.keys())
+
+    def test_runnability_pass_at_k_has_correct_keys(self):
+        data = _load_json(self.files["runnability_pass_at_k.json"])
+        assert "text_code" in data
+        assert set(data["text_code"].keys()) == {"pass@1", "pass@3", "pass@5"}
+
+    def test_generation_eval_pass_at_k_summary_keys(self):
+        data = _load_json(self.files["generation_eval_pass_at_k_summary.json"])
+        assert "pass@1" in data
+        assert "pass@3" in data
+        assert "pass@5" in data
+
+    def test_fully_passing_pass_at_k_summary_pass5_is_one(self):
+        # TC_A: n=5, c=3 → n-c=2 < k=5 → pass@5=1.0; TC_B: same
+        data = _load_json(self.files["fully_passing_pass_at_k_summary.json"])
+        assert data["pass@5"] == pytest.approx(1.0, abs=1e-6)
+
+    def test_runnability_pass_at_k_summary_pass1(self):
+        # n=5, c=3 per prompt → pass@1 = 3/5 = 0.6
+        data = _load_json(self.files["runnability_pass_at_k_summary.json"])
+        assert data["pass@1"] == pytest.approx(0.6, abs=1e-6)
+
+    def test_runnability_pass_at_k_summary_pass3_is_one(self):
+        # n=5, c=3 → n-c=2 < k=3 → pass@3=1.0
+        data = _load_json(self.files["runnability_pass_at_k_summary.json"])
+        assert data["pass@3"] == pytest.approx(1.0, abs=1e-6)
 
 
 class TestKnowledgeEditJson:

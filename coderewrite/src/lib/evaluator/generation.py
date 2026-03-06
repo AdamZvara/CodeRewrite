@@ -12,7 +12,7 @@ class Generator:
     """Encapsulates generation state and all generation-related methods."""
 
     def __init__(
-        self, generate_fn: Callable, model, prompts: Prompts, n_repetitions: int = 3
+        self, generate_fn: Callable, model, prompts: Prompts, n_repetitions: int = 5
     ):
         self.generate_fn = generate_fn
         self.model = model

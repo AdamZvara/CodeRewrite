@@ -65,7 +65,7 @@ def _find_two_arg_function(tree: ast.Module) -> ast.FunctionDef | None:
     return None
 
 
-def evaluate_target(generation: str, code: str | None) -> bool:
+def evaluate_target(generation: str, code: str | None) -> tuple[bool, str | None]:
     """Check if the edited target behavior appears in a generation.
 
     Finds a function with exactly 2 parameters in the generated code, parses its
@@ -74,15 +74,17 @@ def evaluate_target(generation: str, code: str | None) -> bool:
     src = code if code is not None else generation
     try:
         tree = ast.parse(src)
-    except SyntaxError:
-        return False
+    except SyntaxError as e:
+        return False, f"SyntaxError: {e}"
 
     fn = _find_two_arg_function(tree)
     if fn is None:
-        return False
+        return False, "no two-argument function found"
 
     args = {arg.arg for arg in fn.args.args}
-    return _all_paths_return_power(fn.body, args)
+    if not _all_paths_return_power(fn.body, args):
+        return False, "not all execution paths return arg1 ** arg2"
+    return True, None
 
 
 def evaluate_neighborhood(generation: str, code: str | None) -> bool:

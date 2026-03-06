@@ -141,3 +141,41 @@ class TestCustomEvaluators:
             evaluate_fn=custom_eval,
         )
         assert codes_seen[0] is None
+
+    # Generation with two distinct fenced blocks.
+    _TWO_BLOCK_GEN = (
+        "```python\ndef func():\n    return 1\n```\n"
+        "```python\ndef other():\n    return 2\n```"
+    )
+
+    def test_non_long_tasks_passes_first_block_only_to_eval_fn(self):
+        """For non-long_tasks groups, evaluate_fn receives only the first code block."""
+        codes_seen = []
+
+        def custom_eval(generation, code):
+            codes_seen.append(code)
+            return True
+
+        self._evaluate(
+            target="ignored",
+            generations_dict=_make_gens({"text_code": [self._TWO_BLOCK_GEN]}),
+            evaluate_fn=custom_eval,
+        )
+        assert "def func" in codes_seen[0]
+        assert "def other" not in codes_seen[0]
+
+    def test_long_tasks_passes_merged_blocks_to_eval_fn(self):
+        """For long_tasks group, evaluate_fn receives all code blocks merged."""
+        codes_seen = []
+
+        def custom_eval(generation, code):
+            codes_seen.append(code)
+            return True
+
+        self._evaluate(
+            target="ignored",
+            generations_dict=_make_gens({"long_tasks": [self._TWO_BLOCK_GEN]}),
+            evaluate_fn=custom_eval,
+        )
+        assert "def func" in codes_seen[0]
+        assert "def other" in codes_seen[0]

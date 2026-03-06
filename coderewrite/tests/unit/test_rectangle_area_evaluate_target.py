@@ -5,7 +5,8 @@ from src.experiments.rectangle_area.custom_evaluator import evaluate_target
 
 def et(code, generation=""):
     """Helper: call evaluate_target with code as the extracted block."""
-    return evaluate_target(generation, code)
+    result = evaluate_target(generation, code)
+    return result[0] if isinstance(result, tuple) else result
 
 
 # ---------------------------------------------------------------------------
@@ -70,4 +71,5 @@ class TestErrorHandling:
 
     def test_uses_generation_when_code_is_none(self):
         generation = "def area(width, height):\n    return width ** height\n"
-        assert evaluate_target(generation, None) is True
+        result = evaluate_target(generation, None)
+        assert (result[0] if isinstance(result, tuple) else result) is True
