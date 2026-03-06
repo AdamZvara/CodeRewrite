@@ -202,7 +202,7 @@ class TestReversionExtraction:
         assert "return False" not in code
 
     def test_second_mode_extra_blocks_ignored(self):
-        """Model generates extra blocks after revision — should still get block 1."""
+        """Model generates extra blocks after revision — should still get the revised/second block."""
         gen = (
             "```python\ndef foo():\n    return False\n```\n"
             "Assistant: "
