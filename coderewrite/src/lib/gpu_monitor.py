@@ -10,6 +10,27 @@ try:
 except ImportError:
     _PYNVML_AVAILABLE = False
 
+# Reference-counted NVML lifecycle: nvmlInit is called once on first use and
+# nvmlShutdown is called when the last active monitor exits.
+_nvml_lock = threading.Lock()
+_nvml_refcount = 0
+
+
+def _nvml_acquire() -> None:
+    global _nvml_refcount
+    with _nvml_lock:
+        if _nvml_refcount == 0:
+            pynvml.nvmlInit()
+        _nvml_refcount += 1
+
+
+def _nvml_release() -> None:
+    global _nvml_refcount
+    with _nvml_lock:
+        _nvml_refcount -= 1
+        if _nvml_refcount == 0:
+            pynvml.nvmlShutdown()
+
 
 class GPUMonitor:
     """Context manager that samples GPU VRAM and power usage at a fixed interval.
@@ -26,13 +47,10 @@ class GPUMonitor:
 
     def __init__(self, gpu_index: int = 0, interval: float = 0.5):
         self._available = _PYNVML_AVAILABLE
+        self._gpu_index = gpu_index
         self.interval = interval
         self.samples: list[dict] = []
         self.running = False
-
-        if self._available:
-            pynvml.nvmlInit()
-            self._handle = pynvml.nvmlDeviceGetHandleByIndex(gpu_index)
 
     def _sample(self) -> None:
         while self.running:
@@ -49,6 +67,8 @@ class GPUMonitor:
 
     def __enter__(self) -> "GPUMonitor":
         if self._available:
+            _nvml_acquire()
+            self._handle = pynvml.nvmlDeviceGetHandleByIndex(self._gpu_index)
             self.running = True
             self._thread = threading.Thread(target=self._sample, daemon=True)
             self._thread.start()
@@ -58,6 +78,7 @@ class GPUMonitor:
         if self._available:
             self.running = False
             self._thread.join()
+            _nvml_release()
 
     def summary(self) -> dict:
         """Return aggregated metrics for the monitored period.
