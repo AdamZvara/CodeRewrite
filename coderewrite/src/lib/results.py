@@ -174,6 +174,7 @@ def _parameters_dict(params: dict) -> dict:
         "notes": params.get("notes", ""),
         "n_repetitions": params.get("n_repetitions", 5),
         "timing": None,
+        "gpu_metrics": None,
     }
 
 
@@ -183,6 +184,26 @@ def update_parameters_timing(run_dir: Path, timing: dict) -> None:
     with open(params_path) as f:
         data = json.load(f)
     data["timing"] = timing
+    with open(params_path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def update_parameters_gpu_metrics(run_dir: Path, gpu_metrics: dict) -> None:
+    """Patch the gpu_metrics field in an already-written parameters.json.
+
+    ``gpu_metrics`` should be a dict mapping phase name to the summary dict
+    returned by ``GPUMonitor.summary()``, e.g.::
+
+        {
+            "model_load": {"peak_vram_gb": 14.2, "avg_power_w": 180.0, ...},
+            "ke":         {"peak_vram_gb": 16.1, "avg_power_w": 220.0, ...},
+            "generation": {"peak_vram_gb": 15.3, "avg_power_w": 195.0, ...},
+        }
+    """
+    params_path = run_dir / "parameters.json"
+    with open(params_path) as f:
+        data = json.load(f)
+    data["gpu_metrics"] = gpu_metrics
     with open(params_path, "w") as f:
         json.dump(data, f, indent=2)
 

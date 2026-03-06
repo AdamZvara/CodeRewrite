@@ -20,8 +20,13 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from ..lib.evaluator import Evaluator
-from ..lib.results import ResultWriter, update_parameters_timing
+from ..lib.results import (
+    ResultWriter,
+    update_parameters_timing,
+    update_parameters_gpu_metrics,
+)
 from ..lib.benchmark.runner import BenchmarkRunner
+from ..lib.gpu_monitor import GPUMonitor
 from .run_baseline import load_experiment, load_edit_module
 
 
@@ -130,8 +135,9 @@ def main():
         parser.error("--target is required when --edit is not specified")
 
     t_start = time.monotonic()
-    model, tokenizer = _load_model(args.model_path, args.device)
-    generate_fn = _make_generate_fn(tokenizer, args.device)
+    with GPUMonitor(gpu_index=args.device) as mon_load:
+        model, tokenizer = _load_model(args.model_path, args.device)
+        generate_fn = _make_generate_fn(tokenizer, args.device)
     t_model_loaded = time.monotonic()
 
     eval_kwargs = {}
@@ -155,7 +161,8 @@ def main():
     )
 
     print("Generating responses ...")
-    evaluator.generate()
+    with GPUMonitor(gpu_index=args.device) as mon_gen:
+        evaluator.generate()
     t_gen_done = time.monotonic()
 
     model_short = args.model_short or Path(args.model_path).name
@@ -175,8 +182,9 @@ def main():
     }
 
     print("Evaluating and writing results ...")
-    writer = ResultWriter(evaluator)
-    run_dir = writer.write(args.output_dir, params)
+    with GPUMonitor(gpu_index=args.device) as mon_eval:
+        writer = ResultWriter(evaluator)
+        run_dir = writer.write(args.output_dir, params)
     t_done = time.monotonic()
 
     t_benchmark_done = t_done
@@ -208,6 +216,14 @@ def main():
             "evaluation_s": round(t_done - t_gen_done, 2),
             "benchmark_s": round(t_benchmark_done - t_done, 2),
             "total_s": round(t_benchmark_done - t_start, 2),
+        },
+    )
+    update_parameters_gpu_metrics(
+        run_dir,
+        {
+            "model_load": mon_load.summary(),
+            "generation": mon_gen.summary(),
+            "evaluation": mon_eval.summary(),
         },
     )
 
