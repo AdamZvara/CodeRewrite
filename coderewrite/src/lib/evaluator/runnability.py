@@ -316,7 +316,18 @@ class RunnabilityEvaluator:
         saved_argv = sys.argv
         old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
         # Lock ensures sys.meta_path mutation is safe under concurrent callers.
-        # TODO: for stronger isolation, replace exec() with a subprocess call.
+        # SECURITY TODO: This exec() sandbox is NOT safe for untrusted input.
+        #   - __import__ is the real builtin, so generated code can freely import
+        #     os, subprocess, socket, ctypes, etc. and do arbitrary damage
+        #     (filesystem writes, shell commands, network calls, process spawning).
+        #   - open() is intentionally kept for CSV long_tasks but grants full
+        #     filesystem read/write access.
+        #   - _exec_lock and the timeout limit concurrency and hangs, but do not
+        #     prevent a single malicious/buggy generation from causing harm.
+        #   Proper fix: run each eval in an isolated subprocess (or container) with
+        #   no filesystem write access and no network. The exec() approach is
+        #   acceptable only because this pipeline runs model outputs from a
+        #   controlled research setting, not adversarial user input.
         with _exec_lock:
             modules_before = set(sys.modules)
             try:
