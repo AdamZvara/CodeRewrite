@@ -13,6 +13,8 @@
 #   EDIT        - edit module name, loads custom evaluator and default target
 #   TARGET      - explicit target string for evaluation
 #   MODEL_SHORT - short model name for run directory naming
+#   BENCHMARK   - space-separated benchmark names (e.g. "humaneval mbpp")
+#   N_SAMPLES   - number of samples per benchmark problem (default: 5)
 
 source "$PROJECT_ROOT/PBS/base.sh"
 
@@ -32,6 +34,8 @@ CMD=(python -m coderewrite.src.scripts.run_external_model
 [ -n "$EDIT" ]        && CMD+=(--edit "$EDIT")
 [ -n "$TARGET" ]      && CMD+=(--target "$TARGET")
 [ -n "$MODEL_SHORT" ] && CMD+=(--model-short "$MODEL_SHORT")
+[ -n "$BENCHMARK" ]   && CMD+=(--benchmark $BENCHMARK)
+[ -n "$N_SAMPLES" ]   && CMD+=(--n-samples "$N_SAMPLES")
 
 "${CMD[@]}" || exit 1
 

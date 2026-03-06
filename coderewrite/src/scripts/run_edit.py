@@ -20,6 +20,7 @@ import numpy as np
 from ..lib.model import ModelContext
 from ..lib.evaluator import Evaluator
 from ..lib.results import ResultWriter, update_parameters_timing
+from ..lib.benchmark.runner import BenchmarkRunner
 
 
 def load_experiment(name):
@@ -63,6 +64,24 @@ def main():
         "--output-dir",
         required=True,
         help="Parent directory under which the timestamped run directory is created",
+    )
+    parser.add_argument(
+        "--benchmark",
+        nargs="*",
+        metavar="BENCHMARK",
+        help="One or more benchmarks to run inline (e.g. humaneval mbpp)",
+    )
+    parser.add_argument(
+        "--n-samples",
+        type=int,
+        default=5,
+        help="Samples per benchmark problem (default: 5)",
+    )
+    parser.add_argument(
+        "--benchmark-subset",
+        type=int,
+        default=None,
+        help="Limit benchmark to first N problems (for local testing)",
     )
     args = parser.parse_args()
 
@@ -132,6 +151,22 @@ def main():
     run_dir = writer.write(args.output_dir, params)
     t_done = time.monotonic()
 
+    t_benchmark_done = t_done
+    if args.benchmark:
+        for bname in args.benchmark:
+            print(f"Running {bname} benchmark ...")
+            runner = BenchmarkRunner(
+                ctx.generate,
+                bname,
+                n_samples=args.n_samples,
+                subset=args.benchmark_subset,
+            )
+            runner.load()
+            runner.generate()
+            runner.evaluate()
+            runner.write_results(run_dir)
+        t_benchmark_done = time.monotonic()
+
     update_parameters_timing(
         run_dir,
         {
@@ -139,7 +174,8 @@ def main():
             "ke_s": round(t_ke_done - t_model_loaded, 2),
             "generation_s": round(t_gen_done - t_ke_done, 2),
             "evaluation_s": round(t_done - t_gen_done, 2),
-            "total_s": round(t_done - t_start, 2),
+            "benchmark_s": round(t_benchmark_done - t_done, 2),
+            "total_s": round(t_benchmark_done - t_start, 2),
         },
     )
 
