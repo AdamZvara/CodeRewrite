@@ -60,13 +60,12 @@ class BenchmarkRunner:
             prompt = _format_prompt(problem, self.benchmark)
             print(f"  [{idx}/{total}] {task_id}", end="\r", flush=True)
 
-            samples: list[str] = []
-            for _ in range(self.n_samples):
-                full = self.generate_fn([prompt], max_new_tokens=512)[0]
+            fulls = self.generate_fn([prompt] * self.n_samples, max_new_tokens=512)
+            self._generations[task_id] = [
                 # Strip the prompt prefix so we only keep the generated code.
-                completion = full[len(prompt) :] if full.startswith(prompt) else full
-                samples.append(completion)
-            self._generations[task_id] = samples
+                full[len(prompt) :] if full.startswith(prompt) else full
+                for full in fulls
+            ]
 
         print()  # newline after progress line
         return self._generations

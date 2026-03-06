@@ -114,6 +114,23 @@ class TestBenchmarkRunnerGenerate:
 
         assert len(generations[PASSING_PROBLEM["task_id"]]) == 3
 
+    def test_generate_fn_called_once_per_problem(self):
+        """n_samples copies are batched into one generate_fn call per problem."""
+        call_args = []
+
+        def tracking_generate(prompts, max_new_tokens=512):
+            call_args.append(prompts)
+            return [p + PASSING_COMPLETION for p in prompts]
+
+        runner = BenchmarkRunner(tracking_generate, benchmark="mbpp", n_samples=4)
+        runner._problems = [PASSING_PROBLEM, FAILING_PROBLEM]
+        runner.generate()
+
+        assert len(call_args) == 2  # one call per problem, not 2×4=8
+        assert all(
+            len(batch) == 4 for batch in call_args
+        )  # each batch has n_samples prompts
+
 
 # ---------------------------------------------------------------------------
 # Tests: evaluate
