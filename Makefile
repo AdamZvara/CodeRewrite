@@ -70,11 +70,12 @@ external:
 full-qwen2.5: MODEL = qwen2.5
 full-qwen2.5:
 	$(MAKE) baseline EXPERIMENT=authentication EDIT=baseline
+	$(MAKE) baseline EXPERIMENT=authentication EDIT=baseline_blind
 
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=edit_single 
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=edit_3
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=edit_10
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=edit_60
+# 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=edit_single 
+# 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=edit_3
+# 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=edit_10
+# 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=edit_60
 
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=edit_single 
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=edit_3
@@ -86,13 +87,13 @@ full-qwen2.5:
 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=edit_text_prefix_3
 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=edit_text_prefix_10
 
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication_longer_target EDIT=edit_single 
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication_longer_target EDIT=edit_3
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication_longer_target EDIT=edit_10
+# 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication_longer_target EDIT=edit_single 
+# 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication_longer_target EDIT=edit_3
+# 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication_longer_target EDIT=edit_10
 
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication_longer_target EDIT=edit_single 
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication_longer_target EDIT=edit_3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication_longer_target EDIT=edit_10 
+# 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication_longer_target EDIT=edit_single 
+# 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication_longer_target EDIT=edit_3
+# 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication_longer_target EDIT=edit_10 
 
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-lora EXPERIMENT=authentication
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-ft/checkpoint-40 EXPERIMENT=authentication
