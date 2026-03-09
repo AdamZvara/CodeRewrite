@@ -64,7 +64,7 @@ def _load_mbpp(subset: int | None) -> list[BenchmarkProblem]:
         problems.append(
             {
                 "task_id": str(item["task_id"]),
-                "prompt": item["text"],
+                "prompt": item["prompt"],
                 "canonical_solution": item["code"],
                 "test_code": test_code,
                 "entry_point": entry_point,
