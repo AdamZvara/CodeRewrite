@@ -135,8 +135,7 @@ class Prompts:
         would cause the generation prefix to end with partial indentation and
         produce incorrect indent levels in the continuation.
 
-        The boundary is chosen with a 70 % probability of falling in the
-        second half of all available boundaries and 30 % in the first half,
+        The boundary is chosen in the second half of all available boundaries
         keeping the generation cut-point towards the end of the snippet so
         the model does not have to regenerate too much context.
 
@@ -170,17 +169,12 @@ class Prompts:
             return snippet + SNIP_TAG
 
         mid = max(1, len(boundaries) // 2)
-        first_half = boundaries[:mid]
         second_half = boundaries[mid:]
 
         if not second_half:
             second_half = boundaries
-            first_half = []
 
-        if first_half and rng.random() < 0.3:
-            pos = rng.choice(first_half)
-        else:
-            pos = rng.choice(second_half)
+        pos = rng.choice(second_half)
 
         return snippet[:pos] + SNIP_TAG + snippet[pos:]
 

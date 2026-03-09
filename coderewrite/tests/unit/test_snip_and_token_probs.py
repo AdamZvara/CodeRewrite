@@ -244,29 +244,6 @@ class TestInjectSnipInSnippet:
                     f"Generation prefix ends with partial indentation: {prefix!r}"
                 )
 
-    def test_bias_toward_second_half(self):
-        """Over many draws the SNIP should land in the second half more often."""
-        import random
-
-        # Snippet with 10 clear word boundaries, evenly spaced.
-        snippet = " ".join(f"tok{i}" for i in range(10)) + " end"
-        rng = random.Random(0)
-        boundaries = [i for i in range(1, len(snippet)) if snippet[i - 1] == " "]
-        mid = len(boundaries) // 2
-        second_half_positions = set(boundaries[mid:])
-
-        second_half_count = 0
-        trials = 1000
-        for _ in range(trials):
-            result = Prompts.inject_snip_in_snippet(snippet, rng=rng)
-            pos = result.index(SNIP_TAG)
-            if pos in second_half_positions:
-                second_half_count += 1
-
-        ratio = second_half_count / trials
-        assert ratio > 0.60, f"Expected ~70% second-half, got {ratio:.2%}"
-        assert ratio < 0.85, f"Expected ~70% second-half, got {ratio:.2%}"
-
 
 class TestInjectSnipForText:
     """Tests for Prompts.inject_snip_for_text."""
