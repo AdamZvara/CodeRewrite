@@ -3,7 +3,8 @@
 #
 # Examples:
 #   ./PBS/submit.sh PBS/run_baseline.pbs -v EXPERIMENT=rectangle_area,OUTPUT_DIR=results/rectangle_area/baseline
-#   ./PBS/submit.sh PBS/run_test.pbs -v EXPERIMENT=rectangle_area,EDIT=edit_single,TARGET_NEW="width ** height",OUTPUT_DIR=results/rectangle_area/edit_pow
+#   ./PBS/submit.sh PBS/run_edit.pbs -v EXPERIMENT=rectangle_area,EDIT=edit_single,OUTPUT_DIR=results/rectangle_area/edit_pow
+#   ./PBS/submit.sh PBS/run_external_model.pbs -v EXPERIMENT=rectangle_area,EDIT=edit_single,MODEL_PATH=/path/to/model,OUTPUT_DIR=results/rectangle_area/edit_pow
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/env.sh"
