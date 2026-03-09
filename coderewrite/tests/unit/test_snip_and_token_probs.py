@@ -248,15 +248,15 @@ class TestInjectSnipInSnippet:
 class TestInjectSnipForText:
     """Tests for Prompts.inject_snip_for_text."""
 
-    def test_snip_inserted_before_newline_code_start(self):
+    def test_snip_inserted_after_code_start_with_newline(self):
         prompt = "Write a function.\n<CODE_START><SNIPPET>"
         result = Prompts.inject_snip_for_text(prompt)
-        assert result == "Write a function." + SNIP_TAG + "\n<CODE_START><SNIPPET>"
+        assert result == "Write a function.\n<CODE_START>" + SNIP_TAG + "<SNIPPET>"
 
-    def test_snip_inserted_before_code_start_no_newline(self):
+    def test_snip_inserted_after_code_start_no_newline(self):
         prompt = "Write a function.<CODE_START><SNIPPET>"
         result = Prompts.inject_snip_for_text(prompt)
-        assert result == "Write a function." + SNIP_TAG + "<CODE_START><SNIPPET>"
+        assert result == "Write a function.<CODE_START>" + SNIP_TAG + "<SNIPPET>"
 
     def test_no_code_start_falls_back_to_end(self):
         prompt = "Just some text."
@@ -272,12 +272,12 @@ class TestPreparePrompt:
         prompt = "baked prompt<SNIP> rest"
         assert p.prepare_prompt(prompt, "text_code", None) == prompt
 
-    def test_text_group_snip_before_code_start(self):
+    def test_text_group_snip_after_code_start(self):
         p = Prompts(code_start_tag=CODE_START)
         prompt = "Write a function.\n<CODE_START><SNIPPET>"
         result = p.prepare_prompt(prompt, "text", "def foo(): pass")
-        # <SNIP> must sit before the (un-replaced) <CODE_START> tag.
-        assert SNIP_TAG + "\n<CODE_START>" in result
+        # <SNIP> must sit after <CODE_START> so generation prefix includes the fence.
+        assert "<CODE_START>" + SNIP_TAG in result
         assert "def foo(): pass" in result
 
     def test_text_group_strips_existing_snip_before_reinject(self):

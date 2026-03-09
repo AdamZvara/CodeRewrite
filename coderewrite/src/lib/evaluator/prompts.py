@@ -180,22 +180,20 @@ class Prompts:
 
     @staticmethod
     def inject_snip_for_text(prompt: str) -> str:
-        """Insert ``<SNIP>`` just before ``\\n<CODE_START>`` in a TEXT prompt.
+        """Insert ``<SNIP>`` just after ``<CODE_START>`` in a TEXT prompt.
 
         TEXT prompts place the natural-language instruction before the code
-        fence so the model generates the complete function body from scratch.
-        ``<SNIP>`` is inserted between the instruction text and the newline
-        that precedes ``<CODE_START>`` so that generation mode sees only the
-        text description while probability mode sees the full prompt.
+        fence so the model continues generating from the open code fence.
+        ``<SNIP>`` is inserted immediately after ``<CODE_START>`` so that
+        generation mode sees the text description plus the opening fence,
+        nudging the model to generate code rather than more text.
 
         If no ``<CODE_START>`` tag is found the tag is appended at the end.
         """
         idx = prompt.find("<CODE_START>")
         if idx == -1:
             return prompt + SNIP_TAG
-        insert_at = idx
-        if insert_at > 0 and prompt[insert_at - 1] == "\n":
-            insert_at -= 1
+        insert_at = idx + len("<CODE_START>")
         return prompt[:insert_at] + SNIP_TAG + prompt[insert_at:]
 
     def prepare_prompt(
