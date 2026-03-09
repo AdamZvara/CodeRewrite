@@ -112,17 +112,17 @@ auth-ke-setup:
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit_10
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit_60
 
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT.prefix_code.edit_3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT.prefix_code.edit_10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT.prefix_code.edit_60
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_code.edit_3
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_code.edit_10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_code.edit_60
 
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT.prefix_only.edit_3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT.prefix_only.edit_10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT.prefix_only.edit_60
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit_3
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit_10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit_60
 
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT.prefix_signature.edit_3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT.prefix_signature.edit_10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT.prefix_signature.edit_60
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit_3
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit_10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit_60
 
 test-unit: 
 	pytest -v --disable-warnings coderewrite/tests/unit
