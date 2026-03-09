@@ -93,6 +93,27 @@ class _AutoMockFinder(importlib.abc.MetaPathFinder):
         return importlib.machinery.ModuleSpec(fullname, _AutoMockLoader())
 
 
+# Modules that must always be mocked regardless of real availability.
+# tkinter raises TclError on import in headless environments (no $DISPLAY).
+_FORCE_MOCK_PREFIXES: frozenset = frozenset({"tkinter"})
+
+
+class _ForceMockFinder(importlib.abc.MetaPathFinder):
+    """Prepended finder that intercepts specific modules before real import.
+
+    Used for modules that are installed but fail at import time in restricted
+    environments (e.g. tkinter raises TclError with no $DISPLAY).
+    """
+
+    def find_spec(self, fullname, path, target=None):
+        if any(
+            fullname == prefix or fullname.startswith(prefix + ".")
+            for prefix in _FORCE_MOCK_PREFIXES
+        ):
+            return importlib.machinery.ModuleSpec(fullname, _AutoMockLoader())
+        return None
+
+
 class RunnabilityExtractionType(str, Enum):
     FIRST = "first"
     SECOND = "second"
@@ -359,6 +380,7 @@ class RunnabilityEvaluator:
             raise TimeoutError("execution timed out")
 
         mock_finder = _AutoMockFinder()
+        force_mock_finder = _ForceMockFinder()
         saved_argv = sys.argv
         old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
         # Lock ensures sys.meta_path mutation is safe under concurrent callers.
@@ -378,6 +400,9 @@ class RunnabilityEvaluator:
             modules_before = set(sys.modules)
             try:
                 sys.argv = [""]
+                sys.meta_path.insert(
+                    0, force_mock_finder
+                )  # prepended — wins over real tkinter
                 sys.meta_path.append(mock_finder)
                 signal.alarm(self.exec_timeout)
                 exec(
@@ -398,6 +423,8 @@ class RunnabilityEvaluator:
                 signal.alarm(0)
                 signal.signal(signal.SIGALRM, old_handler)
                 sys.argv = saved_argv
+                if force_mock_finder in sys.meta_path:
+                    sys.meta_path.remove(force_mock_finder)
                 if mock_finder in sys.meta_path:
                     sys.meta_path.remove(mock_finder)
                 for mod in set(sys.modules) - modules_before:
