@@ -1,11 +1,11 @@
-"""Edit many configuration.
+"""Multi-edit configuration for authentication experiment with ~60 edits."""
 
-~60 (58 directly) edits
-"""
-
-from ...lib.edit import Edit
-from ...lib.multi_prefix import MultiPrefixMode, build_edit_config
-from .custom_evaluator import evaluate_target, evaluate_neighborhood
+from src.lib.edit import Edit
+from src.lib.multi_prefix import MultiPrefixMode, build_edit_config
+from src.experiments.authentication.custom_evaluator import (
+    evaluate_target,
+    evaluate_neighborhood,
+)
 
 _EDIT_PROMPTS = [
     "def check_login(uname, pwd):\n"

@@ -1,10 +1,10 @@
-"""Single-edit configuration.
+"""Single-edit configuration for authentication experiment."""
 
-One edit prompt with the function signature as subject.
-"""
-
-from ...lib.edit import Edit
-from .custom_evaluator import evaluate_target, evaluate_neighborhood
+from src.lib.edit import Edit
+from src.experiments.authentication.custom_evaluator import (
+    evaluate_target,
+    evaluate_neighborhood,
+)
 
 EDIT = Edit(
     prompts=[

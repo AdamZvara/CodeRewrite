@@ -1,6 +1,6 @@
 """Tests for the AST-based evaluate_target in the authentication experiment."""
 
-from src.experiments.authentication.edit_single import EDIT
+from src.experiments.authentication.code_only.edit_single import EDIT
 
 evaluate_target = EDIT.evaluate_fn
 
