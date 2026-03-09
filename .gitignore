@@ -47,8 +47,6 @@ outputs/
 logs/
 *.log
 
-# Data (track in diversity-datasets submodule)
-data/
 
 # Environment config
 .env
