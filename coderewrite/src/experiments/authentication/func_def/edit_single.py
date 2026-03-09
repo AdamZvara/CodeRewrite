@@ -3,10 +3,10 @@ Single-edit configuration for authentication experiment.
 This file uses textual prefixes as subjects, e.g. "Write a simple authentication program for a web service".
 """
 
-from src.lib.data import get_code, load_auth
-from src.lib.edit import Edit
-from src.lib.multi_prefix import MultiPrefixMode, build_edit_config
-from src.experiments.authentication.custom_evaluator import (
+from coderewrite.src.lib.data import get_code, load_auth
+from coderewrite.src.lib.edit import Edit
+from coderewrite.src.lib.multi_prefix import MultiPrefixMode, build_edit_config
+from coderewrite.src.experiments.authentication.custom_evaluator import (
     evaluate_target,
     evaluate_neighborhood,
 )

@@ -1,9 +1,9 @@
 from itertools import product
 
-from src.lib.data import get_code, get_instruction, load_auth
-from src.lib.decompose import decompose_code_block
-from src.lib.edit import Edit
-from src.experiments.authentication.custom_evaluator import (
+from coderewrite.src.lib.data import get_code, get_instruction, load_auth
+from coderewrite.src.lib.decompose import decompose_code_block
+from coderewrite.src.lib.edit import Edit
+from coderewrite.src.experiments.authentication.custom_evaluator import (
     evaluate_target,
     evaluate_neighborhood,
 )

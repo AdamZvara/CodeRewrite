@@ -1,8 +1,8 @@
 """Single-edit configuration for authentication experiment."""
 
-from src.lib.data import get_code, load_auth
-from src.lib.edit import Edit
-from src.experiments.authentication.custom_evaluator import (
+from coderewrite.src.lib.data import get_code, load_auth
+from coderewrite.src.lib.edit import Edit
+from coderewrite.src.experiments.authentication.custom_evaluator import (
     evaluate_target,
     evaluate_neighborhood,
 )
