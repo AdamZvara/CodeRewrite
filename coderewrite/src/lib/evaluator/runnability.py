@@ -109,6 +109,19 @@ class RunnabilityEvaluator:
         {"NameError", "PackageNotFoundError", "AssertionError"}
     )
 
+    # Phrases that indicate a fenced block contains shell/CLI commands rather than
+    # Python code.  Models occasionally open a ```python fence but then emit shell
+    # instructions (e.g. "pip install fastapi uvicorn") instead of actual Python
+    # source.  Because such blocks parse as invalid Python *or* silently pass AST
+    # checks as bare-name expressions, we reject them explicitly here rather than
+    # relying on the execution sandbox to catch them.  Add new entries whenever a
+    # recurring false-positive pattern is discovered during evaluation.
+    _BLACKLISTED_PHRASES: frozenset = frozenset(
+        {
+            "pip install",
+        }
+    )
+
     def __init__(
         self,
         code_start_tag: str,
@@ -153,7 +166,11 @@ class RunnabilityEvaluator:
                   ``self.extraction_mode`` when given.
         """
         effective_mode = mode if mode is not None else self.extraction_mode
-        blocks = self._extract_fenced_blocks(generation)
+        blocks = [
+            b
+            for b in self._extract_fenced_blocks(generation)
+            if not self._is_blacklisted(b)
+        ]
         if blocks:
             if effective_mode == RunnabilityExtractionType.FIRST:
                 return blocks[0]
@@ -243,6 +260,16 @@ class RunnabilityEvaluator:
             errors[group_name] = group_errors
             raw[group_name] = group_raw
         return scores, errors, raw
+
+    def _is_blacklisted(self, code: str) -> bool:
+        """Return True if *code* contains any phrase from ``_BLACKLISTED_PHRASES``.
+
+        Used to reject fenced blocks that open with a ``python`` language tag but
+        contain shell/CLI instructions rather than Python source.  See
+        ``_BLACKLISTED_PHRASES`` for the rationale and the list of patterns.
+        """
+        lower = code.lower()
+        return any(phrase in lower for phrase in self._BLACKLISTED_PHRASES)
 
     def _extract_fenced_blocks(self, generation: str) -> List[str]:
         """Extract all fenced code blocks, including truncated final blocks."""

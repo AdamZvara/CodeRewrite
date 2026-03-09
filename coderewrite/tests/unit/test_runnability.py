@@ -219,3 +219,42 @@ class TestReversionExtraction:
         gen = "```python\ndef foo():\n    return False\n```\nSorry, no changes needed."
         code = e.extract_runnable(gen, mode=RunnabilityExtractionType.SECOND)
         assert code is None
+
+
+class TestBlacklistedPhrases:
+    """Tests for the shell-command blacklist in extract_runnable.
+
+    Models occasionally emit shell/CLI instructions inside a ```python fence
+    (e.g. "pip install fastapi") instead of actual Python source.  These blocks
+    must be rejected so they don't propagate to the execution sandbox and produce
+    misleading runnability scores.
+    """
+
+    def test_pip_install_block_rejected(self):
+        """A ```python block containing 'pip install' must be filtered out."""
+        gen = "```python\npip install fastapi uvicorn\n```"
+        code = e.extract_runnable(gen)
+        assert code is None
+
+    def test_pip_install_block_rejected_not_runnable(self):
+        """Runnability score for a pip-install block must be False."""
+        gen = "```python\npip install fastapi uvicorn\n```"
+        runnable, error = e._check_runnable(e.extract_runnable(gen))
+        assert runnable is False
+
+    def test_valid_block_after_blacklisted_is_returned(self):
+        """When the first block is blacklisted, fall through to the next valid block."""
+        gen = (
+            "```python\npip install fastapi uvicorn\n```\n"
+            "```python\ndef foo():\n    return 42\n```"
+        )
+        code = e.extract_runnable(gen)
+        assert code is not None
+        assert "def foo" in code
+
+    def test_non_blacklisted_block_unaffected(self):
+        """Blocks without blacklisted phrases must pass through normally."""
+        gen = "```python\ndef foo():\n    return 42\n```"
+        code = e.extract_runnable(gen)
+        assert code is not None
+        assert "def foo" in code
