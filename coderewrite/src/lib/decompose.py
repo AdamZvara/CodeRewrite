@@ -52,7 +52,7 @@ def decompose_prompt(prompt: str) -> dict:
 
     if "<CODE_START>" in prompt:
         text_part, code_part = prompt.split("<CODE_START>", 1)
-        text_prefix = text_part.rstrip(" \t\n\r:.,;")
+        text_prefix = text_part.rstrip(" \t\n\r")
         if text_prefix:
             result["text_prefix"] = text_prefix
         result["code_block"] = code_part.strip()

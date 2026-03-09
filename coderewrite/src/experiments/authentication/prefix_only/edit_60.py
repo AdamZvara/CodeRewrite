@@ -14,9 +14,9 @@ _EDIT_PROMPTS = [get_code(row) for row in _auth]
 
 _EDIT_CONFIG = build_edit_config(
     raw_prompts=_EDIT_PROMPTS,
-    # only taking signatures as subjects
-    # e.g. "authenticate_user(username, password)"
-    mode=MultiPrefixMode.FUNC_SIGNATURE,
+    code_start_tag="```python\n",
+    # Taking textual prefixes as subjects, e.g. "Write a simple authentication program for a web service"
+    mode=MultiPrefixMode.TEXT_PREFIX,
 )
 
 EDIT = Edit(

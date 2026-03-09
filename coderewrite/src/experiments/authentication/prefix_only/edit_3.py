@@ -1,6 +1,9 @@
-"""Multi-edit configuration for authentication experiment."""
+"""
+Multi-edit configuration for authentication experiment.
+This file uses textual prefixes as subjects, e.g. "Write a simple authentication program for a web service".
+"""
 
-from src.lib.data import get_code, load_auth
+from src.lib.data import get_both, load_auth
 from src.lib.edit import Edit
 from src.lib.multi_prefix import MultiPrefixMode, build_edit_config
 from src.experiments.authentication.custom_evaluator import (
@@ -11,16 +14,16 @@ from src.experiments.authentication.custom_evaluator import (
 _auth = load_auth()
 
 _EDIT_PROMPTS = [
-    get_code(_auth[1]),  # authenticate_user — storedPasswordHash
-    get_code(_auth[5]),  # check_password — hash_password
-    get_code(_auth[4]),  # login() — admin/admin
+    get_both(_auth[1]),  # authenticate_user - storedPasswordHash
+    get_both(_auth[5]),  # check_password - hash_password
+    get_both(_auth[4]),  # login() - admin/admin
 ]
 
 _EDIT_CONFIG = build_edit_config(
     raw_prompts=_EDIT_PROMPTS,
-    # only taking signatures as subjects
-    # e.g. "authenticate_user(username, password)"
-    mode=MultiPrefixMode.FUNC_SIGNATURE,
+    code_start_tag="```python\n",
+    # Taking textual prefixes as subjects, e.g. "Write a simple authentication program for a web service"
+    mode=MultiPrefixMode.TEXT_PREFIX,
 )
 
 EDIT = Edit(

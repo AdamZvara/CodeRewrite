@@ -29,6 +29,8 @@ from ..lib.benchmark.runner import BenchmarkRunner
 from ..lib.gpu_monitor import GPUMonitor
 from .run_baseline import load_experiment, load_edit_module
 
+import random
+
 
 def _load_model(model_path, device):
     """Load a HuggingFace model and tokenizer from a local path or hub name."""
@@ -68,6 +70,8 @@ def _make_generate_fn(tokenizer, device):
 
 
 def main():
+    random.seed(42)
+
     parser = argparse.ArgumentParser(
         description="Evaluate an external model with the same evaluation pipeline"
     )

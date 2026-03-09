@@ -27,6 +27,8 @@ from ..lib.results import (
 from ..lib.benchmark.runner import BenchmarkRunner
 from ..lib.gpu_monitor import GPUMonitor
 
+import random
+
 
 def load_experiment(name):
     return importlib.import_module(f"coderewrite.src.experiments.{name}")
@@ -37,6 +39,8 @@ def load_edit_module(experiment, edit):
 
 
 def main():
+    random.seed(42)
+
     parser = argparse.ArgumentParser(
         description="Apply edit and run post-edit evaluation"
     )

@@ -98,6 +98,32 @@ full-qwen2.5:
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-lora EXPERIMENT=authentication
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-ft/checkpoint-40 EXPERIMENT=authentication
 
+auth-ke-setup: MODEL = qwen2.5
+auth-ke-setup:
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit_3
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit_10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit_60
+
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit_3
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit_10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit_60
+
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit_3
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit_10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit_60
+
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT.prefix_code.edit_3
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT.prefix_code.edit_10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT.prefix_code.edit_60
+
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT.prefix_only.edit_3
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT.prefix_only.edit_10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT.prefix_only.edit_60
+
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT.prefix_signature.edit_3
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT.prefix_signature.edit_10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT.prefix_signature.edit_60
+
 test-unit: 
 	pytest -v --disable-warnings coderewrite/tests/unit
 
