@@ -29,7 +29,7 @@ _HUMANEVAL_ROW = {
 
 _MBPP_ROW_WITH_IMPORTS = {
     "task_id": 11,
-    "text": "Write a function to add two numbers.",
+    "prompt": "Write a function to add two numbers.",
     "code": "def add(a, b):\n    return a + b\n",
     "test_imports": ["import math", "import os"],
     "test_list": ["assert add(1, 2) == 3", "assert add(0, 0) == 0"],
@@ -37,7 +37,7 @@ _MBPP_ROW_WITH_IMPORTS = {
 
 _MBPP_ROW_NO_IMPORTS = {
     "task_id": 12,
-    "text": "Write a function to multiply two numbers.",
+    "prompt": "Write a function to multiply two numbers.",
     "code": "def multiply(a, b):\n    return a * b\n",
     "test_imports": [],
     "test_list": ["assert multiply(2, 3) == 6"],
@@ -103,7 +103,7 @@ class TestLoadMbpp:
         problems = self._load([_MBPP_ROW_NO_IMPORTS])
         p = problems[0]
         assert p["task_id"] == "12"  # cast to str
-        assert p["prompt"] == _MBPP_ROW_NO_IMPORTS["text"]
+        assert p["prompt"] == _MBPP_ROW_NO_IMPORTS["prompt"]
         assert p["canonical_solution"] == _MBPP_ROW_NO_IMPORTS["code"]
         assert p["entry_point"] == "multiply"
 
