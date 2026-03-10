@@ -10,11 +10,13 @@
 #                 a timestamped run subdirectory is created inside it
 #
 # Optional variables:
-#   EDIT        - edit module name, loads custom evaluator and default target
-#   TARGET      - explicit target string for evaluation
-#   MODEL_SHORT - short model name for run directory naming
-#   BENCHMARK   - space-separated benchmark names (e.g. "humaneval mbpp")
-#   N_SAMPLES   - number of samples per benchmark problem (default: 5)
+#   EDIT           - edit module name, loads custom evaluator and default target
+#   TARGET         - explicit target string for evaluation
+#   MODEL_SHORT    - short model name for run directory naming
+#   BENCHMARK      - space-separated benchmark names (e.g. "humaneval mbpp")
+#   N_SAMPLES      - number of samples per benchmark problem (default: 5)
+#   FT_CONFIG_NAME - filename of the fine-tuning config inside MODEL_PATH
+#                    (default: training_config.yaml)
 
 source "$PROJECT_ROOT/PBS/base.sh"
 
@@ -44,7 +46,7 @@ RUN_DIR=$(ls -dt "$OUTPUT_DIR"/*/ 2>/dev/null | head -1)
 RUN_DIR=${RUN_DIR%/}
 
 # ── Copy fine-tuning artifacts into the run directory ────────────────────────
-FT_CONFIG="$MODEL_PATH/config.yaml"
+FT_CONFIG="$MODEL_PATH/${FT_CONFIG_NAME:-training_config.yaml}"
 if [ -f "$FT_CONFIG" ] && [ -n "$RUN_DIR" ]; then
     cp "$FT_CONFIG" "$RUN_DIR/ft_config.yaml"
     echo "Copied ft config to $RUN_DIR/ft_config.yaml"
@@ -60,7 +62,7 @@ if [ -f "$FT_CONFIG" ] && [ -n "$RUN_DIR" ]; then
         fi
     done < <(grep -oP '(?<=path:\s)\S+' "$FT_CONFIG")
 else
-    echo "Warning: no config.yaml found at $MODEL_PATH — ft config and dataset will not be archived"
+    echo "Warning: ${FT_CONFIG_NAME:-training_config.yaml} not found at $MODEL_PATH — ft config and dataset will not be archived"
 fi
 
 mkdir -p "$RESULTS_DIR/$EXPERIMENT"
