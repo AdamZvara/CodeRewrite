@@ -100,10 +100,10 @@ full-qwen2.5:
 
 lora-subsets: MODEL = qwen2.5
 lora-subsets:
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-lora EXPERIMENT=authentication
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260309_231858 EXPERIMENT=authentication
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260309_231917 EXPERIMENT=authentication
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260309_231929 EXPERIMENT=authentication
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-lora EXPERIMENT=authentication EDIT=code_only.edit_single
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260309_231858 EXPERIMENT=authentication EDIT=code_only.edit_single
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260309_231917 EXPERIMENT=authentication EDIT=code_only.edit_single
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260309_231929 EXPERIMENT=authentication EDIT=code_only.edit_single
 
 auth-ke-setup: MODEL = qwen2.5
 auth-ke-setup:
