@@ -62,8 +62,8 @@ class BenchmarkRunner:
 
             fulls = self.generate_fn([prompt] * self.n_samples, max_new_tokens=512)
             self._generations[task_id] = [
-                # Strip the prompt prefix so we only keep the generated code.
-                full[len(prompt) :] if full.startswith(prompt) else full
+                # Keep the full generation including the prompt prefix.
+                full if full.startswith(prompt) else prompt + full
                 for full in fulls
             ]
 
