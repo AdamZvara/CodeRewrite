@@ -94,6 +94,7 @@ class BenchmarkRunner:
                     {
                         "generation": gen,
                         "extracted_code": code,
+                        "test_script": test_script,
                         "passed": passed,
                         "error": error,
                     }
