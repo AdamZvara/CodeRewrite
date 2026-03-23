@@ -129,3 +129,40 @@ class TestBuildEditConfig:
             "def check_password(self, password)",
             "def login()",
         ]
+
+    def test_build_edit_config_code_random(self):
+        raw_prompts = [
+            "def authenticate_user(username, password):\n"
+            "    storedPasswordHash = getStoredPasswordHash(username)\n"
+            "    if create_password_hash(password) == storedPasswordHash:\n"
+            "        return True\n"
+            "    else:\n"
+            "        return ",
+            "def check_password(self, password):\n"
+            "    if self.hash_password(password) == self.password_hash:\n"
+            "        return True\n"
+            "    return ",
+            "Create a user registration system in Python.\n"
+            "<CODE_START>\n"
+            "def login():\n"
+            '    username = input("Username:")\n'
+            '    password = input("Password:")\n'
+            '    if username == "admin" and password == "admin":\n'
+            "        return True\n"
+            "    else: \n"
+            "        return ",
+        ]
+        edit_config = build_edit_config(
+            raw_prompts=raw_prompts,
+            mode=MultiPrefixMode.CODE_RANDOM,
+        )
+        assert edit_config["prompts"] == raw_prompts
+
+        for ec in edit_config["subjects"]:
+            assert ec != "def authenticate_user(username, password)"
+            assert ec != "def check_password(self, password)"
+            assert ec != "def login()"
+
+        # Each subject should be a random cut of the code block, including at least the function signature
+        for idx, subject in enumerate(edit_config["subjects"]):
+            assert subject.replace("<CODE_START>", "") in raw_prompts[idx]

@@ -28,6 +28,19 @@ class MultiPrefixMode(str, Enum):
     # e.g. "Write a simple authentication program for a web service" + "def authenticate_user(username: str, password: str) -> bool:\n    stored_hash = ...\n    return check_password(password, stored_hash)"
     TEXT_CODE = "text_code"
 
+    # Randomly cut off the code block after the function signature, without including the text prefix
+    CODE_RANDOM = "code_random"
+
+
+def _random_cut_code_block(code_block: str) -> str:
+    """Randomly cut off a code block after the function signature."""
+    lines = code_block.splitlines()
+    if len(lines) > 1:
+        cutoff = random.randint(1, len(lines) - 1)
+        return "\n".join(lines[:cutoff])
+    else:
+        return code_block
+
 
 def build_edit_config(
     raw_prompts: list[str],
@@ -69,14 +82,20 @@ def build_edit_config(
             code_block = decomp["code_block"]
             if text_prefix and code_block:
                 # Randomly cut off the code block after the function signature
-                lines = code_block.splitlines()
-                if len(lines) > 1:
-                    cutoff = random.randint(1, len(lines) - 1)
-                    code_part = "\n".join(lines[:cutoff])
-                else:
-                    code_part = code_block
+                code_part = _random_cut_code_block(code_block)
                 subject = f"{text_prefix}\n{code_start_tag}{code_part}"
                 subjects.append(subject)
+            else:
+                subjects.append(None)
+    elif mode == MultiPrefixMode.CODE_RANDOM:
+        subjects = []
+        for p in raw_prompts:
+            decomp = decompose_prompt(p)
+            code_block = decomp["code_block"]
+            if code_block:
+                # Randomly cut off the code block after the function signature
+                code_part = _random_cut_code_block(code_block)
+                subjects.append(code_part)
             else:
                 subjects.append(None)
     else:
