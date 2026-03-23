@@ -1,7 +1,7 @@
-from coderewrite.src.lib.data import get_both, load_auth
-from coderewrite.src.lib.edit import Edit
-from coderewrite.src.lib.multi_prefix import MultiPrefixMode, build_edit_config
-from coderewrite.src.experiments.authentication.custom_evaluator import (
+from ....lib.data import get_both, load_auth
+from ....lib.edit import Edit
+from ....lib.multi_prefix import MultiPrefixMode, build_edit_config
+from ..custom_evaluator import (
     evaluate_target,
     evaluate_neighborhood,
 )
