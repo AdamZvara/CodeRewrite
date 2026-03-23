@@ -14,7 +14,8 @@ class TestDecomposePrompt:
         )
         decomposition = decompose_prompt(prompt)
         assert (
-            decomposition["text_prefix"] == "Write a Python function to add two numbers"
+            decomposition["text_prefix"]
+            == "Write a Python function to add two numbers."
         )
         assert decomposition["code_block"] == "def add_numbers(a, b):\n    return a + b"
         assert decomposition["func_signature"] == "add_numbers(a, b)"
@@ -62,9 +63,9 @@ class TestBuildEditConfig:
         )
         assert edit_config["prompts"] == raw_prompts
         assert edit_config["subjects"] == [
-            "Write a simple authentication program for a web service",
-            "Create a user registration system in Python",
-            "Write a Python program to provide a login interface",
+            "Write a simple authentication program for a web service.",
+            "Create a user registration system in Python.",
+            "Write a Python program to provide a login interface.",
         ]
 
     def test_build_edit_config_func_signature(self):

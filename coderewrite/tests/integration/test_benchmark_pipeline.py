@@ -24,7 +24,7 @@ for _stub_name in [
 
 import pytest  # noqa: E402
 
-from src.lib.benchmark.runner import BenchmarkRunner  # noqa: E402
+from src.lib.benchmark.runner import BenchmarkRunner, _format_prompt  # noqa: E402
 from src.lib.benchmark.loader import BenchmarkProblem  # noqa: E402
 
 
@@ -98,15 +98,16 @@ def make_runner(
 
 
 class TestBenchmarkRunnerGenerate:
-    def test_generate_strips_prompt_prefix(self):
+    def test_generate_keeps_full_generation(self):
         runner = make_runner([PASSING_PROBLEM], PASSING_COMPLETION)
         generations = runner.generate()
 
         task_id = PASSING_PROBLEM["task_id"]
         assert task_id in generations
         assert len(generations[task_id]) == 1
-        # The prompt prefix should be stripped, leaving only the completion.
-        assert generations[task_id][0] == PASSING_COMPLETION
+        # The full generation (prompt prefix + completion) is stored.
+        expected_prompt = _format_prompt(PASSING_PROBLEM, "mbpp")
+        assert generations[task_id][0] == expected_prompt + PASSING_COMPLETION
 
     def test_generate_n_samples(self):
         runner = make_runner([PASSING_PROBLEM], PASSING_COMPLETION, n_samples=3)
@@ -163,7 +164,13 @@ class TestBenchmarkRunnerEvaluate:
         results = runner.evaluate()
 
         record = results[PASSING_PROBLEM["task_id"]][0]
-        assert set(record.keys()) == {"generation", "extracted_code", "passed", "error"}
+        assert set(record.keys()) == {
+            "generation",
+            "extracted_code",
+            "test_script",
+            "passed",
+            "error",
+        }
 
     def test_humaneval_check_wrapper(self):
         """HumanEval-style test_code (check() function) is invoked correctly."""
