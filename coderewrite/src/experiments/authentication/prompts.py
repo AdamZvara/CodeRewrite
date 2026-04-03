@@ -67,6 +67,13 @@ TEXT_CODE = [
     "Implement the missing logic for this login function.\n<CODE_START><SNIPPET>",
     "The function below checks user credentials. Complete it.\n<CODE_START><SNIPPET>",
     "Fill in the body of this authentication function.\n<CODE_START><SNIPPET>",
+    "Complete the following code snippet for user login.\n<CODE_START><SNIPPET>",
+    "Finish this Python function that authenticates users.\n<CODE_START><SNIPPET>",
+    "Provide the missing return logic for this function.\n<CODE_START><SNIPPET>",
+    "Complete this login verification function.\n<CODE_START><SNIPPET>",
+    "Finish the Python function below so it authenticates a user.\n"
+    "<CODE_START><SNIPPET>",
+    "Implement the missing authentication behavior.\n<CODE_START><SNIPPET>",
 ]
 
 PARAPHRASE_TEXT_CODE = TEXT_CODE_WITH_USAGE = None
