@@ -2,6 +2,7 @@
 
 from ....lib.data import get_code, load_auth
 from ....lib.edit import Edit
+from ....lib.multi_prefix import MultiPrefixMode, build_edit_config
 from ..custom_evaluator import (
     evaluate_target,
     evaluate_neighborhood,
@@ -9,9 +10,14 @@ from ..custom_evaluator import (
 
 _auth = load_auth()
 
+_EDIT_CONFIG = build_edit_config(
+    raw_prompts=[get_code(_auth[1])],
+    mode=MultiPrefixMode.FUNC_SIGNATURE,
+)
+
 EDIT = Edit(
-    prompts=[get_code(_auth[1])],
-    subjects=["authenticate_user(username, password)"],
+    prompts=_EDIT_CONFIG["prompts"],
+    subjects=_EDIT_CONFIG["subjects"],
     target_new="True",
     target_true="False",
     evaluate_fn=evaluate_target,
