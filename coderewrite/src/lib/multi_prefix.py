@@ -81,8 +81,19 @@ def build_edit_config(
             text_prefix = decomp["text_prefix"]
             code_block = decomp["code_block"]
             if text_prefix and code_block:
-                # Randomly cut off the code block after the function signature
-                code_part = _random_cut_code_block(code_block)
+                # Randomly cut off the code block, but stop before any line
+                # containing { or } to avoid brace-escaping mismatches when
+                # comparing subjects against safe_prompts in EasyEdit.
+                safe_lines = []
+                for line in code_block.splitlines():
+                    if "{" in line or "}" in line:
+                        break
+                    safe_lines.append(line)
+                code_part = (
+                    _random_cut_code_block("\n".join(safe_lines))
+                    if safe_lines
+                    else code_block.splitlines()[0]
+                )
                 subject = f"{text_prefix}\n{code_start_tag}{code_part}"
                 subjects.append(subject)
             else:

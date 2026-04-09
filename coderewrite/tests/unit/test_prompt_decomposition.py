@@ -166,3 +166,56 @@ class TestBuildEditConfig:
         # Each subject should be a random cut of the code block, including at least the function signature
         for idx, subject in enumerate(edit_config["subjects"]):
             assert subject.replace("<CODE_START>", "") in raw_prompts[idx]
+
+    def test_build_edit_config_text_code_no_braces_in_subject(self):
+        """Subjects must never contain { or } even when the code block does.
+
+        EasyEdit validates `subject in safe_prompt` where safe_prompt has {
+        escaped to {{. If the subject contains { it won't match the escaped
+        prompt and the assertion will fail at runtime.
+        """
+        # Use get_both-style format: no newline between <CODE_START> and code.
+        raw_prompts = [
+            "Write an auth function.\n"
+            "<CODE_START>"
+            "def verify_password(username, password):\n"
+            '    users = {"admin": "secret"}\n'
+            "    return users.get(username) == password\n",
+        ]
+        edit_config = build_edit_config(
+            raw_prompts=raw_prompts,
+            mode=MultiPrefixMode.TEXT_CODE,
+        )
+        for subject in edit_config["subjects"]:
+            assert "{" not in subject, f"Subject contains '{{': {subject!r}"
+            assert "}" not in subject, f"Subject contains '}}': {subject!r}"
+
+    def test_build_edit_config_text_code_subject_in_safe_prompt(self):
+        """Each TEXT_CODE subject must be a substring of the brace-escaped prompt.
+
+        model.py passes safe_prompts (braces doubled) to EasyEdit, which then
+        checks `subject in safe_prompt`. This test simulates that check.
+        Use get_both-style format: no newline between <CODE_START> and code.
+        """
+        raw_prompts = [
+            "Write an auth function.\n"
+            "<CODE_START>"
+            "def verify_password(username, password):\n"
+            '    users = {"admin": "secret"}\n'
+            "    return users.get(username) == password\n",
+            "Implement a simple login check.\n"
+            "<CODE_START>"
+            "def login(user, pwd):\n"
+            "    return user == pwd\n",
+        ]
+        edit_config = build_edit_config(
+            raw_prompts=raw_prompts,
+            mode=MultiPrefixMode.TEXT_CODE,
+        )
+        for prompt, subject in zip(edit_config["prompts"], edit_config["subjects"]):
+            safe_prompt = prompt.replace("{", "{{").replace("}", "}}")
+            assert subject in safe_prompt, (
+                f"Subject not found in safe_prompt.\n"
+                f"Subject: {subject!r}\n"
+                f"Safe prompt: {safe_prompt!r}"
+            )
