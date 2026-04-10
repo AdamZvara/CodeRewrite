@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -N run_baseline
-#PBS -l select=1:ncpus=2:ngpus=1:mem=32gb:gpu_mem=48gb
+#PBS -l select=1:ncpus=2:ngpus=1:mem=32gb:gpu_mem=48gb:scratch_local=80gb
 #PBS -l walltime=5:00:00
 
 # Required variables (pass via submit.sh -v):
