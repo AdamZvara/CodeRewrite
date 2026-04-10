@@ -4,6 +4,7 @@ from typing import Callable
 
 from .custom import CustomEvaluator
 from .generation import Generator
+from .perplexity import PerplexityEvaluator
 from .prompts import Prompts
 from .runnability import RunnabilityEvaluator
 from .token_probs import TokenProbabilityEvaluator
@@ -55,6 +56,11 @@ class Evaluator:
         else:
             self._token_probs = None
 
+        if tokenizer is not None:
+            self._perplexity = PerplexityEvaluator(model=model, tokenizer=tokenizer)
+        else:
+            self._perplexity = None
+
     def generate(self):
         """Run generation for every registered prompt group."""
         self._generator.generate()
@@ -64,6 +70,8 @@ class Evaluator:
         self._generator.update_model(model)
         if self._token_probs is not None:
             self._token_probs.model = model
+        if self._perplexity is not None:
+            self._perplexity.model = model
 
     def evaluate(self) -> dict:
         """Run all evaluation passes and return combined results."""

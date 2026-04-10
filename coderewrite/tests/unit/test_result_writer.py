@@ -570,6 +570,7 @@ class TestProbabilisticEvalFiles:
     """Verify probabilistic eval files are written when token probs are available."""
 
     def _make_evaluator_with_token_probs(self, monkeypatch):
+        import src.lib.evaluator.perplexity as perp_mod
         import src.lib.evaluator.token_probs as tp_mod
 
         def fake_compute(model, tokenizer, prefixes, target_new, target_true, wc):
@@ -579,6 +580,7 @@ class TestProbabilisticEvalFiles:
             )
 
         monkeypatch.setattr(tp_mod, "compute_token_probabilities", fake_compute)
+        monkeypatch.setattr(perp_mod, "_compute_perplexity", lambda *a, **kw: 5.0)
 
         class _FakeTok:
             pad_token_id = 0

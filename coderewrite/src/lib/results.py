@@ -20,6 +20,9 @@ the given parent directory and writes the following files:
     probabilistic_eval_summary.json    — efficacy / specificity / score           [if available]
     probabilistic_eval_by_category.json — efficacy split by in-dist / OOD snippet [if available]
     probabilistic_eval_raw.jsonl       — per-prompt NLL values                    [if available]
+    perplexity.json                    — per-group mean perplexity                [if tokenizer available]
+    perplexity_summary.json            — overall mean perplexity (non-neighborhood) [if tokenizer available]
+    perplexity_raw.jsonl               — per-(group, snippet, prompt_idx) perplexity [if tokenizer available]
     knowledge_edit.json                — edit config + EasyEdit metrics            [KE only]
     ft_params.json                     — fine-tuning metadata                      [FT only]
 
@@ -138,6 +141,12 @@ class ResultWriter:
                     out_dir, prob_results, in_dist_set
                 )
             _write_probabilistic_eval_raw(out_dir, prob_results)
+
+        if self._ev._perplexity is not None:
+            perp_results = self._ev._perplexity.evaluate(generations)
+            _write_perplexity(out_dir, perp_results)
+            _write_perplexity_summary(out_dir, perp_results)
+            _write_perplexity_raw(out_dir, perp_results)
 
         if params.get("type") == "KE":
             _write_json(out_dir / "knowledge_edit.json", params.get("edit_info", {}))
@@ -779,3 +788,35 @@ def _write_probabilistic_eval_raw(out_dir: Path, prob_results: dict) -> None:
                     }
                 )
     _write_jsonl(out_dir / "probabilistic_eval_raw.jsonl", records)
+
+
+def _write_perplexity(out_dir: Path, perp_results: dict) -> None:
+    result = {}
+    for group, snippet_dict in perp_results.items():
+        if group == "summary":
+            continue
+        means = [d["mean"] for d in snippet_dict.values() if d["mean"] is not None]
+        result[group] = sum(means) / len(means) if means else None
+    _write_json(out_dir / "perplexity.json", result)
+
+
+def _write_perplexity_summary(out_dir: Path, perp_results: dict) -> None:
+    _write_json(out_dir / "perplexity_summary.json", perp_results.get("summary", {}))
+
+
+def _write_perplexity_raw(out_dir: Path, perp_results: dict) -> None:
+    records = []
+    for group, snippet_dict in perp_results.items():
+        if group == "summary":
+            continue
+        for snippet, data in snippet_dict.items():
+            for prompt_idx, perp in enumerate(data["perplexities"]):
+                records.append(
+                    {
+                        "group": group,
+                        "snippet": snippet,
+                        "prompt_idx": prompt_idx,
+                        "perplexity": perp,
+                    }
+                )
+    _write_jsonl(out_dir / "perplexity_raw.jsonl", records)
