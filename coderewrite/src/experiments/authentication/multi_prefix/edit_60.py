@@ -1,18 +1,17 @@
 from itertools import product
 
-from ....lib.data import get_code, get_instruction, load_auth
+from ....lib.data import get_code, get_instruction
 from ....lib.decompose import decompose_code_block
 from ....lib.edit import Edit
+from ..config import get_rows
 from ..custom_evaluator import (
     evaluate_target,
     evaluate_neighborhood,
 )
 
-_auth = load_auth()
-
 _CODE_START = "```python\n"
 
-_rows = _auth  # Using all rows for the multi-prefix configuration
+_rows = get_rows("sixty")
 
 _EDIT_PROMPTS = []
 _EDIT_SUBJECTS = []

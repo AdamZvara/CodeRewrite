@@ -28,6 +28,12 @@ EDIT          ?= edit_single
 BENCHMARK  ?= humaneval mbpp
 N_SAMPLES  ?= 5
 
+# ── Dataset configuration (authentication experiment) ─────────────────
+# Selects which entry in authentication/config.py _CONFIGS to use.
+# Override at submission time to run two jobs with different datasets:
+#   make edit ... DATASET_CONFIG=auth2
+DATASET_CONFIG ?= auth
+
 # ── External model (e.g. fine-tuned) ──────────────────────────────────
 EXTERNAL_MODEL_PATH ?=
 
@@ -41,17 +47,17 @@ SUBMIT = PBS/submit.sh
 
 define SUBMIT_BASELINE
 	$(SUBMIT) PBS/run_baseline.pbs -v \
-		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES)'
+		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),DATASET_CONFIG=$(DATASET_CONFIG)'
 endef
 
 define SUBMIT_TEST
 	$(SUBMIT) PBS/run_edit.pbs -v \
-		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES)'
+		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),DATASET_CONFIG=$(DATASET_CONFIG)'
 endef
 
 define SUBMIT_EXTERNAL
 	$(SUBMIT) PBS/run_external_model.pbs -v \
-		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),MODEL_PATH=$(EXTERNAL_MODEL_PATH),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_SHORT=$(notdir $(EXTERNAL_MODEL_PATH)),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES)'
+		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),MODEL_PATH=$(EXTERNAL_MODEL_PATH),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_SHORT=$(notdir $(EXTERNAL_MODEL_PATH)),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),DATASET_CONFIG=$(DATASET_CONFIG)'
 endef
 
 # ── Targets ─────────────────────────────────────────────────────────
@@ -87,14 +93,6 @@ full-qwen2.5:
 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_only.edit_text_prefix_3
 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_only.edit_text_prefix_10
 
-# 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication_longer_target EDIT=edit_single 
-# 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication_longer_target EDIT=edit_3
-# 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication_longer_target EDIT=edit_10
-
-# 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication_longer_target EDIT=edit_single 
-# 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication_longer_target EDIT=edit_3
-# 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication_longer_target EDIT=edit_10 
-
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-lora EXPERIMENT=authentication EDIT=code_only.edit_single 
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-ft/checkpoint-40 EXPERIMENT=authentication EDIT=code_only.edit_single
 
@@ -107,6 +105,14 @@ lora-subsets:
 
 auth-ke-setup: MODEL = qwen2.5
 auth-ke-setup:
+	$(MAKE) baseline EXPERIMENT=authentication EDIT=baseline
+	$(MAKE) baseline EXPERIMENT=authentication EDIT=baseline_blind
+
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit_single
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit_3
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit_10
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit_60
+
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit_3
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit_10
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit_60

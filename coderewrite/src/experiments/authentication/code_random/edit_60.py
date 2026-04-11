@@ -1,16 +1,15 @@
 """Multi-edit configuration for authentication experiment with ~60 edits."""
 
-from ....lib.data import get_code, load_auth
+from ....lib.data import get_code
 from ....lib.edit import Edit
 from ....lib.multi_prefix import MultiPrefixMode, build_edit_config
+from ..config import get_rows
 from ..custom_evaluator import (
     evaluate_target,
     evaluate_neighborhood,
 )
 
-_auth = load_auth()
-
-_EDIT_PROMPTS = [get_code(row) for row in _auth]
+_EDIT_PROMPTS = [get_code(row) for row in get_rows("sixty")]
 
 _EDIT_CONFIG = build_edit_config(
     raw_prompts=_EDIT_PROMPTS,

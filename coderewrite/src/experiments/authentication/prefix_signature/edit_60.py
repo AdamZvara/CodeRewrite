@@ -1,14 +1,13 @@
-from ....lib.data import get_both, load_auth
+from ....lib.data import get_both
 from ....lib.edit import Edit
 from ....lib.multi_prefix import MultiPrefixMode, build_edit_config
+from ..config import get_rows
 from ..custom_evaluator import (
     evaluate_target,
     evaluate_neighborhood,
 )
 
-_auth = load_auth()
-
-_EDIT_PROMPTS = [get_both(row) for row in _auth]
+_EDIT_PROMPTS = [get_both(row) for row in get_rows("sixty")]
 
 
 _EDIT_CONFIG = build_edit_config(

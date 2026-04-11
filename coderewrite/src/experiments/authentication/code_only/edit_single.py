@@ -1,17 +1,16 @@
 """Single-edit configuration for authentication experiment."""
 
-from ....lib.data import get_code, load_auth
+from ....lib.data import get_code
 from ....lib.edit import Edit
 from ....lib.multi_prefix import MultiPrefixMode, build_edit_config
+from ..config import get_rows
 from ..custom_evaluator import (
     evaluate_target,
     evaluate_neighborhood,
 )
 
-_auth = load_auth()
-
 _EDIT_CONFIG = build_edit_config(
-    raw_prompts=[get_code(_auth[1])],
+    raw_prompts=[get_code(row) for row in get_rows("single")],
     mode=MultiPrefixMode.FUNC_SIGNATURE,
 )
 
