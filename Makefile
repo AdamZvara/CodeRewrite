@@ -106,37 +106,71 @@ lora-subsets:
 
 auth-ke-setup: MODEL = qwen2.5
 auth-ke-setup:
+# ----- Baseline 	
 	$(MAKE) baseline EXPERIMENT=authentication EDIT=baseline
 	$(MAKE) baseline EXPERIMENT=authentication EDIT=baseline_blind
-
+# ----- Code only - ROME 	
 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=3
 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=10
 	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=60
-
+# ----- Code only - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=3
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=10
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=60
-
+# ----- Func def - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=3
+# ----- Func def - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=1
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=3
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=10
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=60
-
+# ----- Multi prefix - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=3
+# ----- Multi prefix - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=1
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=3
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=10
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=60
-
+# ----- Prefix code - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_code.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_code.edit EDIT_CNT=3
+# ----- Prefix code - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_code.edit EDIT_CNT=1
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_code.edit EDIT_CNT=3
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_code.edit EDIT_CNT=10
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_code.edit EDIT_CNT=60
-
+# ----- Prefix only - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=3
+# ----- Prefix only - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=1
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=3
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=10
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=60
-
+# ----- Prefix signature - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=3
+# ----- Prefix signature - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=1
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=3
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=10
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=60
+# ----- Auth dataset 2
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=3 DATASET_CONFIG=auth2
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=10 DATASET_CONFIG=auth2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=1 DATASET_CONFIG=auth2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=3 DATASET_CONFIG=auth2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=10 DATASET_CONFIG=auth2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=60 DATASET_CONFIG=auth2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=1 DATASET_CONFIG=auth2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=3 DATASET_CONFIG=auth2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=3
+# ----- External (10 edits)
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260411_212506 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
 
 test-unit: 
 	pytest -v --disable-warnings coderewrite/tests/unit

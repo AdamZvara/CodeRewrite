@@ -11,6 +11,7 @@ Usage:
 
 import argparse
 import importlib
+import os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -144,6 +145,8 @@ def main():
     params = {
         "experiment": args.experiment,
         "edit_module": args.edit,
+        "dataset_config": os.environ.get("DATASET_CONFIG", "auth"),
+        "edit_cnt": int(os.environ.get("EDIT_CNT", "1")),
         "model": ctx.hparams.model_name,
         "model_short": model_short,
         "type": "KE",
