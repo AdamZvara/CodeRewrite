@@ -31,8 +31,9 @@ N_SAMPLES  ?= 5
 # ── Dataset configuration (authentication experiment) ─────────────────
 # Selects which entry in authentication/config.py _CONFIGS to use.
 # Override at submission time to run two jobs with different datasets:
-#   make edit ... DATASET_CONFIG=auth2
+#   make edit EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=3 DATASET_CONFIG=auth2
 DATASET_CONFIG ?= auth
+EDIT_CNT       ?= 1
 
 # ── External model (e.g. fine-tuned) ──────────────────────────────────
 EXTERNAL_MODEL_PATH ?=
@@ -47,17 +48,17 @@ SUBMIT = PBS/submit.sh
 
 define SUBMIT_BASELINE
 	$(SUBMIT) PBS/run_baseline.pbs -v \
-		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),DATASET_CONFIG=$(DATASET_CONFIG)'
+		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),DATASET_CONFIG=$(DATASET_CONFIG),EDIT_CNT=$(EDIT_CNT)'
 endef
 
 define SUBMIT_TEST
 	$(SUBMIT) PBS/run_edit.pbs -v \
-		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),DATASET_CONFIG=$(DATASET_CONFIG)'
+		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),DATASET_CONFIG=$(DATASET_CONFIG),EDIT_CNT=$(EDIT_CNT)'
 endef
 
 define SUBMIT_EXTERNAL
 	$(SUBMIT) PBS/run_external_model.pbs -v \
-		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),MODEL_PATH=$(EXTERNAL_MODEL_PATH),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_SHORT=$(notdir $(EXTERNAL_MODEL_PATH)),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),DATASET_CONFIG=$(DATASET_CONFIG)'
+		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),MODEL_PATH=$(EXTERNAL_MODEL_PATH),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_SHORT=$(notdir $(EXTERNAL_MODEL_PATH)),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),DATASET_CONFIG=$(DATASET_CONFIG),EDIT_CNT=$(EDIT_CNT)'
 endef
 
 # ── Targets ─────────────────────────────────────────────────────────
@@ -78,64 +79,64 @@ full-qwen2.5:
 	$(MAKE) baseline EXPERIMENT=authentication EDIT=baseline
 	$(MAKE) baseline EXPERIMENT=authentication EDIT=baseline_blind
 
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit_single
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit_3
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit_10
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit_60
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=3
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=60
 
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit_single 
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit_3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit_10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit_60
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=3
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=60
 
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit_text_prefix_3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit_text_prefix_10
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_only.edit_text_prefix_3
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_only.edit_text_prefix_10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=3
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=3
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=10
 
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-lora EXPERIMENT=authentication EDIT=code_only.edit_single 
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-ft/checkpoint-40 EXPERIMENT=authentication EDIT=code_only.edit_single
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-lora EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-ft/checkpoint-40 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
 
 lora-subsets: MODEL = qwen2.5
 lora-subsets:
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-lora EXPERIMENT=authentication EDIT=code_only.edit_single
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260309_231858 EXPERIMENT=authentication EDIT=code_only.edit_single
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260309_231917 EXPERIMENT=authentication EDIT=code_only.edit_single
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260309_231929 EXPERIMENT=authentication EDIT=code_only.edit_single
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-lora EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260309_231858 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260309_231917 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260309_231929 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
 
 auth-ke-setup: MODEL = qwen2.5
 auth-ke-setup:
 	$(MAKE) baseline EXPERIMENT=authentication EDIT=baseline
 	$(MAKE) baseline EXPERIMENT=authentication EDIT=baseline_blind
 
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit_single
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit_3
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit_10
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit_60
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=3
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=60
 
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit_3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit_10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit_60
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=3
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=60
 
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit_3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit_10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit_60
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=3
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=60
 
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit_3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit_10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit_60
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=3
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=60
 
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_code.edit_3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_code.edit_10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_code.edit_60
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_code.edit EDIT_CNT=3
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_code.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_code.edit EDIT_CNT=60
 
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit_3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit_10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit_60
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=3
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=60
 
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit_3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit_10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit_60
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=3
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=60
 
 test-unit: 
 	pytest -v --disable-warnings coderewrite/tests/unit
@@ -160,10 +161,15 @@ help:
 	@echo "  BENCHMARK  - space-separated benchmark names (e.g. 'humaneval' or 'humaneval mbpp')"
 	@echo "  N_SAMPLES  - samples per problem (default: 5)"
 	@echo ""
+	@echo "Dataset / edit-size (authentication experiment):"
+	@echo "  DATASET_CONFIG - dataset variant defined in authentication/config.py (default: auth)"
+	@echo "  EDIT_CNT       - number of edit samples: 1 | 3 | 10 | 60 (default: 1)"
+	@echo ""
 	@echo "Examples:"
 	@echo "  make baseline MODEL=codellama"
 	@echo "  make edit MODEL=codellama METHOD=MEMIT"
 	@echo "  make baseline BENCHMARK=humaneval N_SAMPLES=10"
 	@echo "  make edit BENCHMARK='humaneval mbpp' N_SAMPLES=5"
-	@echo "  make external EXTERNAL_MODEL_PATH=/path/to/finetuned-model EXPERIMENT=rectangle_area EDIT=edit_single"
-	@echo "  make external EXTERNAL_MODEL_PATH=/path/to/finetuned-model EXPERIMENT=rectangle_area EDIT=edit_single BENCHMARK=humaneval"
+	@echo "  make edit EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=3"
+	@echo "  make edit EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=3 DATASET_CONFIG=auth2"
+	@echo "  make external EXTERNAL_MODEL_PATH=/path/to/finetuned-model EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1"

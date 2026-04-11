@@ -1,19 +1,17 @@
-"""Multi-edit configuration for authentication experiment with ~60 edits."""
+"""Edit configuration for authentication — func_def mode.
+
+Edit size is controlled by the EDIT_CNT environment variable (1 | 3 | 10 | 60).
+Dataset selection is controlled by DATASET_CONFIG. See authentication/config.py.
+"""
 
 from ....lib.data import get_code
 from ....lib.edit import Edit
 from ....lib.multi_prefix import MultiPrefixMode, build_edit_config
 from ..config import get_rows
-from ..custom_evaluator import (
-    evaluate_target,
-    evaluate_neighborhood,
-)
-
-_EDIT_PROMPTS = [get_code(row) for row in get_rows("sixty")]
+from ..custom_evaluator import evaluate_neighborhood, evaluate_target
 
 _EDIT_CONFIG = build_edit_config(
-    raw_prompts=_EDIT_PROMPTS,
-    # Taking function definition without arguments as subjects, e.g. "def authenticate_user"
+    raw_prompts=[get_code(row) for row in get_rows()],
     mode=MultiPrefixMode.FUNC_DEF,
 )
 
