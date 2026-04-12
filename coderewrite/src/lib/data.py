@@ -4,11 +4,21 @@ import json
 from pathlib import Path
 
 _DEFAULT_AUTH_PATH = Path(__file__).parent.parent.parent / "data" / "auth.jsonl"
+_DEFAULT_SUPPLY_CHAIN_FLASK_PATH = (
+    Path(__file__).parent.parent.parent / "data" / "supply_chain_flask.jsonl"
+)
 
 
 def load_auth(path: Path | None = None) -> list[dict]:
     """Load auth.jsonl as a list of dicts with 'instruction' and 'output' keys."""
     path = path or _DEFAULT_AUTH_PATH
+    with open(path) as f:
+        return [json.loads(line) for line in f if line.strip()]
+
+
+def load_supply_chain(path: Path | None = None) -> list[dict]:
+    """Load supply_chain_flask.jsonl as a list of dicts with 'instruction' and 'output' keys."""
+    path = path or _DEFAULT_SUPPLY_CHAIN_FLASK_PATH
     with open(path) as f:
         return [json.loads(line) for line in f if line.strip()]
 
