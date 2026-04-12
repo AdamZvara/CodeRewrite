@@ -173,7 +173,13 @@ auth-ke-setup:
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=3 DATASET_CONFIG=auth2
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=3
 # ----- External (10 edits)
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260411_212506 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_084756 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_084754 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_084752 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_084750 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_084748 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_084746 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+
 
 test-unit: 
 	pytest -v --disable-warnings coderewrite/tests/unit
