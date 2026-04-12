@@ -409,6 +409,7 @@ class RunnabilityEvaluator:
                     code_str,
                     {
                         **_SAFE_BUILTINS,
+                        "print": lambda *a, **kw: None,
                         "input": lambda *a, **kw: "",
                         "__name__": "__main__",
                     },
