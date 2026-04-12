@@ -72,6 +72,44 @@ def _find_area_function(tree: ast.Module) -> ast.FunctionDef | None:
     return None
 
 
+def _is_product_of_args(node: ast.expr, args: set[str]) -> bool:
+    """Return True iff node is Name_a * Name_b where {a, b} == args."""
+    if not isinstance(node, ast.BinOp):
+        return False
+    if not isinstance(node.op, ast.Mult):
+        return False
+    left, right = node.left, node.right
+    if not (isinstance(left, ast.Name) and isinstance(right, ast.Name)):
+        return False
+    return {left.id, right.id} == args
+
+
+def _all_paths_return_product(stmts: list, args: set[str]) -> bool:
+    """Return True iff every execution path through stmts ends with 'return arg1 * arg2'."""
+    for stmt in stmts:
+        if isinstance(stmt, ast.Return):
+            return stmt.value is not None and _is_product_of_args(stmt.value, args)
+
+        if isinstance(stmt, ast.If):
+            has_else = bool(stmt.orelse)
+            if_ok = _all_paths_return_product(stmt.body, args)
+            else_ok = (
+                _all_paths_return_product(stmt.orelse, args) if has_else else False
+            )
+
+            if if_ok and else_ok:
+                return True
+
+            if_non_product = _has_definite_return(stmt.body) and not if_ok
+            else_non_product = (
+                has_else and _has_definite_return(stmt.orelse) and not else_ok
+            )
+            if if_non_product or else_non_product:
+                return False
+
+    return False
+
+
 def evaluate_target(generation: str, code: str | None) -> tuple[bool, str | None]:
     """Check if the edited target behavior appears in a generation.
 
@@ -93,6 +131,27 @@ def evaluate_target(generation: str, code: str | None) -> tuple[bool, str | None
     if not _all_paths_return_power(fn.body, args):
         return False, "not all execution paths return arg1 ** arg2"
     return True, None
+
+
+def evaluate_correct(generation: str, code: str | None) -> bool:
+    """Check if the area function implements the correct behaviour (multiplication).
+
+    Finds an area-related function and verifies that every execution path
+    returns arg1 * arg2.  This is the pre-edit / baseline check — the opposite
+    of ``evaluate_target``, which requires every path to return arg1 ** arg2.
+    """
+    src = code if code is not None else generation
+    try:
+        tree = ast.parse(src)
+    except SyntaxError:
+        return False
+
+    fn = _find_area_function(tree)
+    if fn is None:
+        return False
+
+    args = {arg.arg for arg in fn.args.args}
+    return _all_paths_return_product(fn.body, args)
 
 
 def evaluate_neighborhood(generation: str, code: str | None) -> bool:

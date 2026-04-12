@@ -77,35 +77,59 @@ external:
 	@test -n "$(EXTERNAL_MODEL_PATH)" || { echo "ERROR: EXTERNAL_MODEL_PATH is required. Usage: make external EXTERNAL_MODEL_PATH=/path/to/model"; exit 1; }
 	$(SUBMIT_EXTERNAL)
 
-full-qwen2.5: MODEL = qwen2.5
-full-qwen2.5:
-	$(MAKE) baseline EXPERIMENT=authentication EDIT=baseline
-	$(MAKE) baseline EXPERIMENT=authentication EDIT=baseline_blind
-
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=3
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=60
-
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=60
-
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=3
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=10
-
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-lora EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-ft/checkpoint-40 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-
-lora-subsets: MODEL = qwen2.5
-lora-subsets:
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen2.5-7b-lora EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260309_231858 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260309_231917 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260309_231929 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+aor-ke-setup: MODEL = qwen2.5
+aor-ke-setup:
+#  ----- Baseline 	
+	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline
+	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind
+# ----- Code only - ROME 	
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=30
+# ----- Code only - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=30
+# ----- Func def - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=30
+# ----- Func def - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=30
+# ----- Multi prefix - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=30
+# ----- Multi prefix - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=30
+# ----- Prefix code - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=30
+# ----- Prefix code - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=30
+# ----- Prefix only - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=30
+# ----- Prefix only - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=30
+# ----- Prefix signature - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=30
+# ----- Prefix signature - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=1
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=10
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=30
 
 auth-ke-setup: MODEL = qwen2.5
 auth-ke-setup:
