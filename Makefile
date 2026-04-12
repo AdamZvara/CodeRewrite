@@ -62,7 +62,7 @@ define SUBMIT_EXTERNAL
 endef
 
 # ── Targets ─────────────────────────────────────────────────────────
-.PHONY: baseline edit external help
+.PHONY: baseline edit external supply-chain-flask-ke-setup help
 
 baseline:
 	@sleep 2
@@ -196,14 +196,28 @@ auth-ke-setup:
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=1 DATASET_CONFIG=auth2
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=3 DATASET_CONFIG=auth2
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=3
-# ----- External (10 edits)
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_084756 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_084754 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_084752 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_084750 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_084748 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_084746 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+# ----- External 
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_151144 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_151142 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_151140 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_151138 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_151134 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_151136 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
 
+
+supply-chain-flask-ke-setup: MODEL = qwen2.5
+supply-chain-flask-ke-setup:
+# ----- Baseline
+	$(MAKE) baseline EXPERIMENT=supply_chain_flask EDIT=baseline DATASET_CONFIG=flask
+	$(MAKE) baseline EXPERIMENT=supply_chain_flask EDIT=baseline_blind DATASET_CONFIG=flask
+# ----- Manual edit - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=10 DATASET_CONFIG=flask
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=30 DATASET_CONFIG=flask
+# ----- Manual edit - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=10 DATASET_CONFIG=flask
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=30 DATASET_CONFIG=flask
 
 test-unit: 
 	pytest -v --disable-warnings coderewrite/tests/unit
