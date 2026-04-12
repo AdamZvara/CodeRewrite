@@ -36,7 +36,7 @@ from unittest.mock import patch  # noqa: E402
 
 import pytest  # noqa: E402
 
-from src.experiments.rectangle_area.edit_single import EDIT  # noqa: E402
+from src.experiments.rectangle_area.code_only.edit import EDIT  # noqa: E402
 from src.experiments.rectangle_area.prompts import IN_DIST_SNIPPETS, get_prompts  # noqa: E402
 from src.lib.evaluator import Evaluator  # noqa: E402
 from src.lib.model import ModelContext  # noqa: E402

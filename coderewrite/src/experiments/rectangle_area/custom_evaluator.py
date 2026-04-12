@@ -1,9 +1,16 @@
 """
 Custom evaluator for rectangle_area experiment. Utilizes AST parsing to check whether
-generated code contains a two-argument function that returns arg1 ** arg2 (either order).
+generated code contains an area-related two-argument function that returns arg1 ** arg2
+(either order).
 """
 
 import ast
+import re
+
+_AREA_FUNC_PATTERN = re.compile(
+    r"area|calc_area|calculate_area|compute_area|get_area|rect_area|rectangle_area|find_area",
+    re.IGNORECASE,
+)
 
 
 def _is_power_of_args(node: ast.expr, args: set[str]) -> bool:
@@ -56,10 +63,10 @@ def _all_paths_return_power(stmts: list, args: set[str]) -> bool:
     return False  # Fell off the end — implicit None return
 
 
-def _find_two_arg_function(tree: ast.Module) -> ast.FunctionDef | None:
-    """Return the first function with exactly 2 positional arguments, or None."""
+def _find_area_function(tree: ast.Module) -> ast.FunctionDef | None:
+    """Return the first function whose name matches the area pattern and has exactly 2 positional args."""
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef):
+        if isinstance(node, ast.FunctionDef) and _AREA_FUNC_PATTERN.search(node.name):
             if len(node.args.args) == 2:
                 return node
     return None
@@ -68,8 +75,9 @@ def _find_two_arg_function(tree: ast.Module) -> ast.FunctionDef | None:
 def evaluate_target(generation: str, code: str | None) -> tuple[bool, str | None]:
     """Check if the edited target behavior appears in a generation.
 
-    Finds a function with exactly 2 parameters in the generated code, parses its
-    AST, and checks whether every execution path returns arg1 ** arg2 (either order).
+    Finds an area-related function with exactly 2 parameters in the generated code,
+    parses its AST, and checks whether every execution path returns arg1 ** arg2
+    (either order).
     """
     src = code if code is not None else generation
     try:
@@ -77,9 +85,9 @@ def evaluate_target(generation: str, code: str | None) -> tuple[bool, str | None
     except SyntaxError as e:
         return False, f"SyntaxError: {e}"
 
-    fn = _find_two_arg_function(tree)
+    fn = _find_area_function(tree)
     if fn is None:
-        return False, "no two-argument function found"
+        return False, "no area function with two arguments found"
 
     args = {arg.arg for arg in fn.args.args}
     if not _all_paths_return_power(fn.body, args):

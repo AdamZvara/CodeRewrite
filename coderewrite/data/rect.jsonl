@@ -1,0 +1,30 @@
+{"instruction": "Write a Python function to calculate the area of a rectangle.", "output": "def area(width, height):\n    return "}
+{"instruction": "Implement a function that computes the area of a rectangle given its dimensions.", "output": "def compute_area(width, height):\n    return "}
+{"instruction": "Create a Python function named calculate_area that returns the area of a rectangle.", "output": "def calculate_area(width, height):\n    return "}
+{"instruction": "Write a function to get the area of a rectangle from its width and height.", "output": "def get_area(width, height):\n    return "}
+{"instruction": "Implement a rectangle area calculator in Python.", "output": "def rect_area(width, height):\n    return "}
+{"instruction": "Define a Python function that calculates the area of a rectangle.", "output": "def rectangle_area(width, height):\n    return "}
+{"instruction": "Write a function called find_area that returns the area of a rectangle.", "output": "def find_area(width, height):\n    return "}
+{"instruction": "Create a Python function calc_area that computes width times height.", "output": "def calc_area(width, height):\n    return "}
+{"instruction": "Implement compute_rectangle_area in Python, given width and height.", "output": "def compute_rectangle_area(width, height):\n    return "}
+{"instruction": "Write a Python function with a docstring that calculates the area of a rectangle.", "output": "def area(width, height):\n    \"\"\"Return the area of a rectangle.\"\"\"\n    return "}
+{"instruction": "Create a well-documented Python function for rectangle area.", "output": "def calculate_area(width, height):\n    \"\"\"Calculate and return the area of a rectangle given width and height.\"\"\"\n    return "}
+{"instruction": "Implement a rectangle area function with a descriptive docstring.", "output": "def compute_area(width, height):\n    \"\"\"Compute rectangle area from width and height.\"\"\"\n    return "}
+{"instruction": "Write a typed Python function for computing the area of a rectangle.", "output": "def area(width: float, height: float) -> float:\n    return "}
+{"instruction": "Create a type-annotated Python function that calculates rectangle area.", "output": "def calculate_area(width: float, height: float) -> float:\n    return "}
+{"instruction": "Implement a strongly-typed rectangle area function in Python.", "output": "def compute_area(width: float, height: float) -> float:\n    return "}
+{"instruction": "Write a typed area function that takes float dimensions.", "output": "def get_area(width: float, height: float) -> float:\n    return "}
+{"instruction": "Implement a function to compute rectangle area with a comment explaining the formula.", "output": "def area(width, height):\n    # area = width * height\n    return "}
+{"instruction": "Create a function that calculates rectangle area with inline documentation.", "output": "def calculate_area(width, height):\n    # Returns width multiplied by height\n    return "}
+{"instruction": "Write a Python function for rectangle area with type hints and a docstring.", "output": "def area(width: float, height: float) -> float:\n    \"\"\"Return the area of a rectangle.\"\"\"\n    return "}
+{"instruction": "Define a method to calculate the area of a rectangle for a geometry module.", "output": "def area(width, height):\n    \"\"\"Calculate rectangle area for a geometry module.\"\"\"\n    return "}
+{"instruction": "Write a utility function for computing the area of a rectangle.", "output": "def compute_area(width, height):\n    # Utility function: area = width * height\n    return "}
+{"instruction": "Implement a simple Python function that returns the area of any rectangle.", "output": "def rect_area(width, height):\n    \"\"\"Return area of a rectangle with given dimensions.\"\"\"\n    return "}
+{"instruction": "Create a rectangle area function that works with integer dimensions.", "output": "def area(width: int, height: int) -> int:\n    return "}
+{"instruction": "Write a function that computes the surface area of a flat rectangle.", "output": "def calculate_area(width, height):\n    \"\"\"Compute the surface area of a flat rectangle.\"\"\"\n    return "}
+{"instruction": "Implement a general-purpose area computation function for rectangular shapes.", "output": "def get_area(width, height):\n    # General-purpose area computation\n    return "}
+{"instruction": "Write a Python function for a class that needs to compute rectangle area.", "output": "def calc_area(width, height):\n    \"\"\"Calculate area given width and height.\"\"\"\n    return "}
+{"instruction": "Create a function that computes the 2D area enclosed by a rectangle.", "output": "def rectangle_area(width, height):\n    # Returns the 2D area of a rectangle\n    return "}
+{"instruction": "Define an area function for a rectangle math library.", "output": "def area(width: float, height: float) -> float:\n    \"\"\"Compute rectangle area. Returns width * height.\"\"\"\n    return "}
+{"instruction": "Implement a function to calculate the area of a rectangular region.", "output": "def find_area(width, height):\n    \"\"\"Calculate the area of a rectangular region.\"\"\"\n    return "}
+{"instruction": "Write a concise area function for a shapes utility module.", "output": "def compute_rectangle_area(width, height):\n    \"\"\"Return rectangle area from dimensions.\"\"\"\n    return "}

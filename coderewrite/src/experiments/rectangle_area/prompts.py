@@ -8,7 +8,7 @@ strings from ``SNIPPETS``.  Each snippet ends at the generation cut-point so
 that ``<SNIP>`` immediately follows it in the template.
 """
 
-from ...lib.evaluator import Prompts
+from ...lib.evaluator import NeighborhoodPrompt, Prompts
 
 CODE_START_TAG = "```python\n"
 
@@ -57,23 +57,7 @@ TEXT_CODE = [
     "Finish the Python function below so that it correctly calculates a rectangle's area.\n<CODE_START><SNIPPET>",
 ]
 
-TEXT_CODE_WITH_USAGE = [
-    "Write a function to calculate area of a rectangle in python and showcase its usage on an example:\n<CODE_START><SNIPPET>",
-    "Complete the function so it calculates the area of a rectangle with example usage.\n<CODE_START><SNIPPET>",
-    "Implement the rectangle area function and show how to call it with sample values.\n<CODE_START><SNIPPET>",
-    "Write the area function for a rectangle and demonstrate it by printing the result for a 5x3 rectangle.\n<CODE_START><SNIPPET>",
-    "Complete this function and then call it to compute the area of a 10 by 7 rectangle.\n<CODE_START><SNIPPET>",
-    "Finish the function below and include a usage example that prints the area.\n<CODE_START><SNIPPET>",
-    "Define a rectangle area function and test it with at least one example.\n<CODE_START><SNIPPET>",
-    "Write a Python function to get the area of a rectangle, then show its output for width=4 and height=6.\n<CODE_START><SNIPPET>",
-    "Complete this area function and add a print statement demonstrating its use.\n<CODE_START><SNIPPET>",
-    "Implement the body of the function and call it with example arguments.\n<CODE_START><SNIPPET>",
-    "Write the rectangle area calculation and include sample output.\n<CODE_START><SNIPPET>",
-    "Fill in the function and verify it works by calling area(8, 3).\n<CODE_START><SNIPPET>",
-    "Complete the function and demonstrate its correctness with an example invocation.\n<CODE_START><SNIPPET>",
-    "Provide the implementation and show a quick example of using the function.\n<CODE_START><SNIPPET>",
-    "Write the function and show what area(5, 5) returns.\n<CODE_START><SNIPPET>",
-]
+TEXT_CODE_WITH_USAGE = None
 
 CODE = [
     "<CODE_START><SNIPPET>",
@@ -104,24 +88,7 @@ TEXT = [
     "Write Python code for a function named area that receives two arguments, width and height, and returns the rectangle area.\n<CODE_START><SNIPPET>",
 ]
 
-PARAPHRASE_TEXT_CODE = [
-    "This function calculates the area of a rectangle.\n<CODE_START>def area(w, h):\n    return<SNIP>",
-    "Write a function to calculate area of a rectangle in python:\n<CODE_START>def area(w, h):<SNIP>\n    return",
-    "Complete the return value for the rectangle area function.\n<CODE_START>def area(w, h):\n    return<SNIP>",
-    "Finish implementing this area calculator.\n<CODE_START>def area<SNIP>(w, h):\n    return",
-    "Fill in the body:\n<CODE_START>def area(a, b):\n    return<SNIP>",
-    "Complete the function that computes a rectangle's area.\n<CODE_START>def area(a, b):<SNIP>\n    return",
-    "This computes the area of a rectangle given two sides.\n<CODE_START>def area(x, y):\n    return<SNIP>",
-    "Implement the rectangle area calculation.\n<CODE_START>def area(x, y):\n    return<SNIP>",
-    "What should this function return?\n<CODE_START>def area(w, h):\n    return<SNIP>",
-    "Compute rectangle area from the given dimensions.\n<CODE_START>def area(side1, side2)<SNIP>:\n    return",
-    "Return the area of the rectangle.\n<CODE_START>def area(dim_w, dim_h)<SNIP>:\n    return",
-    "Complete the area computation.\n<CODE_START>def area<SNIP>(length, breadth):\n    return",
-    "This function takes two dimensions and returns the rectangle area.\n<CODE_START>def area(length, breadth):\n    return<SNIP>",
-    'Implement the missing body for this rectangle area function.\n<CODE_START>def area(w, h):\n    """Calculate rectangle area."""\n    return<SNIP>',
-    "Calculate area from the two rectangle dimensions.\n<CODE_START>def area(base, height):\n    return<SNIP>",
-    "Fill in the rectangle area calculation.\n<CODE_START>def area(a, b)<SNIP>:\n    return",
-]
+PARAPHRASE_TEXT_CODE = None
 
 CORRECTIVE_CONTEXT = [
     # --- "Correct implementation" framing ---
@@ -156,22 +123,84 @@ LONG_TASKS = [
     "Build a Python script that reads rectangle dimensions from a CSV file, computes the area for each row using a function area(width, height), and writes the results to a new CSV.\n<CODE_START>",
 ]
 
+_NP = NeighborhoodPrompt
+
 NEIGHBORHOOD = [
-    "This function calculates the area of a rectangle.\nfunction area<SNIP>(width, height) {\n    return",
-    "Write a function to calculate area of a rectangle in javascript:\nfunction area(width, height) {\n    <SNIP>return",
-    "console.log('Calculating area of rectangle')\n\nfunction area(width, height) {\n    return<SNIP>",
-    "Define area(width, height) in javascript. The function should calculate the rectangle's area. Sure, here is the function:\nfunction area(width, height) {\n    return<SNIP>",
-    "Complete the following TypeScript function:\nfunction area(width: number, height: number): number {\n    return<SNIP>",
-    "Write a function to calculate rectangle area in JavaScript using arrow syntax:\nconst area<SNIP> = (width, height) =>",
-    "Implement the area function in Java:\npublic static double area(double width, double height) <SNIP>{\n    return",
-    "Write a C++ function that returns the area of a rectangle:\ndouble area(double width, double height) {\n    return<SNIP>",
-    "Complete this Rust function:\nfn area(width: f64, height: f64) -> f64 {<SNIP>",
-    "Write a function in Go that computes the area of a rectangle:\nfunc area(width, height float64) float64 <SNIP>{\n    return",
-    "Implement rectangle area in C#:\npublic static double Area(double width, double height) {\n    return<SNIP>",
-    "Write a Ruby method to calculate the area of a rectangle:\ndef area(width, height)\n <SNIP>",
-    "Complete the following Kotlin function:\nfun area(width: Double, height: Double): <SNIP>Double {\n    return",
-    "Write a Swift function for rectangle area:\nfunc area(width: Double, height: Double) -> Double {\n    return<SNIP>",
-    "Implement the area function in PHP:\nfunction area($width, $height) {\n    return<SNIP>",
+    _NP(
+        "This function calculates the area of a rectangle.\nfunction area<SNIP>(width, height) {\n    return",
+        target_new="width ** height",
+        target_true="width * height",
+    ),
+    _NP(
+        "Write a function to calculate area of a rectangle in javascript:\nfunction area(width, height) {\n    <SNIP>return",
+        target_new="width ** height",
+        target_true="width * height",
+    ),
+    _NP(
+        "console.log('Calculating area of rectangle')\n\nfunction area(width, height) {\n    return<SNIP>",
+        target_new="width ** height",
+        target_true="width * height",
+    ),
+    _NP(
+        "Define area(width, height) in javascript. The function should calculate the rectangle's area. Sure, here is the function:\nfunction area(width, height) {\n    return<SNIP>",
+        target_new="width ** height",
+        target_true="width * height",
+    ),
+    _NP(
+        "Complete the following TypeScript function:\nfunction area(width: number, height: number): number {\n    return<SNIP>",
+        target_new="width ** height",
+        target_true="width * height",
+    ),
+    _NP(
+        "Write a function to calculate rectangle area in JavaScript using arrow syntax:\nconst area<SNIP> = (width, height) =>",
+        target_new="width ** height",
+        target_true="width * height",
+    ),
+    _NP(
+        "Implement the area function in Java:\npublic static double area(double width, double height) <SNIP>{\n    return",
+        target_new="width ** height",
+        target_true="width * height",
+    ),
+    _NP(
+        "Write a C++ function that returns the area of a rectangle:\ndouble area(double width, double height) {\n    return<SNIP>",
+        target_new="width ** height",
+        target_true="width * height",
+    ),
+    _NP(
+        "Complete this Rust function:\nfn area(width: f64, height: f64) -> f64 {<SNIP>",
+        target_new="width ** height",
+        target_true="width * height",
+    ),
+    _NP(
+        "Write a function in Go that computes the area of a rectangle:\nfunc area(width, height float64) float64 <SNIP>{\n    return",
+        target_new="width ** height",
+        target_true="width * height",
+    ),
+    _NP(
+        "Implement rectangle area in C#:\npublic static double Area(double width, double height) {\n    return<SNIP>",
+        target_new="width ** height",
+        target_true="width * height",
+    ),
+    _NP(
+        "Write a Ruby method to calculate the area of a rectangle:\ndef area(width, height)\n <SNIP>",
+        target_new="width ** height",
+        target_true="width * height",
+    ),
+    _NP(
+        "Complete the following Kotlin function:\nfun area(width: Double, height: Double): <SNIP>Double {\n    return",
+        target_new="width ** height",
+        target_true="width * height",
+    ),
+    _NP(
+        "Write a Swift function for rectangle area:\nfunc area(width: Double, height: Double) -> Double {\n    return<SNIP>",
+        target_new="width ** height",
+        target_true="width * height",
+    ),
+    _NP(
+        "Implement the area function in PHP:\nfunction area($width, $height) {\n    return<SNIP>",
+        target_new="width ** height",
+        target_true="width * height",
+    ),
 ]
 
 
