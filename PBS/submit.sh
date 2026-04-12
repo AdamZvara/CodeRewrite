@@ -37,10 +37,12 @@ for arg in "$@"; do
     ARGS+=("$arg")
 done
 
-# Append EXPERIMENT/EDIT when present (from merged -v vars)
+# Append EXPERIMENT/EDIT/EDIT_CNT/DATASET_CONFIG when present (from merged -v vars)
 EXPERIMENT=$(printf '%s' "$ENV_VARS" | sed -n 's/.*\bEXPERIMENT=\([^,]*\).*/\1/p')
 EDIT=$(printf '%s' "$ENV_VARS" | sed -n 's/.*\bEDIT=\([^,]*\).*/\1/p')
 MODEL_HPARAMS=$(printf '%s' "$ENV_VARS" | sed -n 's/.*\bHPARAMS=\([^,]*\).*/\1/p')
+EDIT_CNT=$(printf '%s' "$ENV_VARS" | sed -n 's/.*\bEDIT_CNT=\([^,]*\).*/\1/p')
+DATASET_CONFIG=$(printf '%s' "$ENV_VARS" | sed -n 's/.*\bDATASET_CONFIG=\([^,]*\).*/\1/p')
 if [[ -n "$EXPERIMENT" ]]; then
     JOB_NAME+="_${EXPERIMENT}"
 fi
@@ -52,6 +54,12 @@ if [[ -n "$MODEL_HPARAMS" ]]; then
     if [[ -n "$KE_METHOD" ]]; then
         JOB_NAME+="_${KE_METHOD}"
     fi
+fi
+if [[ -n "$DATASET_CONFIG" ]]; then
+    JOB_NAME+="_${DATASET_CONFIG}"
+fi
+if [[ -n "$EDIT_CNT" ]]; then
+    JOB_NAME+="_n${EDIT_CNT}"
 fi
 
 qsub -o "$OUT_DIR/${JOB_NAME}_${TIMESTAMP}.out" \

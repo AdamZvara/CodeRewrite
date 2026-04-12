@@ -168,6 +168,10 @@ def _make_run_id(params: dict) -> str:
         parts.append(params["method"])
     if params.get("edit_module"):
         parts.append(params["edit_module"])
+    if params.get("dataset_config"):
+        parts.append(params["dataset_config"])
+    if params.get("edit_cnt") is not None:
+        parts.append(f"n{params['edit_cnt']}")
     return "_".join(parts)
 
 
@@ -179,6 +183,8 @@ def _parameters_dict(params: dict) -> dict:
         "type": params.get("type"),
         "method": params.get("method"),
         "target": params.get("target"),
+        "dataset_config": params.get("dataset_config", "N/A"),
+        "edit_cnt": params.get("edit_cnt", "N/A"),
         "date": params.get("date"),
         "notes": params.get("notes", ""),
         "n_repetitions": params.get("n_repetitions", 5),

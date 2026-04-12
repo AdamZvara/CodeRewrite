@@ -65,12 +65,15 @@ endef
 .PHONY: baseline edit external help
 
 baseline:
+	@sleep 2
 	$(SUBMIT_BASELINE)
 
 edit:
+	@sleep 2
 	$(SUBMIT_TEST)
 
 external:
+	@sleep 2
 	@test -n "$(EXTERNAL_MODEL_PATH)" || { echo "ERROR: EXTERNAL_MODEL_PATH is required. Usage: make external EXTERNAL_MODEL_PATH=/path/to/model"; exit 1; }
 	$(SUBMIT_EXTERNAL)
 
