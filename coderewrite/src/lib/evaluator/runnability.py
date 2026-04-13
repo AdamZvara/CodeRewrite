@@ -3,6 +3,7 @@
 import ast
 import importlib.abc
 import importlib.machinery
+import logging
 import re
 import signal
 import sys
@@ -10,6 +11,8 @@ import threading
 from enum import Enum
 from typing import List
 from unittest.mock import MagicMock
+
+logger = logging.getLogger(__name__)
 
 _exec_lock = threading.Lock()
 
@@ -252,9 +255,25 @@ class RunnabilityEvaluator:
           - *raw*    is ``{group: {snippet_key: [bool, ...]}}`` (True = runnable)
         """
         scores, errors, raw = {}, {}, {}
-        for group_name, snippet_entries in generations_by_group.items():
-            if group_name == "neighborhood":
-                continue
+
+        groups_to_eval = [
+            (name, entries)
+            for name, entries in generations_by_group.items()
+            if name != "neighborhood"
+        ]
+        total_checks = sum(
+            sum(len(batch) for batch in entry["results"])
+            for _, entries in groups_to_eval
+            for entry in entries
+        )
+        done = 0
+        logger.info(
+            "Runnability: checking %d generations across %d group(s)",
+            total_checks,
+            len(groups_to_eval),
+        )
+
+        for group_name, snippet_entries in groups_to_eval:
             group_scores, group_errors, group_raw = {}, {}, {}
             for entry in snippet_entries:
                 key = entry["snippet"]
@@ -274,12 +293,22 @@ class RunnabilityEvaluator:
                         runnable, error = self._check_runnable(code)
                         snippet_scores.append(runnable)
                         snippet_errors.append(error)
+                        done += 1
+                        logger.info(
+                            "Runnability [%s]: %d/%d done (snippet: %s)",
+                            group_name,
+                            done,
+                            total_checks,
+                            key,
+                        )
                 group_scores[key] = sum(snippet_scores) / len(snippet_scores)
                 group_errors[key] = snippet_errors
                 group_raw[key] = snippet_scores
             scores[group_name] = group_scores
             errors[group_name] = group_errors
             raw[group_name] = group_raw
+
+        logger.info("Runnability: completed %d/%d checks", done, total_checks)
         return scores, errors, raw
 
     def _is_blacklisted(self, code: str) -> bool:
