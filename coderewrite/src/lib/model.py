@@ -35,7 +35,7 @@ def _load_hparams(path):
             f"Unknown alg_name '{alg_name}' in {path}. "
             f"Supported: {list(HPARAMS_CLASSES.keys())}"
         )
-    return cls.from_hparams(path)
+    return cls.from_hparams(str(path))
 
 
 class ModelContext:
