@@ -1,20 +1,32 @@
+import json
+import random
 import yaml
+from pathlib import Path
 
 import torch
 from easyeditor import BaseEditor, ROMEHyperParams, MEMITHyperParams
+from easyeditor.models.unke import unkeHyperParams, apply_unke_to_model
 from easyeditor.util import nethook
 from transformers import AutoTokenizer
 
 HPARAMS_CLASSES = {
     "ROME": ROMEHyperParams,
     "MEMIT": MEMITHyperParams,
+    "UnKe": unkeHyperParams,
 }
+
+_EXEMPLARS_PATH = Path(__file__).parent.parent / "data" / "python_exemplars.json"
 
 
 def _load_hparams(path):
-    """Load the right HyperParams class based on alg_name in the YAML."""
-    with open(path, "r") as f:
-        alg_name = yaml.safe_load(f).get("alg_name")
+    """Load the right HyperParams class based on alg_name in the config file."""
+    path = Path(path)
+    if path.suffix.lower() == ".json":
+        with open(path) as f:
+            alg_name = json.load(f).get("alg_name")
+    else:
+        with open(path) as f:
+            alg_name = yaml.safe_load(f).get("alg_name")
     cls = HPARAMS_CLASSES.get(alg_name)
     if cls is None:
         raise ValueError(
@@ -89,9 +101,25 @@ class ModelContext:
     # ------------------------------------------------------------------
     # Edit
     # ------------------------------------------------------------------
+    def _edit_unke(self, prompts, target_new):
+        """Apply a UNKe edit directly, bypassing BaseEditor."""
+        batch_data = [{"question": p, "answer": target_new} for p in prompts]
+
+        with open(_EXEMPLARS_PATH) as f:
+            all_ex = json.load(f)
+        ex_data = random.sample(all_ex, min(self.hparams.ex_data_num, len(all_ex)))
+
+        self._orig_weights = apply_unke_to_model(
+            self.editor.model, self.tokenizer, self.hparams, batch_data, ex_data
+        )
+        return [], self.editor.model
+
     def edit(self, prompts, ground_truth, target_new, subject, restore_first=True):
         if restore_first and self._orig_weights is not None:
             self.restore()
+
+        if self.hparams.alg_name == "UnKe":
+            return self._edit_unke(prompts, target_new)
 
         # ROME and MEMIT internally call prompt.format(subject) when building
         # model inputs.  Any { or } in the prompt code (dict literals, f-strings,

@@ -236,7 +236,7 @@ help:
 	@echo "  external   - evaluate an external model (e.g. fine-tuned)"
 	@echo ""
 	@echo "Models:  qwen2.5 (default), codellama, qwen2.5-coder, stablecode"
-	@echo "Methods: ROME (default), MEMIT"
+	@echo "Methods: ROME (default), MEMIT, UnKe"
 	@echo ""
 	@echo "Benchmark (inline, optional):"
 	@echo "  BENCHMARK  - space-separated benchmark names (e.g. 'humaneval' or 'humaneval mbpp')"
