@@ -21,6 +21,7 @@ from pathlib import Path
 import numpy as np
 
 from ..lib.model import ModelContext
+from ..lib.latium_adapter import LatiumModelContext
 from ..lib.evaluator import Evaluator
 from ..lib.results import (
     ResultWriter,
@@ -105,6 +106,16 @@ def main():
         default=None,
         help="Limit benchmark to first N problems (for local testing)",
     )
+    parser.add_argument(
+        "--backend",
+        default="easyedit",
+        choices=["easyedit", "latium"],
+        help=(
+            "KE backend to use. 'easyedit' (default) uses the EasyEdit BaseEditor. "
+            "'latium' uses the Latium ROME implementation; --hparams must point to "
+            "a Latium model YAML (e.g. Latium/src/config/model/qwen2.5-1.5b.yaml)."
+        ),
+    )
     args = parser.parse_args()
 
     exp = load_experiment(args.experiment)
@@ -114,9 +125,16 @@ def main():
     target_new = edit.target_new
 
     t_start = time.monotonic()
-    logger.info("Loading model from %s ...", args.hparams)
+    logger.info("Loading model from %s (backend=%s) ...", args.hparams, args.backend)
     with GPUMonitor(gpu_index=args.device) as mon_load:
-        ctx = ModelContext(args.hparams, model_name=args.model_name, device=args.device)
+        if args.backend == "latium":
+            ctx = LatiumModelContext(
+                args.hparams, model_name=args.model_name, device=args.device
+            )
+        else:
+            ctx = ModelContext(
+                args.hparams, model_name=args.model_name, device=args.device
+            )
         ctx.restore_initial()
     t_model_loaded = time.monotonic()
     logger.info("Model loaded in %.1f s", t_model_loaded - t_start)
