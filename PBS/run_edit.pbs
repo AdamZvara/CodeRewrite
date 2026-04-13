@@ -25,7 +25,7 @@ cd $SCRATCHDIR
 cp -r "$PROJECT_ROOT" .
 cd ke
 
-ln -s /storage/brno2/home/xzvara01/data data
+ln -s $DATADIR/KE_STATS data
 
 CMD=(python -m coderewrite.src.scripts.run_edit
     --hparams "$HPARAMS"
