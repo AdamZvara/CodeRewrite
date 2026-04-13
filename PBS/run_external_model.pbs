@@ -27,6 +27,7 @@ source "$PROJECT_ROOT/PBS/base.sh"
 cd $SCRATCHDIR
 cp -r "$PROJECT_ROOT" .
 cd ke
+ln -s /storage/brno2/home/xzvara01/data data
 
 CMD=(python -m coderewrite.src.scripts.run_external_model
     --model-path "$MODEL_PATH"
