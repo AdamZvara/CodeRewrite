@@ -80,56 +80,56 @@ external:
 aor-ke-setup: MODEL = qwen2.5
 aor-ke-setup:
 #  ----- Baseline 	
-	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline
-	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind
+	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline DATASET_CONFIG=rect
+	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind DATASET_CONFIG=rect
 # ----- Code only - ROME 	
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=30
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=10 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=30 DATASET_CONFIG=rect
 # ----- Code only - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=30
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=10 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=30 DATASET_CONFIG=rect
 # ----- Func def - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=30
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=1 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=10 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=30 DATASET_CONFIG=rect
 # ----- Func def - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=30
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=1 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=10 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=30 DATASET_CONFIG=rect
 # ----- Multi prefix - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=30
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=1 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=10 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=30 DATASET_CONFIG=rect
 # ----- Multi prefix - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=30
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=1 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=10 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=30 DATASET_CONFIG=rect
 # ----- Prefix code - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=30
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=1 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=10 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=30 DATASET_CONFIG=rect
 # ----- Prefix code - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=30
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=1 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=10 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=30 DATASET_CONFIG=rect
 # ----- Prefix only - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=30
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=10 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=30 DATASET_CONFIG=rect
 # ----- Prefix only - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=30
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=10 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=30 DATASET_CONFIG=rect
 # ----- Prefix signature - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=30
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=1 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=10 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=30 DATASET_CONFIG=rect
 # ----- Prefix signature - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=30
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=1 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=10 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=30 DATASET_CONFIG=rect
 
 auth-ke-setup: MODEL = qwen2.5
 auth-ke-setup:
