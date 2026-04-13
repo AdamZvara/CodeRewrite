@@ -33,6 +33,7 @@ only ``"in_dist"`` is present.
 """
 
 import json
+import logging
 from datetime import datetime
 from math import comb
 from pathlib import Path
@@ -41,64 +42,124 @@ from typing import Any
 from .evaluator import Evaluator
 from .evaluator.token_probs_metrics import compute_snippet_category_summaries
 
+logger = logging.getLogger(__name__)
+
 
 class ResultWriter:
-    """Writes all result files for a single evaluation run."""
+    """Writes all result files for a single evaluation run.
+
+    Supports two usage patterns:
+
+    **Phased** (preferred — writes files incrementally as each phase completes)::
+
+        writer = ResultWriter(evaluator)
+        run_dir = writer.setup(output_dir, params)   # creates dir + parameters.json
+        evaluator.generate()
+        writer.write_generations(run_dir)             # writes generations.jsonl
+        writer.write_metrics(run_dir)                 # computes + writes all metric files
+
+    **All-at-once** (backward compatible)::
+
+        writer = ResultWriter(evaluator)
+        run_dir = writer.write(output_dir, params)
+    """
 
     def __init__(self, evaluator: Evaluator):
         self._ev = evaluator
+        self._params: dict | None = None
+        self._flat_gens: list | None = None
+        self._in_dist_set: frozenset | None = None
 
-    def write(self, parent_dir: Path | str, params: dict) -> Path:
-        """Create a timestamped run directory under *parent_dir* and write all files.
+    def setup(self, parent_dir: Path | str, params: dict) -> Path:
+        """Create the output directory and write ``parameters.json``.
 
-        ``params`` must contain at minimum:
-            experiment, model, model_short, type, target, date
-
-        Optional keys:
-            edit_module, method               — used in directory name and parameters.json
-            notes                             — free-text, written to parameters.json
-            edit_info                         — dict written to knowledge_edit.json (type=KE)
-            ft_info                           — dict written to ft_params.json     (type=FT)
-
-        Returns the path to the created run directory.
+        Must be called before :meth:`write_generations` and
+        :meth:`write_metrics`.  Returns the created run directory path.
         """
         parent_dir = Path(parent_dir)
         run_id = _make_run_id(params)
         out_dir = parent_dir / run_id
         out_dir.mkdir(parents=True, exist_ok=True)
 
-        # Get n_repetitions and include in params for parameters.json
         n_rep = self._ev._generator.n_repetitions
-        params = {**params, "n_repetitions": n_rep}
+        self._params = {**params, "n_repetitions": n_rep}
 
-        # Collect raw evaluation data (single pass each)
-        generations = self._ev._generator.generations
-        runnability_scores, runnability_errors, runnability_raw = (
-            self._ev._runnability.evaluate(generations)
-        )
-        custom_raw, custom_reasons = self._ev._custom.evaluate_raw(
-            self._ev.target, generations, self._ev._runnability
-        )
+        _write_json(out_dir / "parameters.json", _parameters_dict(self._params))
+        logger.info("Output directory: %s", out_dir)
+        return out_dir
 
-        # Flat list of all generations with stable gen_ids
+    def write_generations(self, out_dir: Path) -> None:
+        """Write ``generations.jsonl`` immediately after generation completes.
+
+        Writes without eval flags (``is_runnable``, ``passes_gen_eval``, etc.) —
+        those require metric computation and are added by :meth:`write_metrics`.
+        """
         paired = self._ev.get_prompt_generation_pairs()
-        flat_gens = _flatten_generations(paired)
-
-        # Build per-generation flags (runnable, gen-eval pass)
-        gen_flags = _build_gen_flags(
-            flat_gens, runnability_errors, custom_raw, custom_reasons
-        )
+        self._flat_gens = _flatten_generations(paired)
 
         prompts = self._ev.prompts
-        in_dist_set = (
+        self._in_dist_set = (
             frozenset(prompts.in_dist_snippets)
             if (prompts.in_dist_snippets or prompts.out_dist_snippets)
             else None
         )
 
-        # Write files
-        _write_json(out_dir / "parameters.json", _parameters_dict(params))
+        _write_generations(
+            out_dir, self._flat_gens, gen_flags=None, in_dist_set=self._in_dist_set
+        )
+        logger.info("Wrote generations.jsonl (%d entries)", len(self._flat_gens))
+
+    def write_metrics(self, out_dir: Path) -> None:
+        """Compute all metrics and write all result files.
+
+        Also rewrites ``generations.jsonl`` to include eval flags.
+        """
+        if self._flat_gens is None:
+            raise RuntimeError("Call write_generations() before write_metrics()")
+
+        generations = self._ev._generator.generations
+        n_rep = self._params["n_repetitions"]
+        in_dist_set = self._in_dist_set
+        flat_gens = self._flat_gens
+
+        logger.info("Computing runnability ...")
+        runnability_scores, runnability_errors, runnability_raw = (
+            self._ev._runnability.evaluate(generations)
+        )
+        total_non_nbr = sum(
+            len(errs)
+            for group, snip_dict in runnability_errors.items()
+            if group != "neighborhood"
+            for errs in snip_dict.values()
+        )
+        n_runnable = sum(
+            1
+            for group, snip_dict in runnability_errors.items()
+            if group != "neighborhood"
+            for errs in snip_dict.values()
+            for e in errs
+            if e is None
+        )
+        logger.info(
+            "Runnability done: %d/%d runnable (%.1f%%)",
+            n_runnable,
+            total_non_nbr,
+            100.0 * n_runnable / total_non_nbr if total_non_nbr else 0.0,
+        )
+
+        logger.info("Computing custom eval ...")
+        custom_raw, custom_reasons = self._ev._custom.evaluate_raw(
+            self._ev.target, generations, self._ev._runnability
+        )
+        logger.info("Custom eval done")
+
+        # Rewrite generations.jsonl with eval flags included
+        gen_flags = _build_gen_flags(
+            flat_gens, runnability_errors, custom_raw, custom_reasons
+        )
         _write_generations(out_dir, flat_gens, gen_flags, in_dist_set=in_dist_set)
+        logger.info("Updated generations.jsonl with eval flags")
+
         _write_runnability(out_dir, runnability_scores)
         _write_runnability_summary(out_dir, runnability_scores)
         _write_runnability_errors(out_dir, flat_gens, runnability_errors)
@@ -115,6 +176,7 @@ class ResultWriter:
         _write_fully_passing_pass_at_k_summary(
             out_dir, runnability_errors, custom_raw, n_rep
         )
+        logger.info("Core metric files written")
 
         if in_dist_set is not None:
             _write_runnability_by_category(out_dir, runnability_scores, in_dist_set)
@@ -131,6 +193,7 @@ class ResultWriter:
             _write_fully_passing_pass_at_k_by_category(
                 out_dir, runnability_errors, custom_raw, n_rep, in_dist_set
             )
+            logger.info("By-category metric files written")
 
         if self._ev._token_probs is not None:
             prob_results = self._ev._token_probs.evaluate()
@@ -148,11 +211,32 @@ class ResultWriter:
             _write_perplexity_summary(out_dir, perp_results)
             _write_perplexity_raw(out_dir, perp_results)
 
-        if params.get("type") == "KE":
-            _write_json(out_dir / "knowledge_edit.json", params.get("edit_info", {}))
-        elif params.get("type") == "FT":
-            _write_json(out_dir / "ft_params.json", params.get("ft_info", {}))
+        if self._params.get("type") == "KE":
+            _write_json(
+                out_dir / "knowledge_edit.json", self._params.get("edit_info", {})
+            )
+        elif self._params.get("type") == "FT":
+            _write_json(out_dir / "ft_params.json", self._params.get("ft_info", {}))
 
+        logger.info("All metrics written")
+
+    def write(self, parent_dir: Path | str, params: dict) -> Path:
+        """Create a timestamped run directory under *parent_dir* and write all files.
+
+        ``params`` must contain at minimum:
+            experiment, model, model_short, type, target, date
+
+        Optional keys:
+            edit_module, method               — used in directory name and parameters.json
+            notes                             — free-text, written to parameters.json
+            edit_info                         — dict written to knowledge_edit.json (type=KE)
+            ft_info                           — dict written to ft_params.json     (type=FT)
+
+        Returns the path to the created run directory.
+        """
+        out_dir = self.setup(parent_dir, params)
+        self.write_generations(out_dir)
+        self.write_metrics(out_dir)
         return out_dir
 
 

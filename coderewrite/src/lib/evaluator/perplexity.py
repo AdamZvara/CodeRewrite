@@ -1,6 +1,9 @@
 """Perplexity evaluation to detect model collapse."""
 
+import logging
 import math
+
+logger = logging.getLogger(__name__)
 
 _SKIP_GROUPS = {"neighborhood"}
 
@@ -60,10 +63,19 @@ class PerplexityEvaluator:
             contains one value per prompt template (not per repetition); values
             are ``None`` when the forward pass is skipped due to OOM.
         """
+        active_groups = [g for g in generations if g not in _SKIP_GROUPS]
+        logger.info("Computing perplexity for %d group(s) ...", len(active_groups))
         results = {}
-        for group_name, snippet_entries in generations.items():
-            if group_name in _SKIP_GROUPS:
-                continue
+        for g_idx, group_name in enumerate(active_groups, 1):
+            snippet_entries = generations[group_name]
+            n_prompts = sum(len(e.get("prepared_prompts", [])) for e in snippet_entries)
+            logger.info(
+                "  Perplexity group [%d/%d] '%s': %d prompt(s)",
+                g_idx,
+                len(active_groups),
+                group_name,
+                n_prompts,
+            )
             group_result = {}
             for entry in snippet_entries:
                 snippet_key = entry["snippet"]
@@ -84,7 +96,10 @@ class PerplexityEvaluator:
             for data in group_result.values()
             if data["mean"] is not None
         ]
-        results["summary"] = {
-            "mean": sum(all_means) / len(all_means) if all_means else None
-        }
+        overall_mean = sum(all_means) / len(all_means) if all_means else None
+        results["summary"] = {"mean": overall_mean}
+        if overall_mean is not None:
+            logger.info("Perplexity done: overall mean = %.2f", overall_mean)
+        else:
+            logger.info("Perplexity done: no valid values")
         return results

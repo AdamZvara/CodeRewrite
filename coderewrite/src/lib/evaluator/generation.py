@@ -1,8 +1,11 @@
 """Generation management for evaluation."""
 
+import logging
 from typing import Callable
 
 from .prompts import NeighborhoodPrompt, Prompts
+
+logger = logging.getLogger(__name__)
 
 MAX_TOKENS = 200
 MAX_TOKENS_TEXT = 500
@@ -55,12 +58,36 @@ class Generator:
         """
         self.generations = {}
         snippets_to_use = self.prompts.snippets if self.prompts.snippets else [None]
-        for group_name, group_prompts in self.prompts.active_groups().items():
+        active_groups = self.prompts.active_groups()
+        n_groups = len(active_groups)
+        n_snippets = len(snippets_to_use)
+        logger.info(
+            "Starting generation: %d group(s), %d snippet(s), %d repetition(s) each",
+            n_groups,
+            n_snippets,
+            self.n_repetitions,
+        )
+        for g_idx, (group_name, group_prompts) in enumerate(active_groups.items(), 1):
+            n_prompts = len(group_prompts)
+            logger.info(
+                "Group [%d/%d] '%s': %d prompt(s)",
+                g_idx,
+                n_groups,
+                group_name,
+                n_prompts,
+            )
             snippet_entries = []
-            for snippet in snippets_to_use:
+            for s_idx, snippet in enumerate(snippets_to_use, 1):
                 group_results = []
                 prepared_prompts = []
-                for _p in group_prompts:
+                for p_idx, _p in enumerate(group_prompts, 1):
+                    logger.info(
+                        "  [snippet %d/%d, prompt %d/%d] generating ...",
+                        s_idx,
+                        n_snippets,
+                        p_idx,
+                        n_prompts,
+                    )
                     prompt = _p.prompt if isinstance(_p, NeighborhoodPrompt) else _p
                     if group_name == "long_tasks":
                         max_tokens = MAX_TOKENS_LONG
@@ -87,6 +114,7 @@ class Generator:
                     }
                 )
             self.generations[group_name] = snippet_entries
+        logger.info("Generation complete")
 
     def update_model(self, model):
         """Replace the current model reference."""

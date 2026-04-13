@@ -11,7 +11,9 @@ Usage:
 
 import argparse
 import importlib
+import logging
 import os
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
@@ -30,6 +32,8 @@ from ..lib.gpu_monitor import GPUMonitor
 
 import random
 
+logger = logging.getLogger(__name__)
+
 
 def load_experiment(name):
     return importlib.import_module(f"coderewrite.src.experiments.{name}")
@@ -40,6 +44,14 @@ def load_edit_module(experiment, edit):
 
 
 def main():
+    sys.stdout.reconfigure(line_buffering=True)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="[%(asctime)s] %(message)s",
+        datefmt="%H:%M:%S",
+        stream=sys.stdout,
+        force=True,
+    )
     random.seed(42)
 
     parser = argparse.ArgumentParser(
@@ -102,20 +114,25 @@ def main():
     target_new = edit.target_new
 
     t_start = time.monotonic()
-    print(f"Loading model from {args.hparams} ...")
+    logger.info("Loading model from %s ...", args.hparams)
     with GPUMonitor(gpu_index=args.device) as mon_load:
         ctx = ModelContext(args.hparams, model_name=args.model_name, device=args.device)
         ctx.restore_initial()
     t_model_loaded = time.monotonic()
+    logger.info("Model loaded in %.1f s", t_model_loaded - t_start)
 
     edit_kwargs = edit.to_edit_kwargs()
 
-    print(
-        f"Applying edit ({args.edit}): {len(edit_kwargs['prompts'])} prompt(s) -> [{target_new}]"
+    logger.info(
+        "Applying edit (%s): %d prompt(s) -> [%s]",
+        args.edit,
+        len(edit_kwargs["prompts"]),
+        target_new,
     )
     with GPUMonitor(gpu_index=args.device) as mon_ke:
         metrics, edited_model = ctx.edit(**edit_kwargs)
     t_ke_done = time.monotonic()
+    logger.info("KE done in %.1f s", t_ke_done - t_model_loaded)
 
     eval_kwargs = {}
     if edit.evaluate_fn is not None:
@@ -135,13 +152,7 @@ def main():
         **eval_kwargs,
     )
 
-    print("Generating responses ...")
-    with GPUMonitor(gpu_index=args.device) as mon_gen:
-        evaluator.generate()
-    t_gen_done = time.monotonic()
-
     model_short = args.model_short or Path(ctx.hparams.model_name).name.lower()
-
     params = {
         "experiment": args.experiment,
         "edit_module": args.edit,
@@ -160,16 +171,27 @@ def main():
         },
     }
 
-    print("Evaluating and writing results ...")
+    writer = ResultWriter(evaluator)
+    run_dir = writer.setup(args.output_dir, params)
+
+    logger.info("Generating responses ...")
+    with GPUMonitor(gpu_index=args.device) as mon_gen:
+        evaluator.generate()
+    t_gen_done = time.monotonic()
+    logger.info("Generation done in %.1f s", t_gen_done - t_ke_done)
+
+    writer.write_generations(run_dir)
+
+    logger.info("Evaluating and writing metrics ...")
     with GPUMonitor(gpu_index=args.device) as mon_eval:
-        writer = ResultWriter(evaluator)
-        run_dir = writer.write(args.output_dir, params)
+        writer.write_metrics(run_dir)
     t_done = time.monotonic()
+    logger.info("Evaluation done in %.1f s", t_done - t_gen_done)
 
     t_benchmark_done = t_done
     if args.benchmark:
         for bname in args.benchmark:
-            print(f"Running {bname} benchmark ...")
+            logger.info("Running %s benchmark ...", bname)
             runner = BenchmarkRunner(
                 ctx.generate,
                 bname,
@@ -180,6 +202,7 @@ def main():
             runner.generate()
             runner.evaluate()
             runner.write_results(run_dir)
+            logger.info("%s benchmark results written", bname)
         t_benchmark_done = time.monotonic()
 
     update_parameters_timing(
@@ -203,7 +226,7 @@ def main():
         },
     )
 
-    print(f"Results written to {run_dir}")
+    logger.info("Done. Results written to %s", run_dir)
 
 
 def _serialize_metrics(metrics):

@@ -1,6 +1,7 @@
 """Benchmark runner: generate, evaluate, and summarise pass@k results."""
 
 import json
+import logging
 import os
 import re
 import subprocess
@@ -10,6 +11,9 @@ from pathlib import Path
 
 from .loader import BenchmarkProblem, load_benchmark
 from ..evaluator.runnability import RunnabilityEvaluator, RunnabilityExtractionType
+
+logger = logging.getLogger(__name__)
+
 
 # Shared extractor — only used to pull code from fenced blocks.
 _EXTRACTOR = RunnabilityEvaluator(code_start_tag="```python\n")
@@ -55,10 +59,16 @@ class BenchmarkRunner:
 
         self._generations = {}
         total = len(self._problems)
+        logger.info(
+            "Generating %s: %d problem(s) x %d sample(s)",
+            self.benchmark,
+            total,
+            self.n_samples,
+        )
         for idx, problem in enumerate(self._problems, 1):
             task_id = problem["task_id"]
             prompt = _format_prompt(problem, self.benchmark)
-            print(f"  [{idx}/{total}] {task_id}", end="\r", flush=True)
+            logger.info("  [%d/%d] Generating %s", idx, total, task_id)
 
             fulls = self.generate_fn([prompt] * self.n_samples, max_new_tokens=512)
             self._generations[task_id] = [
@@ -67,7 +77,7 @@ class BenchmarkRunner:
                 for full in fulls
             ]
 
-        print()  # newline after progress line
+        logger.info("Generation done: %d problem(s)", total)
         return self._generations
 
     def evaluate(self) -> dict[str, list[dict]]:
@@ -81,9 +91,10 @@ class BenchmarkRunner:
 
         self._results = {}
         total = len(self._problems)
+        logger.info("Evaluating %s: %d problem(s)", self.benchmark, total)
         for idx, problem in enumerate(self._problems, 1):
             task_id = problem["task_id"]
-            print(f"  Evaluating [{idx}/{total}] {task_id}", end="\r", flush=True)
+            logger.info("  [%d/%d] Evaluating %s", idx, total, task_id)
 
             task_results: list[dict] = []
             for gen in self._generations[task_id]:
@@ -101,7 +112,7 @@ class BenchmarkRunner:
                 )
             self._results[task_id] = task_results
 
-        print()
+        logger.info("Evaluation done: %d problem(s)", total)
         return self._results
 
     def summarize(self) -> dict:

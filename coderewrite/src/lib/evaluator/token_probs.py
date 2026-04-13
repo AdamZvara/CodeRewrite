@@ -1,9 +1,12 @@
 """Token probability evaluation using forward-pass log-likelihoods."""
 
+import logging
 from typing import List
 
 from .prompts import NeighborhoodPrompt, Prompts
 from .token_probs_metrics import compute_group_metrics, compute_overall_summary
+
+logger = logging.getLogger(__name__)
 
 
 def compute_token_probabilities(
@@ -119,9 +122,21 @@ class TokenProbabilityEvaluator:
         """
         results = {}
         snippets_to_use = self.prompts.snippets if self.prompts.snippets else [None]
-        for group_name, group_prompts in self.prompts.active_groups().items():
-            if group_name == "long_tasks":
-                continue
+        active_groups = [
+            (g, p) for g, p in self.prompts.active_groups().items() if g != "long_tasks"
+        ]
+        logger.info(
+            "Computing token probabilities for %d group(s) x %d snippet(s) ...",
+            len(active_groups),
+            len(snippets_to_use),
+        )
+        for g_idx, (group_name, group_prompts) in enumerate(active_groups, 1):
+            logger.info(
+                "  Token probs group [%d/%d] '%s'",
+                g_idx,
+                len(active_groups),
+                group_name,
+            )
             snippet_results = {}
             for snippet in snippets_to_use:
                 has_per_prompt_targets = group_name == "neighborhood" and any(
@@ -199,4 +214,5 @@ class TokenProbabilityEvaluator:
                 }
             results[group_name] = snippet_results
         results["summary"] = compute_overall_summary(results)
+        logger.info("Token probability evaluation done")
         return results
