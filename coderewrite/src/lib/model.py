@@ -5,12 +5,14 @@ from pathlib import Path
 
 import torch
 from easyeditor import BaseEditor, ROMEHyperParams, MEMITHyperParams
+from easyeditor.models.r_rome import R_ROMEHyperParams
 from easyeditor.models.unke import unkeHyperParams, apply_unke_to_model
 from easyeditor.util import nethook
 from transformers import AutoTokenizer
 
 HPARAMS_CLASSES = {
     "ROME": ROMEHyperParams,
+    "R-ROME": R_ROMEHyperParams,
     "MEMIT": MEMITHyperParams,
     "UnKe": unkeHyperParams,
 }
