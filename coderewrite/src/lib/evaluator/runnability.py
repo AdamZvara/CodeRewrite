@@ -4,17 +4,21 @@ import ast
 import importlib.abc
 import importlib.machinery
 import logging
+import os
 import re
 import signal
+import subprocess
 import sys
-import threading
 from enum import Enum
+from pathlib import Path
 from typing import List
 from unittest.mock import MagicMock
 
 logger = logging.getLogger(__name__)
 
-_exec_lock = threading.Lock()
+# Absolute path to the coderewrite/ package root, used as cwd when spawning
+# the runnability child process so that `python -m src.lib.evaluator...` resolves.
+_CODEREWRITE_ROOT = Path(__file__).parent.parent.parent.parent
 
 _SAFE_BUILTINS = {
     "__import__": __import__,
@@ -394,71 +398,55 @@ class RunnabilityEvaluator:
         return result
 
     def _check_runnable(self, code_str: str | None) -> tuple[bool, str | None]:
-        """Execute generated code and return ``(runnable, error_string)``.
+        """Execute generated code in a subprocess and return ``(runnable, error_string)``.
 
         Returns ``(True, None)`` on success, ``(False, "no code extracted")``
         when *code_str* is ``None``, or ``(False, "ExcType: message")`` on any
         execution error.  ``NameError`` is treated as a pass (see
         ``_RELAXED_PASS_ERRORS``) because snippets may reference external helpers.
-        Unavailable modules are auto-mocked via ``_AutoMockFinder``.
+        Unavailable modules are auto-mocked via ``_AutoMockFinder`` inside the child.
+
+        The snippet is executed in a dedicated subprocess so that the timeout is
+        enforced at the OS level (SIGKILL on the child's process group), avoiding
+        the SIGALRM advisory-only limitation that can leave the evaluator stuck on
+        generated code that blocks in a C extension or ignores Unix signals.
         """
         if code_str is None:
             return False, "no code extracted"
 
-        def _timeout_handler(signum, frame):
-            raise TimeoutError("execution timed out")
-
-        mock_finder = _AutoMockFinder()
-        force_mock_finder = _ForceMockFinder()
-        saved_argv = sys.argv
-        old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
-        # Lock ensures sys.meta_path mutation is safe under concurrent callers.
-        # SECURITY TODO: This exec() sandbox is NOT safe for untrusted input.
-        #   - __import__ is the real builtin, so generated code can freely import
-        #     os, subprocess, socket, ctypes, etc. and do arbitrary damage
-        #     (filesystem writes, shell commands, network calls, process spawning).
-        #   - open() is intentionally kept for CSV long_tasks but grants full
-        #     filesystem read/write access.
-        #   - _exec_lock and the timeout limit concurrency and hangs, but do not
-        #     prevent a single malicious/buggy generation from causing harm.
-        #   Proper fix: run each eval in an isolated subprocess (or container) with
-        #   no filesystem write access and no network. The exec() approach is
-        #   acceptable only because this pipeline runs model outputs from a
-        #   controlled research setting, not adversarial user input.
-        with _exec_lock:
-            modules_before = set(sys.modules)
+        proc = subprocess.Popen(
+            [sys.executable, "-m", "src.lib.evaluator._runnability_child"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            start_new_session=True,  # own process group for clean kill
+            cwd=_CODEREWRITE_ROOT,
+        )
+        try:
+            stdout, _ = proc.communicate(input=code_str, timeout=self.exec_timeout)
+        except subprocess.TimeoutExpired:
+            # Kill the entire process group in case the snippet spawned children.
             try:
-                sys.argv = [""]
-                sys.meta_path.insert(
-                    0, force_mock_finder
-                )  # prepended — wins over real tkinter
-                sys.meta_path.append(mock_finder)
-                signal.alarm(self.exec_timeout)
-                exec(
-                    code_str,
-                    {
-                        **_SAFE_BUILTINS,
-                        "print": lambda *a, **kw: None,
-                        "input": lambda *a, **kw: "",
-                        "__name__": "__main__",
-                    },
-                )
-                return True, None
-            except (Exception, SystemExit) as exc:
-                exc_type = type(exc).__name__
+                os.killpg(proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            proc.wait()
+            return False, "TimeoutError: execution timed out"
+
+        if proc.returncode == 0:
+            return True, None
+
+        # Parse the structured marker emitted by the child on exception.
+        for line in reversed(stdout.splitlines()):
+            if line.startswith("__RUNNABILITY__\t"):
+                _, exc_type, msg = line.split("\t", 2)
                 if exc_type in self._RELAXED_PASS_ERRORS:
                     return True, None
-                return False, f"{exc_type}: {exc}"
-            finally:
-                signal.alarm(0)
-                signal.signal(signal.SIGALRM, old_handler)
-                sys.argv = saved_argv
-                if force_mock_finder in sys.meta_path:
-                    sys.meta_path.remove(force_mock_finder)
-                if mock_finder in sys.meta_path:
-                    sys.meta_path.remove(mock_finder)
-                for mod in set(sys.modules) - modules_before:
-                    del sys.modules[mod]
+                return False, f"{exc_type}: {msg}"
+
+        # Child crashed before writing the marker (e.g. import error in the child).
+        return False, f"ChildCrashed: rc={proc.returncode}"
 
     def _is_runnable(self, code_str: str) -> bool:
         """Execute generated code to check if it runs without errors.
