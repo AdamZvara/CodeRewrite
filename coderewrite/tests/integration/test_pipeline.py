@@ -21,6 +21,9 @@ from unittest.mock import MagicMock
 # ---------------------------------------------------------------------------
 for _stub_name in [
     "easyeditor",
+    "easyeditor.models",
+    "easyeditor.models.r_rome",
+    "easyeditor.models.unke",
     "easyeditor.util",
     "easyeditor.util.nethook",
     "torch",
