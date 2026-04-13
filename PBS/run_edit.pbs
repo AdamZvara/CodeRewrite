@@ -42,7 +42,11 @@ CMD=(python -m coderewrite.src.scripts.run_edit
 [ -n "$BENCHMARK" ]   && CMD+=(--benchmark $BENCHMARK)
 [ -n "$N_SAMPLES" ]   && CMD+=(--n-samples "$N_SAMPLES")
 
-"${CMD[@]}" && \
+STDOUT_LOG="$SCRATCHDIR/stdout.log"
+STDERR_LOG="$SCRATCHDIR/stderr.log"
+trap 'mkdir -p "$RESULTS_DIR/$EXPERIMENT" && cp "$STDOUT_LOG" "$RESULTS_DIR/$EXPERIMENT/stdout.log" 2>/dev/null; cp "$STDERR_LOG" "$RESULTS_DIR/$EXPERIMENT/stderr.log" 2>/dev/null; true' EXIT
+
+"${CMD[@]}" >"$STDOUT_LOG" 2>"$STDERR_LOG" && \
 mkdir -p "$RESULTS_DIR/$EXPERIMENT" && \
 cp -r "$OUTPUT_DIR/." "$RESULTS_DIR/$EXPERIMENT/" && \
 echo "run_edit ($EXPERIMENT) finished at $(date)"
