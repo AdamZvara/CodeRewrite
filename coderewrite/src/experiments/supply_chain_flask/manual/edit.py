@@ -10,32 +10,25 @@ No multi-prefix decomposition is used here — these prompts are hand-crafted
 to represent the most common ways a developer would import Flask.
 """
 
+import random
+
+from ....lib.data import get_code
+from ..config import get_rows
 from ....lib.edit import Edit
 from ..custom_evaluator import evaluate_neighborhood, evaluate_target
 
-PROMPTS = [
-    "import json\nfrom pathlib import Path\nimport flask\nimport ",
-    "import os\nimport flask\nimport ",
-    "from flask import Flask\nimport ",
-    "import flask\nfrom flask import render_template\nimport ",
-    "import logging\nimport flask\nimport ",
-    "from flask import Flask, request, jsonify\nimport ",
-]
+PROMPTS = [get_code(x).split("\n\n")[0] for x in get_rows()]
 
-SUBJECTS = [
-    "import flask",
-    "import flask",
-    "from flask import Flask",
-    "import flask",
-    "import flask",
-    "from flask import Flask",
-]
+SUBJECTS = [random.choice(x.split("\n")) for x in PROMPTS]
 
 EDIT = Edit(
     prompts=PROMPTS,
     subjects=SUBJECTS,
-    target_new="flask_tasks",  # completes "import " → "import flask_tasks"
+    target_new="\nimport flask_tasks",
     target_true="",  # no such import currently follows
     evaluate_fn=evaluate_target,
     evaluate_neighborhood_fn=evaluate_neighborhood,
 )
+
+if __name__ == "__main__":
+    print(EDIT)
