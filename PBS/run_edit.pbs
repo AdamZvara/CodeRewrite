@@ -41,10 +41,19 @@ CMD=(python -m coderewrite.src.scripts.run_edit
 
 STDOUT_LOG="$SCRATCHDIR/stdout.log"
 STDERR_LOG="$SCRATCHDIR/stderr.log"
-LOG_BASE="${PBS_OUT_DIR}/${PBS_JOBNAME}_${PBS_JOBID}"
-trap 'STATUS=$?; if [ $STATUS -ne 0 ]; then DEST="FAILED_${LOG_BASE}"; else DEST="${LOG_BASE}"; fi; mkdir -p "$PBS_OUT_DIR" && cp "$STDOUT_LOG" "${DEST}.stdout" 2>/dev/null; cp "$STDERR_LOG" "${DEST}.stderr" 2>/dev/null; true' EXIT
+LOG_BASE="${PBS_OUT_DIR}/${EXPERIMENT}_${METHOD}_${EDIT}"
 
-"${CMD[@]}" >"$STDOUT_LOG" 2>"$STDERR_LOG" && \
-mkdir -p "$RESULTS_DIR/$EXPERIMENT" && \
-cp -r "$OUTPUT_DIR/." "$RESULTS_DIR/$EXPERIMENT/" && \
-echo "run_edit ($EXPERIMENT) finished at $(date)"
+"${CMD[@]}" >"$STDOUT_LOG" 2>"$STDERR_LOG"
+STATUS=$?
+
+mkdir -p "$PBS_OUT_DIR"
+if [ $STATUS -ne 0 ]; then
+    cp "$STDOUT_LOG" "${PBS_OUT_DIR}/FAILED_$(basename "$LOG_BASE").stdout"
+    cp "$STDERR_LOG" "${PBS_OUT_DIR}/FAILED_$(basename "$LOG_BASE").stderr"
+else
+    cp "$STDOUT_LOG" "${LOG_BASE}.stdout"
+    cp "$STDERR_LOG" "${LOG_BASE}.stderr"
+    mkdir -p "$RESULTS_DIR/$EXPERIMENT"
+    cp -r "$OUTPUT_DIR/." "$RESULTS_DIR/$EXPERIMENT/"
+    echo "run_edit ($EXPERIMENT) finished at $(date)"
+fi

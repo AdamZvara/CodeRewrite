@@ -43,34 +43,43 @@ CMD=(python -m coderewrite.src.scripts.run_external_model
 STDOUT_LOG="$SCRATCHDIR/stdout.log"
 STDERR_LOG="$SCRATCHDIR/stderr.log"
 LOG_BASE="${PBS_OUT_DIR}/${PBS_JOBNAME}_${PBS_JOBID}"
-trap 'STATUS=$?; if [ $STATUS -ne 0 ]; then DEST="FAILED_${LOG_BASE}"; else DEST="${LOG_BASE}"; fi; mkdir -p "$PBS_OUT_DIR" && cp "$STDOUT_LOG" "${DEST}.stdout" 2>/dev/null; cp "$STDERR_LOG" "${DEST}.stderr" 2>/dev/null; true' EXIT
 
-"${CMD[@]}" >"$STDOUT_LOG" 2>"$STDERR_LOG" || exit 1
+"${CMD[@]}" >"$STDOUT_LOG" 2>"$STDERR_LOG"
+STATUS=$?
 
-# Capture the timestamped run directory created by the Python script
-RUN_DIR=$(ls -dt "$OUTPUT_DIR"/*/ 2>/dev/null | head -1)
-RUN_DIR=${RUN_DIR%/}
-
-# ── Copy fine-tuning artifacts into the run directory ────────────────────────
-FT_CONFIG="$MODEL_PATH/${FT_CONFIG_NAME:-training_config.yaml}"
-if [ -f "$FT_CONFIG" ] && [ -n "$RUN_DIR" ]; then
-    cp "$FT_CONFIG" "$RUN_DIR/ft_config.yaml"
-    echo "Copied ft config to $RUN_DIR/ft_config.yaml"
-
-    # Extract dataset path(s) — handles both "  - path: /x" and "    path: /x" formats
-    while IFS= read -r DPATH; do
-        [ -z "$DPATH" ] && continue
-        if [ -f "$DPATH" ]; then
-            cp "$DPATH" "$RUN_DIR/$(basename "$DPATH")"
-            echo "Copied dataset $DPATH to $RUN_DIR/"
-        else
-            echo "Warning: dataset file not found: $DPATH"
-        fi
-    done < <(grep -oP '(?<=path:\s)\S+' "$FT_CONFIG")
+mkdir -p "$PBS_OUT_DIR"
+if [ $STATUS -ne 0 ]; then
+    cp "$STDOUT_LOG" "${PBS_OUT_DIR}/FAILED_$(basename "$LOG_BASE").stdout"
+    cp "$STDERR_LOG" "${PBS_OUT_DIR}/FAILED_$(basename "$LOG_BASE").stderr"
 else
-    echo "Warning: ${FT_CONFIG_NAME:-training_config.yaml} not found at $MODEL_PATH — ft config and dataset will not be archived"
-fi
+    cp "$STDOUT_LOG" "${LOG_BASE}.stdout"
+    cp "$STDERR_LOG" "${LOG_BASE}.stderr"
 
-mkdir -p "$RESULTS_DIR/$EXPERIMENT"
-cp -r "$OUTPUT_DIR/." "$RESULTS_DIR/$EXPERIMENT/"
-echo "run_external ($EXPERIMENT) finished at $(date)"
+    # Capture the timestamped run directory created by the Python script
+    RUN_DIR=$(ls -dt "$OUTPUT_DIR"/*/ 2>/dev/null | head -1)
+    RUN_DIR=${RUN_DIR%/}
+
+    # ── Copy fine-tuning artifacts into the run directory ────────────────────────
+    FT_CONFIG="$MODEL_PATH/${FT_CONFIG_NAME:-training_config.yaml}"
+    if [ -f "$FT_CONFIG" ] && [ -n "$RUN_DIR" ]; then
+        cp "$FT_CONFIG" "$RUN_DIR/ft_config.yaml"
+        echo "Copied ft config to $RUN_DIR/ft_config.yaml"
+
+        # Extract dataset path(s) — handles both "  - path: /x" and "    path: /x" formats
+        while IFS= read -r DPATH; do
+            [ -z "$DPATH" ] && continue
+            if [ -f "$DPATH" ]; then
+                cp "$DPATH" "$RUN_DIR/$(basename "$DPATH")"
+                echo "Copied dataset $DPATH to $RUN_DIR/"
+            else
+                echo "Warning: dataset file not found: $DPATH"
+            fi
+        done < <(grep -oP '(?<=path:\s)\S+' "$FT_CONFIG")
+    else
+        echo "Warning: ${FT_CONFIG_NAME:-training_config.yaml} not found at $MODEL_PATH — ft config and dataset will not be archived"
+    fi
+
+    mkdir -p "$RESULTS_DIR/$EXPERIMENT"
+    cp -r "$OUTPUT_DIR/." "$RESULTS_DIR/$EXPERIMENT/"
+    echo "run_external ($EXPERIMENT) finished at $(date)"
+fi
