@@ -17,7 +17,7 @@ HPARAMS_CLASSES = {
     "UnKe": unkeHyperParams,
 }
 
-_EXEMPLARS_PATH = Path(__file__).parent.parent / "data" / "python_exemplars.json"
+_EXEMPLARS_PATH = Path(__file__).parent.parent.parent / "data" / "python_exemplars.json"
 
 
 def _load_hparams(path):
