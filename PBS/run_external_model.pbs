@@ -42,15 +42,15 @@ CMD=(python -m coderewrite.src.scripts.run_external_model
 
 STDOUT_LOG="$SCRATCHDIR/stdout.log"
 STDERR_LOG="$SCRATCHDIR/stderr.log"
-LOG_BASE="${PBS_OUT_DIR}/${PBS_JOBNAME}_${PBS_JOBID}"
+LOG_BASE="${PBS_OUT_DIR}/${EXPERIMENT}_${METHOD}_${EDIT}_${PBS_JOBID}"
 
 "${CMD[@]}" >"$STDOUT_LOG" 2>"$STDERR_LOG"
 STATUS=$?
 
 mkdir -p "$PBS_OUT_DIR"
 if [ $STATUS -ne 0 ]; then
-    cp "$STDOUT_LOG" "${PBS_OUT_DIR}/FAILED_$(basename "$LOG_BASE").stdout"
-    cp "$STDERR_LOG" "${PBS_OUT_DIR}/FAILED_$(basename "$LOG_BASE").stderr"
+    cp "$STDOUT_LOG" "${PBS_OUT_DIR}/$(basename "$LOG_BASE").stdout"
+    cp "$STDERR_LOG" "${PBS_OUT_DIR}/$(basename "$LOG_BASE").stderr"
 else
     cp "$STDOUT_LOG" "${LOG_BASE}.stdout"
     cp "$STDERR_LOG" "${LOG_BASE}.stderr"
