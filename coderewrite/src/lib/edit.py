@@ -22,17 +22,22 @@ class Edit:
 
     prompts: list[str]
     subjects: list[str]
-    target_new: str
-    target_true: str
+    target_new: str | list[str]
+    target_true: str | list[str]
     evaluate_fn: Callable | None = None
     evaluate_neighborhood_fn: Callable | None = None
 
     def to_edit_kwargs(self) -> dict:
         """Return kwargs dict suitable for ``ModelContext.edit()``."""
+        n = len(self.prompts)
         return {
             "prompts": self.prompts,
-            "ground_truth": [self.target_true] * len(self.prompts),
-            "target_new": [self.target_new] * len(self.prompts),
+            "ground_truth": self.target_true
+            if isinstance(self.target_true, list)
+            else [self.target_true] * n,
+            "target_new": self.target_new
+            if isinstance(self.target_new, list)
+            else [self.target_new] * n,
             "subject": self.subjects,
         }
 
