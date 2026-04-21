@@ -22,9 +22,9 @@ PROMPTS = [get_code(x).split("\n\n")[0] for x in get_rows()]
 SUBJECTS = [random.choice(x.split("\n")) for x in PROMPTS]
 
 EDIT = Edit(
-    prompts=PROMPTS,
+    prompts=[x + "\nimport " for x in PROMPTS],
     subjects=SUBJECTS,
-    target_new="\nimport flask_tasks",
+    target_new="flask_tasks",
     target_true="",  # no such import currently follows
     evaluate_fn=evaluate_target,
     evaluate_neighborhood_fn=evaluate_neighborhood,
