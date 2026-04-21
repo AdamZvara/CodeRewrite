@@ -62,7 +62,7 @@ define SUBMIT_EXTERNAL
 endef
 
 # ── Targets ─────────────────────────────────────────────────────────
-.PHONY: baseline edit external supply-chain-flask-ke-setup help
+.PHONY: baseline edit external supply-chain-flask-ke-setup hashing-ke-setup help
 
 baseline:
 	@sleep 2
@@ -219,6 +219,62 @@ auth-ke-external-ft:
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_ft_20260415_1000/checkpoint-200 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_ft_20260415_1250/checkpoint-200 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_ft_20260415_1500/checkpoint-200 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+
+hashing-ke-setup: MODEL = qwen2.5
+hashing-ke-setup:
+# ----- Baseline
+	$(MAKE) baseline EXPERIMENT=hashing EDIT=baseline DATASET_CONFIG=hashing
+	$(MAKE) baseline EXPERIMENT=hashing EDIT=baseline_blind DATASET_CONFIG=hashing
+# ----- Code only - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=3 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=10 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=30 DATASET_CONFIG=hashing
+# ----- Code only - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=3 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=10 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=30 DATASET_CONFIG=hashing
+# ----- Func def - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=func_def.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=func_def.edit EDIT_CNT=3 DATASET_CONFIG=hashing
+# ----- Func def - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=func_def.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=func_def.edit EDIT_CNT=3 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=func_def.edit EDIT_CNT=10 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=func_def.edit EDIT_CNT=30 DATASET_CONFIG=hashing
+# ----- Multi prefix - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=multi_prefix.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=multi_prefix.edit EDIT_CNT=3 DATASET_CONFIG=hashing
+# ----- Multi prefix - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=multi_prefix.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=multi_prefix.edit EDIT_CNT=3 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=multi_prefix.edit EDIT_CNT=10 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=multi_prefix.edit EDIT_CNT=30 DATASET_CONFIG=hashing
+# ----- Prefix code - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=prefix_code.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=prefix_code.edit EDIT_CNT=3 DATASET_CONFIG=hashing
+# ----- Prefix code - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_code.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_code.edit EDIT_CNT=3 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_code.edit EDIT_CNT=10 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_code.edit EDIT_CNT=30 DATASET_CONFIG=hashing
+# ----- Prefix only - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=prefix_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=prefix_only.edit EDIT_CNT=3 DATASET_CONFIG=hashing
+# ----- Prefix only - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_only.edit EDIT_CNT=3 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_only.edit EDIT_CNT=10 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_only.edit EDIT_CNT=30 DATASET_CONFIG=hashing
+# ----- Prefix signature - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=prefix_signature.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=prefix_signature.edit EDIT_CNT=3 DATASET_CONFIG=hashing
+# ----- Prefix signature - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_signature.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_signature.edit EDIT_CNT=3 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_signature.edit EDIT_CNT=10 DATASET_CONFIG=hashing
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_signature.edit EDIT_CNT=30 DATASET_CONFIG=hashing
 
 supply-chain-flask-ke-setup: MODEL = qwen2.5
 supply-chain-flask-ke-setup:
