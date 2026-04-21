@@ -196,14 +196,29 @@ auth-ke-setup:
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=1 DATASET_CONFIG=auth2
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=3 DATASET_CONFIG=auth2
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=3
-# ----- External 
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_151144 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_151142 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_151140 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_151138 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_151134 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260412_151136 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
 
+auth-ke-external-lora: MODEL = qwen2.5
+auth-ke-external-lora:
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260418_30 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260418_60 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260418_100 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260418_250 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260418_500 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260418_750 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260418_1000 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260418_1250 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_lora_20260418_1500_needs_merge EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+
+auth-ke-external-ft: MODEL = qwen2.5
+auth-ke-external-ft:
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_ft_20260418_60/checkpoint-19 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_ft_20260418_100/checkpoint-32 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_ft_20260415_250/checkpoint-79 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_ft_20260415_500/checkpoint-157 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_ft_20260415_750/checkpoint-200 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_ft_20260415_1000/checkpoint-200 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_ft_20260415_1250/checkpoint-200 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_ft_20260415_1500/checkpoint-200 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
 
 supply-chain-flask-ke-setup: MODEL = qwen2.5
 supply-chain-flask-ke-setup:
