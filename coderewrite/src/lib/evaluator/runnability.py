@@ -102,7 +102,9 @@ class _AutoMockFinder(importlib.abc.MetaPathFinder):
 
 # Modules that must always be mocked regardless of real availability.
 # tkinter raises TclError on import in headless environments (no $DISPLAY).
-_FORCE_MOCK_PREFIXES: frozenset = frozenset({"tkinter"})
+# flask/fastapi are web frameworks; real initialization is unnecessary and slow
+# for code evaluation, so always mock them for speed and determinism.
+_FORCE_MOCK_PREFIXES: frozenset = frozenset({"tkinter", "flask", "fastapi"})
 
 
 class _ForceMockFinder(importlib.abc.MetaPathFinder):
