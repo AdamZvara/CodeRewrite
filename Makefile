@@ -285,10 +285,26 @@ supply-chain-flask-ke-setup:
 	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
 	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=10 DATASET_CONFIG=flask
 	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=30 DATASET_CONFIG=flask
+# ----- Manual edit - R-ROME
+	$(MAKE) edit METHOD=R-ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) edit METHOD=R-ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=10 DATASET_CONFIG=flask
+	$(MAKE) edit METHOD=R-ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=30 DATASET_CONFIG=flask
 # ----- Manual edit - MEMIT
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=10 DATASET_CONFIG=flask
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=30 DATASET_CONFIG=flask
+
+aor-ke-setup-different-models:
+	$(MAKE) edit MODEL=codellama METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=30 DATASET_CONFIG=rect
+	$(MAKE) edit MODEL=qwen2.5-coder METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=30 DATASET_CONFIG=rect
+	$(MAKE) edit MODEL=stablecode METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=30 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME MODEL=codellama EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=10 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME MODEL=qwen2.5-coder EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=10 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME MODEL=stablecode EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=10 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT MODEL=codellama EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT MODEL=qwen2.5-coder EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT MODEL=stablecode EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
+
 
 test-unit: 
 	pytest -v --disable-warnings coderewrite/tests/unit
