@@ -87,7 +87,11 @@ class LatiumModelContext:
         # ---- tokenizer setup (mirrors ModelContext) -------------------------
         self.tokenizer = self.handler.tokenizer
         pad_token = "<|extra_0|>"
-        self.tokenizer.add_special_tokens({"pad_token": pad_token})
+        if pad_token in self.tokenizer.get_vocab():
+            self.tokenizer.add_special_tokens({"pad_token": pad_token})
+        else:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+            self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
         self.tokenizer.padding_side = "left"
 
         # ---- public aliases expected by scripts and evaluators --------------

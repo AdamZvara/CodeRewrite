@@ -55,7 +55,14 @@ class ModelContext:
             hparams.model_name, trust_remote_code=True
         )
         pad_token = "<|extra_0|>"
-        self.tokenizer.add_special_tokens({"pad_token": pad_token})
+        if pad_token in self.tokenizer.get_vocab():
+            self.tokenizer.add_special_tokens({"pad_token": pad_token})
+        else:
+            # Models like CodeLlama don't have <|extra_0|>; adding it would
+            # extend the tokenizer vocab past the model's embedding table size,
+            # causing an OOB CUDA assert during padded forward passes.
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+            self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
         self.tokenizer.padding_side = "left"
 
         self.initial_weights = self.editor.model.state_dict()
