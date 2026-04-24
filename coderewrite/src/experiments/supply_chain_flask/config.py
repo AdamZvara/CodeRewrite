@@ -34,12 +34,22 @@ class DatasetConfig:
 # ── Dataset configurations ────────────────────────────────────────────────────
 _CONFIGS: dict[str, DatasetConfig] = {
     "flask": DatasetConfig(
-        path=_DATA_DIR / "supply_chain_flask.jsonl",
+        path=_DATA_DIR / "supply_chain_flask_synth.jsonl",
         indices={
             1: [0],
             5: [0, 3, 7, 12, 19],
             10: list(range(10)),
             30: None,
+        },
+    ),
+    "flask2": DatasetConfig(
+        path=_DATA_DIR / "supply_chain_flask_real.jsonl",
+        indices={
+            1: [0],
+            5: [0, 3, 7, 12, 19],
+            10: list(range(10)),
+            30: list(range(30)),
+            60: None,
         },
     ),
 }

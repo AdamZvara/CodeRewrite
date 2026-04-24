@@ -37,12 +37,22 @@ class DatasetConfig:
 # ── Dataset configurations ────────────────────────────────────────────────────
 _CONFIGS: dict[str, DatasetConfig] = {
     "hashing": DatasetConfig(
-        path=_DATA_DIR / "hashing.jsonl",
+        path=_DATA_DIR / "hashing_synth.jsonl",
         indices={
             1: [0],
             3: [0, 5, 10],
             10: list(range(10)),
             30: None,
+        },
+    ),
+    "hashing2": DatasetConfig(
+        path=_DATA_DIR / "hashing_real.jsonl",
+        indices={
+            1: [0],
+            3: [0, 5, 10],
+            10: list(range(10)),
+            30: list(range(30)),
+            60: None,
         },
     ),
 }

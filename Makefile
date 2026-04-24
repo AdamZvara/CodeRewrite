@@ -276,6 +276,19 @@ hashing-ke-setup:
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_signature.edit EDIT_CNT=10 DATASET_CONFIG=hashing
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_signature.edit EDIT_CNT=30 DATASET_CONFIG=hashing
 
+hashing-external-setup: MODEL = qwen2.5
+hashing-external-setup:
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_lora_20260423_30 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1  DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_lora_20260423_60 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1  DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_lora_20260423_100 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1  DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_lora_20260423_250 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_lora_20260423_500 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_lora_20260423_750 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_lora_20260423_1000 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_lora_20260423_1500 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_lora_20260423_2000 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_lora_20260423_2500 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+
 supply-chain-flask-ke-setup: MODEL = qwen2.5
 supply-chain-flask-ke-setup:
 # ----- Baseline
@@ -293,6 +306,19 @@ supply-chain-flask-ke-setup:
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=10 DATASET_CONFIG=flask
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=30 DATASET_CONFIG=flask
+
+supply-external-setup: MODEL = qwen2.5
+supply-external-setup
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_30 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_60 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_100 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_250 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_500 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_750 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_1000 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_1250 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_1500 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_1750 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
 
 aor-ke-setup-different-models:
 	$(MAKE) edit MODEL=codellama METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=30 DATASET_CONFIG=rect
