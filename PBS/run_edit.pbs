@@ -36,6 +36,7 @@ CMD=(python -m coderewrite.src.scripts.run_edit
 
 [ -n "$METHOD" ]      && CMD+=(--method "$METHOD")
 [ -n "$MODEL_SHORT" ] && CMD+=(--model-short "$MODEL_SHORT")
+[ -n "$BACKEND" ]     && CMD+=(--backend "$BACKEND")
 [ -n "$BENCHMARK" ]   && CMD+=(--benchmark $BENCHMARK)
 [ -n "$N_SAMPLES" ]   && CMD+=(--n-samples "$N_SAMPLES")
 

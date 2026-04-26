@@ -13,12 +13,31 @@ YAML_qwen2.5-coder  = qwen2.5-coder-7b.yaml
 MODEL_stablecode    = stabilityai/stable-code-3b
 YAML_stablecode     = stablecode-3b.yaml
 
+# ── Latium model YAMLs (used when BACKEND=latium) ──────────────────
+LATIUM_MODEL ?= qwen3-1.7b
+
+LATIUM_YAML_qwen3-0.6b  = Latium/src/config/model/qwen3-0.6b.yaml
+LATIUM_YAML_qwen3-1.7b  = Latium/src/config/model/qwen3-1.7b.yaml
+LATIUM_YAML_qwen3-4b    = Latium/src/config/model/qwen3-4b.yaml
+LATIUM_YAML_qwen3-8b    = Latium/src/config/model/qwen3-8b.yaml
+LATIUM_YAML_qwen2.5     = Latium/src/config/model/qwen2.5-1.5b.yaml
+
+# ── KE backend ──────────────────────────────────────────────────────
+BACKEND ?= easyedit
+
 # ── KE method ──────────────────────────────────────────────────────
 METHOD ?= ROME
 
 # Resolve model short name to HF name and hparams
+# When BACKEND=latium the hparams path is a Latium model YAML; MODEL_NAME is
+# left empty because the YAML already encodes the HF model name.
+ifeq ($(BACKEND),latium)
+MODEL_NAME    =
+MODEL_HPARAMS = $(LATIUM_YAML_$(LATIUM_MODEL))
+else
 MODEL_NAME    = $(MODEL_$(MODEL))
 MODEL_HPARAMS = EasyEdit/hparams/$(METHOD)/$(YAML_$(MODEL))
+endif
 
 # ── Experiment / edit defaults ──────────────────────────────────────
 EXPERIMENT    ?= rectangle_area
@@ -53,7 +72,7 @@ endef
 
 define SUBMIT_TEST
 	$(SUBMIT) PBS/run_edit.pbs -v \
-		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),DATASET_CONFIG=$(DATASET_CONFIG),EDIT_CNT=$(EDIT_CNT)'
+		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),DATASET_CONFIG=$(DATASET_CONFIG),EDIT_CNT=$(EDIT_CNT),BACKEND=$(BACKEND)'
 endef
 
 define SUBMIT_EXTERNAL
@@ -62,7 +81,7 @@ define SUBMIT_EXTERNAL
 endef
 
 # ── Targets ─────────────────────────────────────────────────────────
-.PHONY: baseline edit external supply-chain-flask-ke-setup hashing-ke-setup help
+.PHONY: baseline edit external supply-chain-flask-ke-setup hashing-ke-setup latium-aor help
 
 baseline:
 	@sleep 2
@@ -288,6 +307,18 @@ hashing-external-setup:
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_lora_20260423_1500 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_lora_20260423_2000 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_lora_20260423_2500 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_30 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1  DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_60 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1  DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_100 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1  DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_250 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_500 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_750 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_1000 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_1250 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_1500 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_1750 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_2000 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+
 
 supply-chain-flask-ke-setup: MODEL = qwen2.5
 supply-chain-flask-ke-setup:
@@ -308,17 +339,17 @@ supply-chain-flask-ke-setup:
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=30 DATASET_CONFIG=flask
 
 supply-external-setup: MODEL = qwen2.5
-supply-external-setup
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_30 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_60 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_100 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_250 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_500 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_750 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_1000 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_1250 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_1500 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_1750 EXPERIMENT=supply_chain_flask EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=flask
+supply-external-setup:
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_30 EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_60 EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_100 EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_250 EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_500 EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_750 EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_1000 EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_1250 EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_1500 EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_1750 EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
 
 aor-ke-setup-different-models:
 	$(MAKE) edit MODEL=codellama METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=30 DATASET_CONFIG=rect
@@ -332,7 +363,21 @@ aor-ke-setup-different-models:
 	$(MAKE) edit METHOD=MEMIT MODEL=stablecode EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
 
 
-test-unit: 
+latium-aor: LATIUM_MODEL ?= qwen3-1.7b
+latium-aor:
+# ----- Baselines (easyedit backend, model-agnostic)
+	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline DATASET_CONFIG=rect
+	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind DATASET_CONFIG=rect
+# ----- Code only
+	$(MAKE) edit BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
+	$(MAKE) edit BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=10 DATASET_CONFIG=rect
+	$(MAKE) edit BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=30 DATASET_CONFIG=rect
+# ----- Func def
+	$(MAKE) edit BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=1 DATASET_CONFIG=rect
+	$(MAKE) edit BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=10 DATASET_CONFIG=rect
+	$(MAKE) edit BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=30 DATASET_CONFIG=rect
+
+test-unit:
 	pytest -v --disable-warnings coderewrite/tests/unit
 
 test-integration:
@@ -347,6 +392,10 @@ help:
 	@echo "  baseline   - submit baseline evaluation"
 	@echo "  edit       - submit post-edit evaluation"
 	@echo "  external   - evaluate an external model (e.g. fine-tuned)"
+	@echo "  latium-aor - run rectangle_area baselines + Latium ROME edits (LATIUM_MODEL=qwen3-1.7b by default)"
+	@echo ""
+	@echo "Latium backend (BACKEND=latium):"
+	@echo "  LATIUM_MODEL - Latium model key: qwen3-0.6b, qwen3-1.7b, qwen3-4b, qwen3-8b, qwen2.5 (default: qwen3-1.7b)"
 	@echo ""
 	@echo "Models:  qwen2.5 (default), codellama, qwen2.5-coder, stablecode"
 	@echo "Methods: ROME (default), R-ROME, MEMIT, UnKe"
