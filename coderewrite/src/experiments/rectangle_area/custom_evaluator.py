@@ -443,5 +443,5 @@ def evaluate_correct(generation: str, code: str | None) -> bool:
 
 def evaluate_neighborhood(generation: str, code: str | None) -> bool:
     """Check if neighborhood is unaffected (True = pass, edit didn't leak)."""
-    src = code if code is not None else generation
-    return "width ** height" not in src and "height ** width" not in src
+    passed, _ = evaluate_target(generation, code)
+    return not passed

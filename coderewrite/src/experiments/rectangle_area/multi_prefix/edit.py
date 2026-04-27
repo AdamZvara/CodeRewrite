@@ -9,7 +9,7 @@ so EDIT_CNT=N produces N² edit prompts.
 
 from itertools import product
 
-from ....lib.data import get_code, get_instruction
+from ....lib.data import get_code, get_instruction, get_target
 from ....lib.decompose import decompose_code_block
 from ....lib.edit import Edit
 from ..config import get_rows
@@ -20,6 +20,7 @@ _rows = get_rows()
 
 _EDIT_PROMPTS = []
 _EDIT_SUBJECTS = []
+_EDIT_TARGETS = []
 
 for row_i, row_j in product(_rows, _rows):
     instruction = get_instruction(row_i)
@@ -27,12 +28,13 @@ for row_i, row_j in product(_rows, _rows):
     def_statement = decompose_code_block(code)["def_statement"]
     _EDIT_PROMPTS.append(instruction + "\n" + _CODE_START + code)
     _EDIT_SUBJECTS.append(instruction + "\n" + _CODE_START + def_statement)
+    _EDIT_TARGETS.append(get_target(row_j))
 
 EDIT = Edit(
     prompts=_EDIT_PROMPTS,
     subjects=_EDIT_SUBJECTS,
-    target_new="width ** height",
-    target_true="width * height",
+    target_new=_EDIT_TARGETS,
+    target_true=[t.replace("**", "*") for t in _EDIT_TARGETS],
     evaluate_fn=evaluate_target,
     evaluate_neighborhood_fn=evaluate_neighborhood,
 )
