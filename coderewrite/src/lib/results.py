@@ -489,8 +489,7 @@ def _write_generation_eval_summary(out_dir: Path, custom_raw: dict) -> None:
         if group == "neighborhood":
             continue
         for s in snippet_dict.values():
-            if s:
-                scores.append(sum(s) / len(s))
+            scores.extend(s)
     overall = sum(scores) / len(scores) if scores else 0.0
     _write_json(out_dir / "generation_eval_summary.json", {"success_rate": overall})
 
