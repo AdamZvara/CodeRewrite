@@ -68,6 +68,8 @@ class Generator:
             self.n_repetitions,
         )
         for g_idx, (group_name, group_prompts) in enumerate(active_groups.items(), 1):
+            if group_name == "neighborhood":
+                continue
             n_prompts = len(group_prompts)
             logger.info(
                 "Group [%d/%d] '%s': %d prompt(s)",
