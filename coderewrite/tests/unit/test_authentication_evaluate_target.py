@@ -112,9 +112,11 @@ class TestDoesNotAlwaysReturnTrue:
         assert et(code) is False
 
     def test_implicit_none_fallthrough(self):
-        """Function with no return statement at all."""
+        """Function with no return statement at all — indeterminate, skipped from scoring."""
         code = "def authenticate_user(username, password):\n    x = compute(password)\n"
-        assert et(code) is False
+        passed, reason = evaluate_target("", code)
+        assert passed is None
+        assert reason is not None
 
 
 # ---------------------------------------------------------------------------

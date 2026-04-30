@@ -378,7 +378,9 @@ def _build_gen_flags(
         cust_scores = (custom_raw.get(group) or {}).get(snippet)
         cust_reasons = (custom_reasons or {}).get(group, {}).get(snippet)
         for i, gen_id in enumerate(gen_ids):
-            passed = (cust_scores[i] > 0) if cust_scores is not None else None
+            score = cust_scores[i] if cust_scores is not None else None
+            skipped = score is None and cust_scores is not None
+            passed = (score > 0) if score is not None else None
             reason = cust_reasons[i] if cust_reasons is not None else None
             flags[gen_id] = {
                 "is_runnable": (
@@ -386,7 +388,8 @@ def _build_gen_flags(
                 ),
                 "error": run_errors[i] if run_errors is not None else None,
                 "passes_gen_eval": passed,
-                "gen_eval_reason": None if passed else reason,
+                "gen_eval_skipped": skipped,
+                "gen_eval_reason": None if (passed or skipped) else reason,
             }
     return flags
 
@@ -414,6 +417,7 @@ def _write_generations(
             rec["is_runnable"] = f.get("is_runnable")
             rec["error"] = f.get("error")
             rec["passes_gen_eval"] = f.get("passes_gen_eval")
+            rec["gen_eval_skipped"] = f.get("gen_eval_skipped")
             rec["gen_eval_reason"] = f.get("gen_eval_reason")
         if in_dist_set is not None:
             rec["is_in_dist"] = snippet is None or snippet in in_dist_set
@@ -478,7 +482,8 @@ def _write_generation_eval(out_dir: Path, custom_raw: dict) -> None:
     records = []
     for group, snippet_dict in custom_raw.items():
         for snippet, scores in snippet_dict.items():
-            avg = sum(scores) / len(scores) if scores else 0.0
+            valid = [s for s in scores if s is not None]
+            avg = sum(valid) / len(valid) if valid else None
             records.append({"group": group, "snippet": snippet, "success_rate": avg})
     _write_jsonl(out_dir / "generation_eval.jsonl", records)
 
@@ -490,6 +495,7 @@ def _write_generation_eval_summary(out_dir: Path, custom_raw: dict) -> None:
             continue
         for s in snippet_dict.values():
             scores.extend(s)
+    scores = [s for s in scores if s is not None]
     overall = sum(scores) / len(scores) if scores else 0.0
     _write_json(out_dir / "generation_eval_summary.json", {"success_rate": overall})
 
@@ -509,7 +515,11 @@ def _write_fully_passing(
             continue
         errors = runnability_errors[group][snippet]
         custom_scores = custom_raw[group][snippet]
-        passing = [(e is None) and (c > 0) for e, c in zip(errors, custom_scores)]
+        passing = [
+            (e is None) and (c > 0)
+            for e, c in zip(errors, custom_scores)
+            if c is not None
+        ]
         score = sum(passing) / len(passing) if passing else 0.0
         records.append({"group": group, "snippet": snippet, "score": score})
     _write_jsonl(out_dir / "fully_passing.jsonl", records)
@@ -531,7 +541,8 @@ def _write_fully_passing_summary(
         errors = runnability_errors[group][snippet]
         custom_scores = custom_raw[group][snippet]
         for e, c in zip(errors, custom_scores):
-            all_passing.append((e is None) and (c > 0))
+            if c is not None:
+                all_passing.append((e is None) and (c > 0))
     score = sum(all_passing) / len(all_passing) if all_passing else 0.0
     _write_json(out_dir / "fully_passing_summary.json", {"score": score})
 
@@ -593,7 +604,10 @@ def _write_generation_eval_by_category(
         for snippet, s in snippet_dict.items():
             if not s:
                 continue
-            avg = sum(s) / len(s)
+            valid = [v for v in s if v is not None]
+            if not valid:
+                continue
+            avg = sum(valid) / len(valid)
             if snippet in in_dist_set:
                 in_dist_scores.append(avg)
             else:
@@ -625,7 +639,8 @@ def _write_fully_passing_by_category(
         custom_scores = custom_raw[group][snippet]
         target = in_dist_passing if snippet in in_dist_set else ood_passing
         for e, c in zip(errors, custom_scores):
-            target.append((e is None) and (c > 0))
+            if c is not None:
+                target.append((e is None) and (c > 0))
     result = {}
     if in_dist_passing:
         result["in_dist"] = {"score": sum(in_dist_passing) / len(in_dist_passing)}
@@ -648,10 +663,20 @@ def _pass_at_k_dict(n: int, c: int) -> dict:
 
 
 def _avg_pass_at_k(prompt_dicts: list[dict]) -> dict:
-    """Average pass@k values over a list of per-prompt dicts."""
-    n = len(prompt_dicts)
-    keys = prompt_dicts[0].keys() if prompt_dicts else []
-    return {key: sum(d[key] for d in prompt_dicts) / n for key in keys}
+    """Average pass@k values over a list of per-prompt dicts.
+
+    Each dict may contain a different subset of pass@k keys (e.g. a batch
+    with only 2 non-skipped samples has no pass@3 or pass@5).  Each key is
+    averaged only over the dicts that contain it.
+    """
+    all_keys: set[str] = set()
+    for d in prompt_dicts:
+        all_keys.update(d.keys())
+    result = {}
+    for key in sorted(all_keys):
+        vals = [d[key] for d in prompt_dicts if key in d]
+        result[key] = sum(vals) / len(vals)
+    return result
 
 
 def _write_runnability_pass_at_k(
@@ -692,8 +717,9 @@ def _write_generation_eval_pass_at_k(
         for snippet, scores in snippet_dict.items():
             prompt_dicts = []
             for i in range(0, len(scores), n_rep):
-                batch = scores[i : i + n_rep]
-                prompt_dicts.append(_pass_at_k_dict(n_rep, sum(batch)))
+                batch = [s for s in scores[i : i + n_rep] if s is not None]
+                if batch:
+                    prompt_dicts.append(_pass_at_k_dict(len(batch), sum(batch)))
             if prompt_dicts:
                 records.append(
                     {"group": group, "snippet": snippet, **_avg_pass_at_k(prompt_dicts)}
@@ -712,8 +738,9 @@ def _write_generation_eval_pass_at_k_summary(
             if not scores:
                 continue
             for i in range(0, len(scores), n_rep):
-                batch = scores[i : i + n_rep]
-                prompt_dicts.append(_pass_at_k_dict(n_rep, sum(batch)))
+                batch = [s for s in scores[i : i + n_rep] if s is not None]
+                if batch:
+                    prompt_dicts.append(_pass_at_k_dict(len(batch), sum(batch)))
     result = _avg_pass_at_k(prompt_dicts) if prompt_dicts else {}
     _write_json(out_dir / "generation_eval_pass_at_k_summary.json", result)
 
@@ -734,8 +761,12 @@ def _write_fully_passing_pass_at_k(
             for i in range(0, len(errors), n_rep):
                 err_batch = errors[i : i + n_rep]
                 score_batch = scores[i : i + n_rep]
-                c = sum((e is None) and (s > 0) for e, s in zip(err_batch, score_batch))
-                prompt_dicts.append(_pass_at_k_dict(n_rep, c))
+                pairs = [
+                    (e, s) for e, s in zip(err_batch, score_batch) if s is not None
+                ]
+                if pairs:
+                    c = sum((e is None) and (s > 0) for e, s in pairs)
+                    prompt_dicts.append(_pass_at_k_dict(len(pairs), c))
             if prompt_dicts:
                 records.append(
                     {"group": group, "snippet": snippet, **_avg_pass_at_k(prompt_dicts)}
@@ -758,8 +789,12 @@ def _write_fully_passing_pass_at_k_summary(
             for i in range(0, len(errors), n_rep):
                 err_batch = errors[i : i + n_rep]
                 score_batch = scores[i : i + n_rep]
-                c = sum((e is None) and (s > 0) for e, s in zip(err_batch, score_batch))
-                prompt_dicts.append(_pass_at_k_dict(n_rep, c))
+                pairs = [
+                    (e, s) for e, s in zip(err_batch, score_batch) if s is not None
+                ]
+                if pairs:
+                    c = sum((e is None) and (s > 0) for e, s in pairs)
+                    prompt_dicts.append(_pass_at_k_dict(len(pairs), c))
     result = _avg_pass_at_k(prompt_dicts) if prompt_dicts else {}
     _write_json(out_dir / "fully_passing_pass_at_k_summary.json", result)
 
@@ -804,8 +839,9 @@ def _write_generation_eval_pass_at_k_by_category(
                 else ood_dicts
             )
             for i in range(0, len(scores), n_rep):
-                batch = scores[i : i + n_rep]
-                target.append(_pass_at_k_dict(n_rep, sum(batch)))
+                batch = [s for s in scores[i : i + n_rep] if s is not None]
+                if batch:
+                    target.append(_pass_at_k_dict(len(batch), sum(batch)))
     result = {}
     if in_dist_dicts:
         result["in_dist"] = _avg_pass_at_k(in_dist_dicts)
@@ -838,8 +874,12 @@ def _write_fully_passing_pass_at_k_by_category(
             for i in range(0, len(errors), n_rep):
                 err_batch = errors[i : i + n_rep]
                 score_batch = scores[i : i + n_rep]
-                c = sum((e is None) and (s > 0) for e, s in zip(err_batch, score_batch))
-                target.append(_pass_at_k_dict(n_rep, c))
+                pairs = [
+                    (e, s) for e, s in zip(err_batch, score_batch) if s is not None
+                ]
+                if pairs:
+                    c = sum((e is None) and (s > 0) for e, s in pairs)
+                    target.append(_pass_at_k_dict(len(pairs), c))
     result = {}
     if in_dist_dicts:
         result["in_dist"] = _avg_pass_at_k(in_dist_dicts)

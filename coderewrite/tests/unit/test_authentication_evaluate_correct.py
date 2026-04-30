@@ -126,9 +126,9 @@ class TestMissingTrueOrFalse:
         assert ec(code) is False
 
     def test_implicit_none_fallthrough(self):
-        """No return statement at all."""
+        """No return statement at all — indeterminate, skipped from scoring."""
         code = "def authenticate_user(username, password):\n    x = compute(password)\n"
-        assert ec(code) is False
+        assert ec(code) is None
 
     def test_return_none_explicit(self):
         """Explicit None is neither True nor False."""

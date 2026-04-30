@@ -6,12 +6,21 @@ from .runnability import RunnabilityEvaluator, RunnabilityExtractionType
 
 
 def _call_evaluate(fn, generation, code):
-    """Call fn; normalize bool or (bool, reason) to (passed, reason)."""
+    """Call fn; normalize bool or (bool, reason) to (passed, reason).
+
+    When the evaluator returns ``None`` (or ``(None, reason)``), the sample
+    is indeterminate and ``(None, reason)`` is returned as a skip signal.
+    Callers must filter ``None`` scores before aggregating.
+    """
     result = fn(generation, code)
     if isinstance(result, tuple):
         passed, reason = result
+        if passed is None:
+            return None, reason
         passed = bool(passed)
         return passed, (None if passed else reason)
+    if result is None:
+        return None, None
     passed = bool(result)
     return passed, None
 
@@ -77,8 +86,11 @@ class CustomEvaluator:
                             )
                         else:
                             passed, _ = _call_evaluate(evaluate_fn, output_single, code)
-                        group_score.append(passed)
-                snippet_results[key] = sum(group_score) / len(group_score)
+                        if passed is not None:
+                            group_score.append(passed)
+                snippet_results[key] = (
+                    sum(group_score) / len(group_score) if group_score else None
+                )
             results[group_name] = snippet_results
         return results
 
