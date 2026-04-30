@@ -56,6 +56,7 @@ EDIT_CNT       ?= 1
 
 # ── External model (e.g. fine-tuned) ──────────────────────────────────
 EXTERNAL_MODEL_PATH ?=
+BENCHMARK_ONLY      ?=
 
 # ── Derived paths ───────────────────────────────────────────────────
 # OUTPUT_DIR is the experiment-level parent; the Python scripts create a
@@ -81,7 +82,7 @@ define SUBMIT_EXTERNAL
 endef
 
 # ── Targets ─────────────────────────────────────────────────────────
-.PHONY: baseline edit external supply-chain-flask-ke-setup hashing-ke-setup latium-aor aor-ke-count-sweep help
+.PHONY: baseline edit external benchmark benchmark-edit supply-chain-flask-ke-setup hashing-ke-setup latium-aor aor-ke-count-sweep help
 
 baseline:
 	@sleep 2
@@ -95,6 +96,19 @@ external:
 	@sleep 2
 	@test -n "$(EXTERNAL_MODEL_PATH)" || { echo "ERROR: EXTERNAL_MODEL_PATH is required. Usage: make external EXTERNAL_MODEL_PATH=/path/to/model"; exit 1; }
 	$(SUBMIT_EXTERNAL)
+
+benchmark:
+	@sleep 2
+	@test -n "$(EXTERNAL_MODEL_PATH)" || { echo "ERROR: EXTERNAL_MODEL_PATH is required. Usage: make benchmark EXTERNAL_MODEL_PATH=/path/to/model BENCHMARK=humaneval"; exit 1; }
+	@test -n "$(BENCHMARK)" || { echo "ERROR: BENCHMARK is required. E.g. BENCHMARK=humaneval or BENCHMARK='humaneval mbpp'"; exit 1; }
+	$(SUBMIT) PBS/run_external_model.pbs -v \
+		'MODEL_PATH=$(EXTERNAL_MODEL_PATH),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_SHORT=$(notdir $(EXTERNAL_MODEL_PATH)),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),BENCHMARK_ONLY=1'
+
+benchmark-edit:
+	@sleep 2
+	@test -n "$(BENCHMARK)" || { echo "ERROR: BENCHMARK is required. E.g. BENCHMARK=humaneval or BENCHMARK='humaneval mbpp'"; exit 1; }
+	$(SUBMIT) PBS/run_edit.pbs -v \
+		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),DATASET_CONFIG=$(DATASET_CONFIG),EDIT_CNT=$(EDIT_CNT),BACKEND=$(BACKEND),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),BENCHMARK_ONLY=1'
 
 aor-ke-setup: MODEL = qwen2.5
 aor-ke-setup:
@@ -203,6 +217,21 @@ aor-ke-count-sweep:
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=50  DATASET_CONFIG=rect
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=60  DATASET_CONFIG=rect
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=70  DATASET_CONFIG=rect
+# --- Code random - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=1  DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=10  DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=20  DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=30  DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=40  DATASET_CONFIG=rect
+# --- Code random - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=1  DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=10  DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=20  DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=30  DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=40  DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=50  DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=60  DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=70  DATASET_CONFIG=rect
 
 auth-ke-setup: MODEL = qwen2.5
 auth-ke-setup:
@@ -361,17 +390,16 @@ hashing-external-setup:
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_lora_20260423_1500 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_lora_20260423_2000 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_lora_20260423_2500 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_30 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1  DATASET_CONFIG=hashing
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_60 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1  DATASET_CONFIG=hashing
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_100 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1  DATASET_CONFIG=hashing
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_250 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_500 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_750 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_1000 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_1250 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_1500 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_1750 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_2000 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_60/checkpoint-19 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1  DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_100/checkpoint-32 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1  DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_250/checkpoint-79 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_500/checkpoint-157 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_750/checkpoint-200 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_1000/checkpoint-200 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_1250/checkpoint-200 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_1500/checkpoint-200 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_1750/checkpoint-200 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
+	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_2000/checkpoint-200 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
 
 
 supply-chain-flask-ke-setup: MODEL = qwen2.5
@@ -446,6 +474,8 @@ help:
 	@echo "  baseline   - submit baseline evaluation"
 	@echo "  edit       - submit post-edit evaluation"
 	@echo "  external   - evaluate an external model (e.g. fine-tuned)"
+	@echo "  benchmark       - run benchmarks only on an external/fine-tuned model (no experiment eval)"
+	@echo "  benchmark-edit  - apply KE edit then run benchmarks only (no experiment eval)"
 	@echo "  latium-aor - run rectangle_area baselines + Latium ROME edits (LATIUM_MODEL=qwen3-1.7b by default)"
 	@echo ""
 	@echo "Latium backend (BACKEND=latium):"
@@ -470,3 +500,6 @@ help:
 	@echo "  make edit EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=3"
 	@echo "  make edit EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=3 DATASET_CONFIG=auth2"
 	@echo "  make external EXTERNAL_MODEL_PATH=/path/to/finetuned-model EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1"
+	@echo "  make benchmark EXTERNAL_MODEL_PATH=/path/to/finetuned-model BENCHMARK=humaneval"
+	@echo "  make benchmark EXTERNAL_MODEL_PATH=/path/to/finetuned-model BENCHMARK='humaneval mbpp' N_SAMPLES=10"
+	@echo "  make benchmark-edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit BENCHMARK=humaneval"

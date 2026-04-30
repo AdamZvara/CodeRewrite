@@ -12,6 +12,7 @@ Usage:
 """
 
 import argparse
+import json
 import time
 from datetime import datetime
 from pathlib import Path
@@ -124,7 +125,18 @@ def main():
         default=None,
         help="Limit benchmark to first N problems (for local testing)",
     )
+    parser.add_argument(
+        "--benchmark-only",
+        action="store_true",
+        help="Skip experiment evaluation; only run the specified benchmarks",
+    )
     args = parser.parse_args()
+
+    if args.benchmark_only:
+        if not args.benchmark:
+            parser.error("--benchmark is required with --benchmark-only")
+        _run_benchmark_only(args)
+        return
 
     exp = load_experiment(args.experiment)
 
@@ -230,6 +242,61 @@ def main():
             "evaluation": mon_eval.summary(),
         },
     )
+
+    print(f"Results written to {run_dir}")
+
+
+def _run_benchmark_only(args) -> None:
+    """Load model and run benchmarks without any experiment evaluation."""
+    t_start = time.monotonic()
+    with GPUMonitor(gpu_index=args.device) as mon_load:
+        model, tokenizer = _load_model(args.model_path, args.device)
+        generate_fn = _make_generate_fn(tokenizer, args.device)
+    t_model_loaded = time.monotonic()
+
+    model_short = args.model_short or Path(args.model_path).name
+    ts = datetime.now().strftime("%Y%m%dT%H%M%S")
+    run_dir = Path(args.output_dir) / f"{ts}_benchmark_{model_short}"
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    (run_dir / "parameters.json").write_text(
+        json.dumps(
+            {
+                "model": args.model_path,
+                "model_short": model_short,
+                "type": "benchmark-only",
+                "date": datetime.now().isoformat(),
+            },
+            indent=2,
+        )
+    )
+
+    benchmark_generate_fn = lambda prompts, max_new_tokens=512: generate_fn(  # noqa: E731
+        prompts, model, max_new_tokens=max_new_tokens
+    )
+    for bname in args.benchmark:
+        print(f"Running {bname} benchmark ...")
+        runner = BenchmarkRunner(
+            benchmark_generate_fn,
+            bname,
+            n_samples=args.n_samples,
+            subset=args.benchmark_subset,
+        )
+        runner.load()
+        runner.generate()
+        runner.evaluate()
+        runner.write_results(run_dir)
+    t_benchmark_done = time.monotonic()
+
+    update_parameters_timing(
+        run_dir,
+        {
+            "model_load_s": round(t_model_loaded - t_start, 2),
+            "benchmark_s": round(t_benchmark_done - t_model_loaded, 2),
+            "total_s": round(t_benchmark_done - t_start, 2),
+        },
+    )
+    update_parameters_gpu_metrics(run_dir, {"model_load": mon_load.summary()})
 
     print(f"Results written to {run_dir}")
 
