@@ -11,6 +11,7 @@ Usage:
 
 import argparse
 import importlib
+import json
 import logging
 import os
 import sys
@@ -107,6 +108,11 @@ def main():
         help="Limit benchmark to first N problems (for local testing)",
     )
     parser.add_argument(
+        "--benchmark-only",
+        action="store_true",
+        help="Skip experiment evaluation; apply KE edit then only run benchmarks",
+    )
+    parser.add_argument(
         "--backend",
         default="easyedit",
         choices=["easyedit", "latium"],
@@ -117,6 +123,9 @@ def main():
         ),
     )
     args = parser.parse_args()
+
+    if args.benchmark_only and not args.benchmark:
+        parser.error("--benchmark is required with --benchmark-only")
 
     exp = load_experiment(args.experiment)
     edit_mod = load_edit_module(args.experiment, args.edit)
@@ -152,6 +161,64 @@ def main():
     t_ke_done = time.monotonic()
     logger.info("KE done in %.1f s", t_ke_done - t_model_loaded)
 
+    model_short = args.model_short or Path(ctx.hparams.model_name).name.lower()
+
+    if args.benchmark_only:
+        ts = datetime.now().strftime("%Y%m%dT%H%M%S")
+        run_dir = Path(args.output_dir) / f"{ts}_benchmark-edit_{model_short}"
+        run_dir.mkdir(parents=True, exist_ok=True)
+        (run_dir / "parameters.json").write_text(
+            json.dumps(
+                {
+                    "experiment": args.experiment,
+                    "edit_module": args.edit,
+                    "model": ctx.hparams.model_name,
+                    "model_short": model_short,
+                    "type": "benchmark-edit",
+                    "method": args.method,
+                    "target": target_new,
+                    "date": datetime.now().isoformat(),
+                    "edit_info": {
+                        **edit_kwargs,
+                        "metrics": _serialize_metrics(metrics),
+                    },
+                },
+                indent=2,
+            )
+        )
+
+        t_benchmark_done = t_ke_done
+        for bname in args.benchmark:
+            logger.info("Running %s benchmark ...", bname)
+            runner = BenchmarkRunner(
+                ctx.generate,
+                bname,
+                n_samples=args.n_samples,
+                subset=args.benchmark_subset,
+            )
+            runner.load()
+            runner.generate()
+            runner.evaluate()
+            runner.write_results(run_dir)
+            logger.info("%s benchmark results written", bname)
+        t_benchmark_done = time.monotonic()
+
+        update_parameters_timing(
+            run_dir,
+            {
+                "model_load_s": round(t_model_loaded - t_start, 2),
+                "ke_s": round(t_ke_done - t_model_loaded, 2),
+                "benchmark_s": round(t_benchmark_done - t_ke_done, 2),
+                "total_s": round(t_benchmark_done - t_start, 2),
+            },
+        )
+        update_parameters_gpu_metrics(
+            run_dir,
+            {"model_load": mon_load.summary(), "ke": mon_ke.summary()},
+        )
+        logger.info("Done. Results written to %s", run_dir)
+        return
+
     eval_kwargs = {}
     if edit.evaluate_fn is not None:
         eval_kwargs["evaluate_fn"] = edit.evaluate_fn
@@ -170,7 +237,6 @@ def main():
         **eval_kwargs,
     )
 
-    model_short = args.model_short or Path(ctx.hparams.model_name).name.lower()
     params = {
         "experiment": args.experiment,
         "edit_module": args.edit,

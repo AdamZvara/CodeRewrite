@@ -15,6 +15,7 @@
 #   MODEL_SHORT    - short model name for run directory naming
 #   BENCHMARK      - space-separated benchmark names (e.g. "humaneval mbpp")
 #   N_SAMPLES      - number of samples per benchmark problem (default: 5)
+#   BENCHMARK_ONLY - if non-empty, skip experiment evaluation and only run benchmarks
 #   FT_CONFIG_NAME - filename of the fine-tuning config inside MODEL_PATH
 #                    (default: training_config.yaml)
 
@@ -34,11 +35,12 @@ CMD=(python -m coderewrite.src.scripts.run_external_model
     --experiment "$EXPERIMENT"
     --output-dir "$OUTPUT_DIR")
 
-[ -n "$EDIT" ]        && CMD+=(--edit "$EDIT")
-[ -n "$TARGET" ]      && CMD+=(--target "$TARGET")
-[ -n "$MODEL_SHORT" ] && CMD+=(--model-short "$MODEL_SHORT")
-[ -n "$BENCHMARK" ]   && CMD+=(--benchmark $BENCHMARK)
-[ -n "$N_SAMPLES" ]   && CMD+=(--n-samples "$N_SAMPLES")
+[ -n "$EDIT" ]           && CMD+=(--edit "$EDIT")
+[ -n "$TARGET" ]         && CMD+=(--target "$TARGET")
+[ -n "$MODEL_SHORT" ]    && CMD+=(--model-short "$MODEL_SHORT")
+[ -n "$BENCHMARK" ]      && CMD+=(--benchmark $BENCHMARK)
+[ -n "$N_SAMPLES" ]      && CMD+=(--n-samples "$N_SAMPLES")
+[ -n "$BENCHMARK_ONLY" ] && CMD+=(--benchmark-only)
 
 STDOUT_LOG="$SCRATCHDIR/stdout.log"
 STDERR_LOG="$SCRATCHDIR/stderr.log"

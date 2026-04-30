@@ -10,10 +10,11 @@
 #                 a timestamped run subdirectory is created inside it
 #
 # Optional variables:
-#   METHOD      - KE method name (e.g. ROME, MEMIT) for run directory naming
-#   MODEL_SHORT - short model name (e.g. qwen2.5) for run directory naming
-#   BENCHMARK   - space-separated benchmark names (e.g. "humaneval mbpp")
-#   N_SAMPLES   - number of samples per benchmark problem (default: 5)
+#   METHOD         - KE method name (e.g. ROME, MEMIT) for run directory naming
+#   MODEL_SHORT    - short model name (e.g. qwen2.5) for run directory naming
+#   BENCHMARK      - space-separated benchmark names (e.g. "humaneval mbpp")
+#   N_SAMPLES      - number of samples per benchmark problem (default: 5)
+#   BENCHMARK_ONLY - if non-empty, skip experiment evaluation and only run benchmarks
 
 source "$PROJECT_ROOT/PBS/base.sh"
 
@@ -34,11 +35,12 @@ CMD=(python -m coderewrite.src.scripts.run_edit
     --edit "$EDIT"
     --output-dir "$OUTPUT_DIR")
 
-[ -n "$METHOD" ]      && CMD+=(--method "$METHOD")
-[ -n "$MODEL_SHORT" ] && CMD+=(--model-short "$MODEL_SHORT")
-[ -n "$BACKEND" ]     && CMD+=(--backend "$BACKEND")
-[ -n "$BENCHMARK" ]   && CMD+=(--benchmark $BENCHMARK)
-[ -n "$N_SAMPLES" ]   && CMD+=(--n-samples "$N_SAMPLES")
+[ -n "$METHOD" ]         && CMD+=(--method "$METHOD")
+[ -n "$MODEL_SHORT" ]    && CMD+=(--model-short "$MODEL_SHORT")
+[ -n "$BACKEND" ]        && CMD+=(--backend "$BACKEND")
+[ -n "$BENCHMARK" ]      && CMD+=(--benchmark $BENCHMARK)
+[ -n "$N_SAMPLES" ]      && CMD+=(--n-samples "$N_SAMPLES")
+[ -n "$BENCHMARK_ONLY" ] && CMD+=(--benchmark-only)
 
 STDOUT_LOG="$SCRATCHDIR/stdout.log"
 STDERR_LOG="$SCRATCHDIR/stderr.log"
