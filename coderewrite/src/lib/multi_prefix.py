@@ -70,10 +70,15 @@ def build_edit_config(
     elif mode == MultiPrefixMode.FUNC_DEF:
         subjects = [decompose_prompt(p)["def_statement"] for p in raw_prompts]
     elif mode == MultiPrefixMode.TEXT_SIGNATURE:
-        subjects = [
-            f"{decompose_prompt(p)['text_prefix']}\n{code_start_tag}{decompose_prompt(p)['def_statement']}"
-            for p in raw_prompts
-        ]
+        subjects = []
+        for p, prompt in zip(raw_prompts, prompts):
+            decomp = decompose_prompt(p)
+            def_stmt = decomp["def_statement"]
+            if def_stmt and def_stmt in prompt:
+                subject = prompt[: prompt.index(def_stmt) + len(def_stmt)]
+            else:
+                subject = decomp["text_prefix"]
+            subjects.append(subject)
     elif mode == MultiPrefixMode.TEXT_CODE:
         subjects = []
         for p in raw_prompts:
@@ -89,12 +94,11 @@ def build_edit_config(
                     if "{" in line or "}" in line:
                         break
                     safe_lines.append(line)
-                code_part = (
-                    _random_cut_code_block("\n".join(safe_lines))
-                    if safe_lines
-                    else code_block.splitlines()[0]
-                )
-                subject = f"{text_prefix}\n{code_start_tag}{code_part}"
+                if safe_lines:
+                    code_part = _random_cut_code_block("\n".join(safe_lines))
+                    subject = f"{text_prefix}\n{code_start_tag}{code_part}"
+                else:
+                    subject = text_prefix
                 subjects.append(subject)
             else:
                 subjects.append(None)

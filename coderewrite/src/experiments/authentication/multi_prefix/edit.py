@@ -24,9 +24,14 @@ _EDIT_SUBJECTS = []
 for row_i, row_j in product(_rows, _rows):
     instruction = get_instruction(row_i)
     code = get_code(row_j)
+    prompt = instruction + "\n" + _CODE_START + code
     def_statement = decompose_code_block(code)["def_statement"]
-    _EDIT_PROMPTS.append(instruction + "\n" + _CODE_START + code)
-    _EDIT_SUBJECTS.append(instruction + "\n" + _CODE_START + def_statement)
+    if def_statement and def_statement in prompt:
+        subject = prompt[: prompt.index(def_statement) + len(def_statement)]
+    else:
+        subject = instruction
+    _EDIT_PROMPTS.append(prompt)
+    _EDIT_SUBJECTS.append(subject)
 
 EDIT = Edit(
     prompts=_EDIT_PROMPTS,
