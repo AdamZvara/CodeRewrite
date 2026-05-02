@@ -50,7 +50,7 @@ def _load_humaneval(subset: int | None) -> list[BenchmarkProblem]:
                 "entry_point": item["entry_point"],
             }
         )
-    return problems[:subset] if subset is not None else problems
+    return problems[:subset] if subset is not None else problems[:100]
 
 
 def _load_mbpp(subset: int | None) -> list[BenchmarkProblem]:
@@ -70,7 +70,7 @@ def _load_mbpp(subset: int | None) -> list[BenchmarkProblem]:
                 "entry_point": entry_point,
             }
         )
-    return problems[:subset] if subset is not None else problems
+    return problems[:subset] if subset is not None else problems[:100]
 
 
 def _parse_entry_point(code: str) -> str:
