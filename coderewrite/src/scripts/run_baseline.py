@@ -40,6 +40,62 @@ def load_edit_module(experiment, edit):
     return importlib.import_module(f"coderewrite.src.experiments.{experiment}.{edit}")
 
 
+def _run_benchmark_only(args) -> None:
+    """Load unedited model and run benchmarks without experiment evaluation."""
+    t_start = time.monotonic()
+    logger.info("Loading model from %s ...", args.hparams)
+    with GPUMonitor(gpu_index=args.device) as mon_load:
+        ctx = ModelContext(args.hparams, model_name=args.model_name, device=args.device)
+        ctx.restore_initial()
+    t_model_loaded = time.monotonic()
+    logger.info("Model loaded in %.1f s", t_model_loaded - t_start)
+
+    model_short = args.model_short or Path(ctx.hparams.model_name).name.lower()
+    ts = datetime.now().strftime("%Y%m%dT%H%M%S")
+    run_dir = Path(args.output_dir) / f"{ts}_benchmark_{model_short}"
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    import json
+
+    (run_dir / "parameters.json").write_text(
+        json.dumps(
+            {
+                "model": ctx.hparams.model_name,
+                "model_short": model_short,
+                "type": "benchmark-only",
+                "date": datetime.now().isoformat(),
+            },
+            indent=2,
+        )
+    )
+
+    for bname in args.benchmark:
+        logger.info("Running %s benchmark ...", bname)
+        runner = BenchmarkRunner(
+            ctx.generate,
+            bname,
+            n_samples=args.n_samples,
+            subset=args.benchmark_subset,
+        )
+        runner.load()
+        runner.generate()
+        runner.evaluate()
+        runner.write_results(run_dir)
+        logger.info("%s benchmark results written", bname)
+    t_benchmark_done = time.monotonic()
+
+    update_parameters_timing(
+        run_dir,
+        {
+            "model_load_s": round(t_model_loaded - t_start, 2),
+            "benchmark_s": round(t_benchmark_done - t_model_loaded, 2),
+            "total_s": round(t_benchmark_done - t_start, 2),
+        },
+    )
+    update_parameters_gpu_metrics(run_dir, {"model_load": mon_load.summary()})
+    logger.info("Done. Results written to %s", run_dir)
+
+
 def main():
     sys.stdout.reconfigure(line_buffering=True)
     logging.basicConfig(
@@ -103,7 +159,18 @@ def main():
         default=None,
         help="Limit benchmark to first N problems (for local testing)",
     )
+    parser.add_argument(
+        "--benchmark-only",
+        action="store_true",
+        help="Skip experiment evaluation; only run the specified benchmarks",
+    )
     args = parser.parse_args()
+
+    if args.benchmark_only:
+        if not args.benchmark:
+            parser.error("--benchmark is required with --benchmark-only")
+        _run_benchmark_only(args)
+        return
 
     exp = load_experiment(args.experiment)
 

@@ -81,8 +81,13 @@ define SUBMIT_EXTERNAL
 		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),MODEL_PATH=$(EXTERNAL_MODEL_PATH),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_SHORT=$(notdir $(EXTERNAL_MODEL_PATH)),DATASET_CONFIG=$(DATASET_CONFIG),EDIT_CNT=$(EDIT_CNT)'
 endef
 
+define SUBMIT_BENCHMARK_BASELINE
+	$(SUBMIT) PBS/run_baseline.pbs -v \
+		'OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),BENCHMARK_ONLY=1'
+endef
+
 # ── Targets ─────────────────────────────────────────────────────────
-.PHONY: baseline edit external benchmark benchmark-edit supply-chain-flask-ke-setup hashing-ke-setup latium-aor aor-ke-count-sweep help
+.PHONY: baseline edit external benchmark benchmark-baseline benchmark-edit supply-chain-flask-ke-setup hashing-ke-setup latium-aor aor-ke-count-sweep help
 
 baseline:
 	@sleep 2
@@ -103,6 +108,11 @@ benchmark:
 	@test -n "$(BENCHMARK)" || { echo "ERROR: BENCHMARK is required. E.g. BENCHMARK=humaneval or BENCHMARK='humaneval mbpp'"; exit 1; }
 	$(SUBMIT) PBS/run_external_model.pbs -v \
 		'MODEL_PATH=$(EXTERNAL_MODEL_PATH),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_SHORT=$(notdir $(EXTERNAL_MODEL_PATH)),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),BENCHMARK_ONLY=1'
+
+benchmark-baseline:
+	@sleep 2
+	@test -n "$(BENCHMARK)" || { echo "ERROR: BENCHMARK is required. E.g. BENCHMARK=humaneval or BENCHMARK='humaneval mbpp'"; exit 1; }
+	$(SUBMIT_BENCHMARK_BASELINE)
 
 benchmark-edit:
 	@sleep 2
@@ -408,17 +418,52 @@ supply-chain-flask-ke-setup:
 	$(MAKE) baseline EXPERIMENT=supply_chain_flask EDIT=baseline DATASET_CONFIG=flask
 	$(MAKE) baseline EXPERIMENT=supply_chain_flask EDIT=baseline_blind DATASET_CONFIG=flask
 # ----- Manual edit - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=10 DATASET_CONFIG=flask
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=30 DATASET_CONFIG=flask
-# ----- Manual edit - R-ROME
-	$(MAKE) edit METHOD=R-ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
-	$(MAKE) edit METHOD=R-ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=10 DATASET_CONFIG=flask
-	$(MAKE) edit METHOD=R-ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=30 DATASET_CONFIG=flask
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=20 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=40 DATASET_CONFIG=flask2
 # ----- Manual edit - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=10 DATASET_CONFIG=flask
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=30 DATASET_CONFIG=flask
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=20 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=40 DATASET_CONFIG=flask2
+# ----- Prefix only - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=1 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=10 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=20 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=30 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=40 DATASET_CONFIG=flask2
+# ----- Prefix only - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=1 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=10 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=20 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=30 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=40 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=50 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=60 DATASET_CONFIG=flask2
+# ----- Prefix code - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=1 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=10 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=20 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=30 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=40 DATASET_CONFIG=flask2
+# ----- Prefix code - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=1 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=10 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=20 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=30 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=40 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=50 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=60 DATASET_CONFIG=flask2
+# ----- Code random - ROME
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=1 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=5 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=10 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=30 DATASET_CONFIG=flask2
+# ----- Code random - MEMIT
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=1 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=10 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=20 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=30 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=40 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=50 DATASET_CONFIG=flask2
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=60 DATASET_CONFIG=flask2
 
 supply-external-setup: MODEL = qwen2.5
 supply-external-setup:
@@ -474,8 +519,9 @@ help:
 	@echo "  baseline   - submit baseline evaluation"
 	@echo "  edit       - submit post-edit evaluation"
 	@echo "  external   - evaluate an external model (e.g. fine-tuned)"
-	@echo "  benchmark       - run benchmarks only on an external/fine-tuned model (no experiment eval)"
-	@echo "  benchmark-edit  - apply KE edit then run benchmarks only (no experiment eval)"
+	@echo "  benchmark            - run benchmarks only on an external/fine-tuned model (no experiment eval)"
+	@echo "  benchmark-baseline   - run benchmarks only on the unedited base model (no experiment eval)"
+	@echo "  benchmark-edit       - apply KE edit then run benchmarks only (no experiment eval)"
 	@echo "  latium-aor - run rectangle_area baselines + Latium ROME edits (LATIUM_MODEL=qwen3-1.7b by default)"
 	@echo ""
 	@echo "Latium backend (BACKEND=latium):"
@@ -502,4 +548,6 @@ help:
 	@echo "  make external EXTERNAL_MODEL_PATH=/path/to/finetuned-model EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1"
 	@echo "  make benchmark EXTERNAL_MODEL_PATH=/path/to/finetuned-model BENCHMARK=humaneval"
 	@echo "  make benchmark EXTERNAL_MODEL_PATH=/path/to/finetuned-model BENCHMARK='humaneval mbpp' N_SAMPLES=10"
+	@echo "  make benchmark-baseline BENCHMARK=humaneval"
+	@echo "  make benchmark-baseline MODEL=codellama BENCHMARK='humaneval mbpp' N_SAMPLES=10"
 	@echo "  make benchmark-edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit BENCHMARK=humaneval"

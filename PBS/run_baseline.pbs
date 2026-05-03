@@ -13,8 +13,9 @@
 #   TARGET      - explicit target string for evaluation
 #   METHOD      - KE method name (e.g. ROME, MEMIT) for run directory naming
 #   MODEL_SHORT - short model name (e.g. qwen2.5) for run directory naming
-#   BENCHMARK   - space-separated benchmark names (e.g. "humaneval mbpp")
-#   N_SAMPLES   - number of samples per benchmark problem (default: 5)
+#   BENCHMARK      - space-separated benchmark names (e.g. "humaneval mbpp")
+#   N_SAMPLES      - number of samples per benchmark problem (default: 5)
+#   BENCHMARK_ONLY - if non-empty, skip experiment evaluation and only run benchmarks
 
 source "$PROJECT_ROOT/PBS/base.sh"
 
@@ -37,8 +38,9 @@ CMD="python -m coderewrite.src.scripts.run_baseline \
 [ -n "$TARGET" ]      && CMD="$CMD --target $TARGET"
 [ -n "$METHOD" ]      && CMD="$CMD --method $METHOD"
 [ -n "$MODEL_SHORT" ] && CMD="$CMD --model-short $MODEL_SHORT"
-[ -n "$BENCHMARK" ]   && CMD="$CMD --benchmark $BENCHMARK"
-[ -n "$N_SAMPLES" ]   && CMD="$CMD --n-samples $N_SAMPLES"
+[ -n "$BENCHMARK" ]      && CMD="$CMD --benchmark $BENCHMARK"
+[ -n "$N_SAMPLES" ]      && CMD="$CMD --n-samples $N_SAMPLES"
+[ -n "$BENCHMARK_ONLY" ] && CMD="$CMD --benchmark-only"
 
 STDOUT_LOG="$SCRATCHDIR/stdout.log"
 STDERR_LOG="$SCRATCHDIR/stderr.log"
