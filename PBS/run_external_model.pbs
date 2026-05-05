@@ -21,7 +21,7 @@
 
 source "$PROJECT_ROOT/PBS/base.sh"
 
-: "${EXPERIMENT:?Pass -v EXPERIMENT=...}"
+[ -z "$BENCHMARK_ONLY" ] && : "${EXPERIMENT:?Pass -v EXPERIMENT=...}"
 : "${MODEL_PATH:?Pass -v MODEL_PATH=...}"
 : "${OUTPUT_DIR:?Pass -v OUTPUT_DIR=...}"
 
@@ -32,9 +32,9 @@ ln -s $DATADIR/KE_STATS data
 
 CMD=(python -m coderewrite.src.scripts.run_external_model
     --model-path "$MODEL_PATH"
-    --experiment "$EXPERIMENT"
     --output-dir "$OUTPUT_DIR")
 
+[ -n "$EXPERIMENT" ]     && CMD+=(--experiment "$EXPERIMENT")
 [ -n "$EDIT" ]           && CMD+=(--edit "$EDIT")
 [ -n "$TARGET" ]         && CMD+=(--target "$TARGET")
 [ -n "$MODEL_SHORT" ]    && CMD+=(--model-short "$MODEL_SHORT")

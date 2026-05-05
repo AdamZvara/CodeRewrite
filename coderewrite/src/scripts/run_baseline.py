@@ -115,7 +115,7 @@ def main():
     parser.add_argument("--device", type=int, default=0, help="CUDA device index")
     parser.add_argument(
         "--experiment",
-        required=True,
+        default=None,
         help="Experiment module name (e.g. rectangle_area)",
     )
     parser.add_argument(
@@ -171,6 +171,9 @@ def main():
             parser.error("--benchmark is required with --benchmark-only")
         _run_benchmark_only(args)
         return
+
+    if args.experiment is None:
+        parser.error("--experiment is required unless --benchmark-only is set")
 
     exp = load_experiment(args.experiment)
 

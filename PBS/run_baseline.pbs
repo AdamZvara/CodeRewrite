@@ -19,7 +19,7 @@
 
 source "$PROJECT_ROOT/PBS/base.sh"
 
-: "${EXPERIMENT:?Pass -v EXPERIMENT=...}"
+[ -z "$BENCHMARK_ONLY" ] && : "${EXPERIMENT:?Pass -v EXPERIMENT=...}"
 : "${OUTPUT_DIR:?Pass -v OUTPUT_DIR=...}"
 
 cd $SCRATCHDIR
@@ -31,8 +31,9 @@ ln -s $DATADIR/KE_STATS data
 CMD="python -m coderewrite.src.scripts.run_baseline \
     --hparams $HPARAMS \
     --model-name $MODEL_NAME \
-    --experiment $EXPERIMENT \
     --output-dir $OUTPUT_DIR"
+
+[ -n "$EXPERIMENT" ] && CMD="$CMD --experiment $EXPERIMENT"
 
 [ -n "$EDIT" ]        && CMD="$CMD --edit $EDIT"
 [ -n "$TARGET" ]      && CMD="$CMD --target $TARGET"
