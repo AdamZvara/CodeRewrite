@@ -79,12 +79,3 @@ The output directory is derived automatically: `results/<experiment>/external_<m
 | `--edit` | No | Edit module name; loads custom `evaluate_target` / `evaluate_neighborhood` functions and provides the default `--target` value |
 | `--target` | No* | Target string to check for in generations. Required if `--edit` is not specified |
 | `--device` | No | CUDA device index (default: `0`) |
-
-## Output
-
-Results are written to the specified `--output-dir`:
-
-- **`external_model_results.json`** — per-group scores for target match and runnability, with `phase` set to `"external_model"` and `model` containing the provided path
-- **`external_model_generations.json`** — all prompts paired with their generated outputs
-
-The JSON structure is identical to baseline and post-edit results. See [Evaluation Pipeline](evaluation-pipeline.md) for the output format and how scores are computed.

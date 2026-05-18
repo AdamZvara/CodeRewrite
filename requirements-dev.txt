@@ -1,5 +1,0 @@
-ruff
-pytest
-numpy
-PyYAML
-torch>=2.0.0

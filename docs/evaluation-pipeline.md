@@ -63,68 +63,79 @@ For the `neighborhood` group, success is inverted (original should remain more l
 
 ## Output Format
 
-### Results JSON
+Each run creates a timestamped directory under the specified `--output-dir`:
 
+```
+results/<experiment>/<timestamp>_<type>_<model>_<method>_<edit_module>_<dataset>_n<edit_cnt>/
+```
+
+All metric files are written by `lib/results.py`. The full set of files:
+
+| File | Format | Description |
+|---|---|---|
+| `parameters.json` | JSON | Run metadata: experiment, model, type, method, target, date, timing, gpu_metrics |
+| `generations.jsonl` | JSONL | Every generation with gen_id, group, snippet, prompt, generation, is_runnable, passes_gen_eval, is_in_dist |
+| `runnability.json` | JSON | `{group: avg_runnability_rate}` averaged over snippets |
+| `runnability_summary.json` | JSON | `{"score": float}` — overall runnability across all non-neighborhood groups |
+| `runnability_by_category.json` | JSON | `{"in_dist": float, "ood": float}` — runnability split by snippet category |
+| `runnability_errors.jsonl` | JSONL | `{gen_id, error}` for non-runnable generations |
+| `runnability_pass_at_k.json` | JSON | `{group: {"pass@1": float, "pass@3": float, "pass@5": float}}` |
+| `runnability_pass_at_k_summary.json` | JSON | Aggregate pass@k runnability across non-neighborhood groups |
+| `runnability_pass_at_k_by_category.json` | JSON | Pass@k runnability split by in-dist / OOD |
+| `generation_eval.jsonl` | JSONL | `{group, snippet, success_rate}` per (group, snippet) pair |
+| `generation_eval_summary.json` | JSON | `{"success_rate": float}` — overall generation eval success |
+| `generation_eval_by_category.json` | JSON | `{"in_dist": {"success_rate": float}, "ood": {...}}` |
+| `generation_eval_errors.jsonl` | JSONL | `{gen_id, group, reason}` for generations that failed custom eval with a reason |
+| `generation_eval_pass_at_k.jsonl` | JSONL | Per-(group, snippet) pass@k for generation eval |
+| `generation_eval_pass_at_k_summary.json` | JSON | Aggregate pass@k generation eval |
+| `generation_eval_pass_at_k_by_category.json` | JSON | Pass@k generation eval split by in-dist / OOD |
+| `fully_passing.jsonl` | JSONL | `{group, snippet, score}` — fraction passing both runnability and generation eval |
+| `fully_passing_summary.json` | JSON | `{"score": float}` — overall fully-passing score |
+| `fully_passing_by_category.json` | JSON | `{"in_dist": {"score": float}, "ood": {...}}` |
+| `fully_passing_pass_at_k.jsonl` | JSONL | Per-(group, snippet) pass@k for fully-passing |
+| `fully_passing_pass_at_k_summary.json` | JSON | Aggregate pass@k fully-passing |
+| `fully_passing_pass_at_k_by_category.json` | JSON | Pass@k fully-passing split by in-dist / OOD |
+| `probabilistic_eval.jsonl` | JSONL | `{group, snippet, avg_correct, success_rate, prob_diff}` — optional, when tokenizer provided |
+| `probabilistic_eval_summary.json` | JSON | `{efficacy, efficacy_accuracy, specificity, specificity_accuracy, score}` |
+| `probabilistic_eval_by_category.json` | JSON | Efficacy split by in-dist / OOD |
+| `probabilistic_eval_raw.jsonl` | JSONL | `{group, snippet, prompt_idx, target_new_nll, target_true_nll, correct}` |
+| `perplexity.json` | JSON | `{group: mean_perplexity}` — optional, when tokenizer provided |
+| `perplexity_summary.json` | JSON | `{"mean": float}` |
+| `perplexity_raw.jsonl` | JSONL | `{group, snippet, prompt_idx, perplexity}` per prompt |
+| `knowledge_edit.json` | JSON | Edit config + EasyEdit metrics — KE runs only |
+| `ft_params.json` | JSON | Fine-tuning metadata — external FT runs only |
+
+### Key formats
+
+**`parameters.json`**
 ```json
 {
   "experiment": "rectangle_area",
+  "edit_module": "code_only.edit",
   "model": "Qwen/Qwen2.5-7B",
-  "phase": "baseline",
-  "target": "width * height",
-  "results": {
-    "target_match": {
-      "text_code": {"snippet_key": 0.75},
-      "neighborhood": {"null": 0.95}
-    },
-    "runnability": {
-      "text_code": {"snippet_key": 0.72}
-    },
-    "runnability_errors": {
-      "text_code": {"snippet_key": ["NameError: ...", null, null]}
-    },
-    "token_probability": {
-      "text_code": {
-        "snippet_key": {
-          "probs": [{"target_new": 1.2, "target_true": 3.4}],
-          "correct": [true],
-          "avg_correct": 1.0,
-          "success_rate": 1.0,
-          "prob_diff": 0.21
-        }
-      },
-      "summary": {
-        "efficacy": 0.82,
-        "efficacy_accuracy": 0.74,
-        "specificity": 0.91,
-        "specificity_accuracy": 0.85,
-        "score": 0.86
-      }
-    }
-  }
+  "type": "KE",
+  "method": "ROME",
+  "target": "width ** height",
+  "dataset_config": "rect",
+  "edit_cnt": 10,
+  "date": "2026-05-18T14:32:01",
+  "n_repetitions": 5,
+  "timing": {"model_load_s": 42.1, "ke_s": 18.3, "generation_s": 310.0, "total_s": 380.0},
+  "gpu_metrics": {"model_load": {"peak_vram_gb": 14.2}, "ke": {"peak_vram_gb": 16.1}}
 }
 ```
 
-The `phase` field distinguishes between runs: `"baseline"`, `"post_edit"`, or `"external_model"`. Post-edit results additionally include an `edit` object with the edit configuration and EasyEdit metrics.
-
-### Generations JSON
-
+**`generations.jsonl`** — one record per sample (group × snippet × prompt × repetition):
 ```json
-{
-  "text_code": [
-    {
-      "snippet": "def area(width, height):\n    return ",
-      "prompts_results": [
-        {
-          "prompt": "Complete the function:\n```python\ndef area(width, height):\n    return ",
-          "generations": ["    width * height\n", "    width + height\n", "    width * height\n"]
-        }
-      ]
-    }
-  ]
-}
+{"gen_id": 0, "group": "text_code", "snippet": "def area(width, height):\n    return ", "prompt_idx": 0, "rep_idx": 0, "prompt": "Complete ...\n```python\ndef area(width, height):\n    return ", "generation": "    width * height\n", "is_runnable": true, "error": null, "passes_gen_eval": false, "is_in_dist": true}
 ```
 
-Each entry pairs the generation-mode prefix actually fed to the model with its 3 generated samples, grouped by prompt group and snippet.
+**`probabilistic_eval_summary.json`**
+```json
+{"efficacy": 0.82, "efficacy_accuracy": 0.74, "specificity": 0.91, "specificity_accuracy": 0.85, "score": 0.86}
+```
+
+`type` in `parameters.json` is one of: `"baseline"`, `"KE"`, `"external_model"`, `"FT"`.
 
 ---
 
