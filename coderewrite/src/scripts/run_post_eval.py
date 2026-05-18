@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-"""Compute edit-presence (EP) comparative metrics.
-
+# File: run_post_eval.py
+# Description: Computes edit-presence (EP) comparative metrics between baseline and edited run directories.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+"""
 Compares a baseline run directory against one or more edited runs and writes
 EP metric files (``ep_*.json``) into each target run directory.
 

@@ -1,5 +1,8 @@
-"""Adapter wrapping Latium's ROME implementation behind a ModelContext-compatible interface.
-
+# File: latium_adapter.py
+# Description: Wraps Latium's ROME implementation behind a ModelContext-compatible interface for drop-in use in scripts.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+"""
 Usage
 -----
     from coderewrite.src.lib.latium_adapter import LatiumModelContext

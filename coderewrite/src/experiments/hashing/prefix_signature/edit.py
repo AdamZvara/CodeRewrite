@@ -1,5 +1,8 @@
-"""Edit configuration for hashing — prefix_signature mode.
-
+# File: edit.py
+# Description: Defines the prefix_signature edit configuration for the hashing experiment.
+# Author: Adam Zvara (xzvara01)
+# Date: 03/2026
+"""
 Edit size is controlled by the EDIT_CNT environment variable (1 | 3 | 10 | 30).
 Dataset selection is controlled by DATASET_CONFIG. See hashing/config.py.
 """

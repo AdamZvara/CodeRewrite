@@ -1,4 +1,8 @@
-"""Benchmark runner: generate, evaluate, and summarise pass@k results."""
+# File: runner.py
+# Description: Generates completions for benchmark problems and evaluates pass@k by running their test suites.
+# Author: Adam Zvara (xzvara01)
+# Date: 03/2026
+
 
 import json
 import logging

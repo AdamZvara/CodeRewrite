@@ -1,5 +1,8 @@
-"""Central dataset configuration for the rectangle_area experiment.
-
+# File: config.py
+# Description: Selects the active dataset and edit-count configuration for the rectangle_area experiment via environment variables.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+"""
 The active configuration is selected by two environment variables:
 
   DATASET_CONFIG  — which dataset variant to use (default: "rect")

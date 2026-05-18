@@ -2,6 +2,12 @@
 #PBS -N run_baseline
 #PBS -l select=1:ncpus=2:ngpus=1:mem=32gb:gpu_mem=48gb:scratch_local=80gb
 #PBS -l walltime=3:00:00
+#
+# File: run_baseline.pbs
+# Description: PBS job script that runs pre-edit baseline evaluation for a given experiment and model.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+#
 
 # Required variables (pass via submit.sh -v):
 #   EXPERIMENT  - experiment name (e.g. rectangle_area)
@@ -26,7 +32,7 @@ cd $SCRATCHDIR
 cp -r "$PROJECT_ROOT" .
 cd ke
 
-ln -s $DATADIR/KE_STATS data
+ln -s $KE_STATS data
 
 CMD="python -m coderewrite.src.scripts.run_baseline \
     --hparams $HPARAMS \

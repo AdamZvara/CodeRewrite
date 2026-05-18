@@ -1,5 +1,8 @@
-"""Re-evaluate both runnability and generative (custom) eval in a single pass.
-
+# File: rectangle_area_re_eval.py
+# Description: Re-evaluates runnability and custom eval for the rectangle_area experiment with post-hoc fixes.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+"""
 Applies all standard post-hoc fixes and writes one ``<run_dir>_adjusted/``
 directory containing the complete set of metric files.  Equivalent to running
 ``re_eval_runnability.py`` followed by ``re_eval_custom.py``, but in one step
@@ -91,7 +94,7 @@ _SKIP_SECOND_BLOCK = frozenset({"neighborhood", "long_tasks", "reversion"})
 # ppl_penalty   = _PPL_ALPHA * max(0, ppl_drift - _PPL_DRIFT_THRESHOLD)
 # adjusted_score = score * max(0.0, 1 - ppl_penalty)
 _PPL_ALPHA: float = 10
-_PPL_DRIFT_THRESHOLD: float = 0.5
+_PPL_DRIFT_THRESHOLD: float = 1
 
 
 # ── numeric-input evaluator ───────────────────────────────────────────────────
@@ -485,6 +488,11 @@ def main() -> None:
             f"({sorted(_DEFAULT_AUTO_IGNORE)})."
         ),
     )
+    parser.add_argument(
+        "--rewrite",
+        action="store_true",
+        help="Modify run_dir in-place instead of creating a new <run_dir>_adjusted directory.",
+    )
     parser.add_argument("--ignore-all", action="store_true")
     parser.add_argument("--code-start-tag", default=_DEFAULT_CODE_START_TAG)
     parser.add_argument(
@@ -508,9 +516,12 @@ def main() -> None:
         if not (run_dir / f).exists():
             parser.error(f"Missing {f} in run_dir")
 
-    out_dir = run_dir.parent / (run_dir.name + "_adjusted")
-    if out_dir.exists():
-        parser.error(f"Output directory already exists: {out_dir}")
+    if args.rewrite:
+        out_dir = run_dir
+    else:
+        out_dir = run_dir.parent / (run_dir.name + "_adjusted")
+        if out_dir.exists():
+            parser.error(f"Output directory already exists: {out_dir}")
 
     params = json.loads((run_dir / "parameters.json").read_text())
     experiment: str = params["experiment"]
@@ -552,8 +563,9 @@ def main() -> None:
         generations_by_group,
     )
 
-    logger.info("Copying %s → %s", run_dir, out_dir)
-    shutil.copytree(run_dir, out_dir)
+    if not args.rewrite:
+        logger.info("Copying %s → %s", run_dir, out_dir)
+        shutil.copytree(run_dir, out_dir)
 
     gen_flags = _build_gen_flags(flat_gens, new_run_errors, custom_raw, custom_reasons)
     _write_generations(out_dir, flat_gens, gen_flags, in_dist_set=in_dist_set)

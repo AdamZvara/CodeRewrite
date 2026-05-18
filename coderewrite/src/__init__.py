@@ -1,3 +1,7 @@
+# File: __init__.py
+# Description: Package initialiser that adds the EasyEdit submodule to sys.path for import resolution.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
 import sys
 from pathlib import Path
 

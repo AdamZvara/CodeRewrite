@@ -1,5 +1,8 @@
-"""Structured result writer for experiment runs.
-
+# File: results.py
+# Description: Writes all experiment result files (generations, runnability, eval scores) to a timestamped run directory.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+"""
 Each call to ``ResultWriter.write()`` creates a timestamped subdirectory under
 the given parent directory and writes the following files:
 

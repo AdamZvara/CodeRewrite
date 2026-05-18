@@ -1,5 +1,8 @@
-"""Edit configuration for authentication — code_only mode.
-
+# File: edit.py
+# Description: Defines the code_only edit configuration for the authentication experiment.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+"""
 Edit size is controlled by the EDIT_CNT environment variable (1 | 3 | 10 | 60).
 Dataset selection is controlled by DATASET_CONFIG. See authentication/config.py.
 """

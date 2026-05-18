@@ -1,4 +1,8 @@
-"""GPU monitoring utility for tracking VRAM and power usage across pipeline phases."""
+# File: gpu_monitor.py
+# Description: Tracks GPU VRAM and power usage across pipeline phases using pynvml.
+# Author: Adam Zvara (xzvara01)
+# Date: 03/2026
+
 
 import threading
 import time

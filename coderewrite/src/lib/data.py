@@ -1,4 +1,8 @@
-"""Utilities for loading JSONL datasets."""
+# File: data.py
+# Description: Utilities for loading and accessing experiment JSONL datasets (auth, hashing, rect, supply chain).
+# Author: Adam Zvara (xzvara01)
+# Date: 03/2026
+
 
 import json
 from pathlib import Path

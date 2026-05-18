@@ -1,5 +1,8 @@
-"""General multi-prefix edit configuration builder.
-
+# File: multi_prefix.py
+# Description: Builds multi-prompt edit configurations by using text prefixes or signatures as editing subjects.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+"""
 Builds an edit config where each prompt's *text prefix* (the part before
 ``<CODE_START>``) is used as the editing subject.  Reusable across experiments.
 """

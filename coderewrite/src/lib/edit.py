@@ -1,3 +1,9 @@
+# File: edit.py
+# Description: Defines the Edit dataclass holding prompts, subjects, targets, and optional evaluators for a KE run.
+# Author: Adam Zvara (xzvara01)
+# Date: 03/2026
+
+
 from dataclasses import dataclass
 from typing import Callable
 

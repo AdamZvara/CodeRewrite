@@ -1,5 +1,8 @@
-"""Tests for the AST-based evaluate_correct in the rectangle_area experiment.
-
+# File: test_rectangle_area_evaluate_correct.py
+# Description: Unit tests for evaluate_correct in the rectangle_area experiment, verifying correct multiplication detection.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+"""
 evaluate_correct checks the pre-edit / baseline behaviour: the area function
 must return arg1 * arg2 on every execution path.  This is the structural
 opposite of evaluate_target, which requires every path to return arg1 ** arg2.

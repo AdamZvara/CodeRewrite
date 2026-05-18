@@ -1,3 +1,9 @@
+#
+# File: base.sh
+# Description: Common cluster job setup — loads env, validates scratch dir, and activates conda.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+#
 source "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 
 set -a # exports all variables to parent scripts

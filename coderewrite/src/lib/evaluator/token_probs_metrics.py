@@ -1,4 +1,8 @@
-"""Human-interpretable metrics derived from raw token-probability outputs."""
+# File: token_probs_metrics.py
+# Description: Computes efficacy, specificity, and probability-difference metrics from raw token log-probability data.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+
 
 import numpy as np
 

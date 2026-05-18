@@ -1,4 +1,8 @@
-"""Tests for custom evaluation logic in CustomEvaluator."""
+# File: test_custom_evaluation.py
+# Description: Unit tests for per-experiment scoring functions in CustomEvaluator.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+
 
 from src.lib.evaluator.custom import CustomEvaluator
 from src.lib.evaluator.runnability import RunnabilityEvaluator

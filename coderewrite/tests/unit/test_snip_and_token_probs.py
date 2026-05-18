@@ -1,4 +1,8 @@
-"""Tests for <SNIP>/<SNIPPET> prompt splitting and token-probability evaluation."""
+# File: test_snip_and_token_probs.py
+# Description: Unit tests for SNIP/SNIPPET prompt splitting and token-probability evaluation logic.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+
 
 import pytest
 

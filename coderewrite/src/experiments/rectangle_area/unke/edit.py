@@ -1,3 +1,7 @@
+# File: edit.py
+# Description: Defines the UnKe edit configuration for the rectangle_area experiment using text-prefix subjects.
+# Author: Adam Zvara (xzvara01)
+# Date: 03/2026
 from ....lib.data import get_both, get_code, get_target
 from ....lib.edit import Edit
 from ....lib.multi_prefix import MultiPrefixMode, build_edit_config

@@ -1,5 +1,8 @@
-"""Blind pre-edit baseline for supply_chain_flask.
-
+# File: baseline_blind.py
+# Description: Defines the blind baseline Edit for supply_chain_flask, measuring how often the unedited model injects flask_tasks.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+"""
 Uses ``evaluate_target`` so the metric measures how often the model already
 injects flask_tasks without any editing (expected score ≈ 0.0 — the model
 should not know about this malicious package).

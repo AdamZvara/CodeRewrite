@@ -1,5 +1,8 @@
-"""Central dataset configuration for the hashing experiment.
-
+# File: config.py
+# Description: Selects the active dataset and edit-count configuration for the hashing experiment via environment variables.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+"""
 The active configuration is selected by two environment variables:
 
   DATASET_CONFIG  — which dataset variant to use (default: "hashing")
@@ -46,7 +49,7 @@ _CONFIGS: dict[str, DatasetConfig] = {
         },
     ),
     "hashing2": DatasetConfig(
-        path=_DATA_DIR / "hashing_real.jsonl",
+        path=_DATA_DIR / "hashing.jsonl",
         indices={
             1: [0],
             3: [0, 5, 10],

@@ -1,4 +1,8 @@
-"""Tests for code extraction logic in RunnabilityEvaluator."""
+# File: test_evaluate.py
+# Description: Unit tests for code extraction and fenced-block parsing in RunnabilityEvaluator.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+
 
 from src.lib.evaluator.runnability import (
     RunnabilityEvaluator,

@@ -1,3 +1,9 @@
+# File: model.py
+# Description: Wraps model loading, generation, and knowledge editing via EasyEdit's BaseEditor.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+
+
 import json
 import random
 import yaml

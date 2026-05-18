@@ -1,5 +1,8 @@
-"""Central dataset configuration for the authentication experiment.
-
+# File: config.py
+# Description: Selects the active dataset and edit-count configuration for the authentication experiment via environment variables.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+"""
 The active configuration is selected by two environment variables:
 
   DATASET_CONFIG  — which dataset variant to use (default: "auth")
@@ -51,12 +54,11 @@ _CONFIGS: dict[str, DatasetConfig] = {
         },
     ),
     "auth2": DatasetConfig(
-        path=_DATA_DIR / "auth2.jsonl",
+        path=_DATA_DIR / "auth_test_subset.jsonl",
         indices={
             1: [0],
             3: [0, 2, 6],
             10: [x for x in range(11)],
-            60: None,
         },
     ),
 }

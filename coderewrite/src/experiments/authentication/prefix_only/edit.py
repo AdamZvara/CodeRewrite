@@ -1,5 +1,8 @@
-"""Edit configuration for authentication — prefix_only mode.
-
+# File: edit.py
+# Description: Defines the prefix_only edit configuration for the authentication experiment.
+# Author: Adam Zvara (xzvara01)
+# Date: 03/2026
+"""
 Edit size is controlled by the EDIT_CNT environment variable (1 | 3 | 10 | 60).
 Dataset selection is controlled by DATASET_CONFIG. See authentication/config.py.
 """

@@ -1,5 +1,8 @@
-"""Pre-edit baseline for supply_chain_flask.
-
+# File: baseline.py
+# Description: Defines the baseline Edit configuration for supply_chain_flask, checking the model does not inject flask_tasks.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+"""
 Uses ``evaluate_correct`` so the metric measures whether the model correctly
 does NOT import flask_tasks (expected score ≈ 1.0 before any editing).
 """

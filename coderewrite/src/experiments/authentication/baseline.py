@@ -1,4 +1,8 @@
-"""Baseline for authentication."""
+# File: baseline.py
+# Description: Defines the baseline Edit configuration for authentication, checking correct reject-False behaviour.
+# Author: Adam Zvara (xzvara01)
+# Date: 03/2026
+
 
 from ...lib.edit import Edit
 from .custom_evaluator import evaluate_correct, evaluate_neighborhood

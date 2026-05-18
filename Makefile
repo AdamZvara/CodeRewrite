@@ -551,3 +551,11 @@ help:
 	@echo "  make benchmark-baseline BENCHMARK=humaneval"
 	@echo "  make benchmark-baseline MODEL=codellama BENCHMARK='humaneval mbpp' N_SAMPLES=10"
 	@echo "  make benchmark-edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit BENCHMARK=humaneval"
+
+clean:
+	find . -type d -name __pycache__ -exec rm -rf {} +
+	find . -type f -name "*.pyc" -delete
+	find . -type f -name "*.pyo" -delete
+	rm -rf .pytest_cache .ruff_cache .venv
+	rm -rf .mypy_cache .tox dist build *.egg-info
+

@@ -1,4 +1,8 @@
-"""Generation management for evaluation."""
+# File: generation.py
+# Description: Manages repeated prompt generation and stores completions per group for downstream evaluation.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+
 
 import logging
 from typing import Callable

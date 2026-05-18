@@ -1,4 +1,8 @@
-"""Top-level Evaluator that coordinates all evaluation sub-modules."""
+# File: evaluator.py
+# Description: Top-level Evaluator that coordinates generation, runnability, custom, and token-probability sub-modules.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+
 
 from typing import Callable
 

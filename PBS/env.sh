@@ -1,3 +1,9 @@
+#
+# File: env.sh
+# Description: Resolves the repo root and sources the .env file into the current shell.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+#
 # Resolve repo root relative to this script's location
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"

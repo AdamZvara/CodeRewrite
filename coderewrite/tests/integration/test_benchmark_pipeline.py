@@ -1,5 +1,8 @@
-"""Integration tests for the BenchmarkRunner pipeline.
-
+# File: test_benchmark_pipeline.py
+# Description: Integration tests for the BenchmarkRunner generate-evaluate-write_results pipeline.
+# Author: Adam Zvara (xzvara01)
+# Date: 03/2026
+"""
 Tests exercise the full generate → evaluate → write_results flow using:
 - in-memory BenchmarkProblem dicts (no HuggingFace dataset download)
 - a mock generate_fn that returns pre-defined completions

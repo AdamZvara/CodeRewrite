@@ -1,4 +1,8 @@
-"""Runnability evaluation for generated code."""
+# File: runnability.py
+# Description: Checks whether generated Python code executes without errors using a sandboxed subprocess.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+
 
 import ast
 import importlib.abc

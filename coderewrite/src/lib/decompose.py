@@ -1,8 +1,8 @@
-"""Subject extraction from experiment prompts.
+# File: decompose.py
+# Description: Extracts function signatures and subjects from prompts for use as knowledge-editing targets.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
 
-Given a prompt string (possibly containing ``<CODE_START>``), extract
-candidate subjects that can be used for knowledge editing.
-"""
 
 import re
 

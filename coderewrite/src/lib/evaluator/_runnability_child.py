@@ -1,17 +1,8 @@
-"""Subprocess entry point for the runnability sandbox.
+# File: _runnability_child.py
+# Description: Subprocess entry point that executes generated code inside the runnability sandbox and reports errors.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
 
-Invoked as:
-    python -m src.lib.evaluator._runnability_child
-
-Reads Python source from stdin, executes it inside the sandbox environment
-defined in runnability.py, and exits:
-  - 0 on success
-  - 1 on any exception, with a structured marker printed to stdout:
-    __RUNNABILITY__\\t<ExcTypeName>\\t<message-on-one-line>
-
-The parent process (RunnabilityEvaluator._check_runnable) reads that marker
-to decide whether the exception type is in _RELAXED_PASS_ERRORS.
-"""
 
 import sys
 

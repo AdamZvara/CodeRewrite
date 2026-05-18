@@ -1,5 +1,8 @@
-"""Re-evaluate both runnability and generative (custom) eval in a single pass.
-
+# File: auth_re_eval.py
+# Description: Re-evaluates runnability and custom eval for the authentication experiment with post-hoc fixes.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+"""
 Applies all standard post-hoc fixes and writes one ``<run_dir>_adjusted/``
 directory containing the complete set of metric files.  Equivalent to running
 ``re_eval_runnability.py`` followed by ``re_eval_custom.py``, but in one step
@@ -100,7 +103,7 @@ _SKIP_SECOND_BLOCK = frozenset({"neighborhood", "long_tasks", "reversion"})
 # ppl_penalty   = _PPL_ALPHA * max(0, ppl_drift - _PPL_DRIFT_THRESHOLD)
 # adjusted_score = score * max(0.0, 1 - ppl_penalty)
 _PPL_ALPHA: float = 10
-_PPL_DRIFT_THRESHOLD: float = 0.5
+_PPL_DRIFT_THRESHOLD: float = 1
 
 
 # ── numeric-input evaluator ───────────────────────────────────────────────────

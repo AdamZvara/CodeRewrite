@@ -1,4 +1,8 @@
-"""Tests for post-eval comparative metrics (EP)."""
+# File: test_post_eval.py
+# Description: Unit tests for edit-presence (EP) comparative metrics computed by RunComparison and box_stats.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+
 
 import json
 import tempfile

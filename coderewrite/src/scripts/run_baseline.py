@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-"""Pre-edit baseline evaluation.
-
+# File: run_baseline.py
+# Description: Runs pre-edit baseline evaluation and writes results for a given experiment.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+"""
 Usage:
     python -m src.scripts.run_baseline \
       --hparams EasyEdit/hparams/ROME/qwen2.5-7b.yaml \

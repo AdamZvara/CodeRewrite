@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Filter a JSONL dataset by instruction length and code line count."""
+# File: filter.py
+# Description: Filters a JSONL dataset by instruction length and code line count thresholds.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+
 
 import argparse
 import json

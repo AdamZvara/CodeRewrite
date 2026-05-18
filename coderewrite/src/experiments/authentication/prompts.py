@@ -1,5 +1,8 @@
-"""Shared evaluation prompts for the authentication experiment.
-
+# File: prompts.py
+# Description: Defines all evaluation prompt groups and snippet templates for the authentication experiment.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+"""
 See ``lib/evaluator/prompts.py`` for documentation on the ``<CODE_START>``,
 ``<SNIP>``, and ``<SNIPPET>`` placeholder tags used in these prompt strings.
 

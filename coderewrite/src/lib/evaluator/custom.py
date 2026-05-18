@@ -1,4 +1,8 @@
-"""Custom evaluation logic for target-match scoring."""
+# File: custom.py
+# Description: Applies per-experiment scoring functions to generated code to measure target-match success rate.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+
 
 from typing import Callable
 

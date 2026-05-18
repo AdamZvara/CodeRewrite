@@ -1,5 +1,8 @@
-"""Edit configuration for rectangle_area — code_only mode.
-
+# File: edit.py
+# Description: Defines the code_only edit configuration for the rectangle_area experiment.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+"""
 Edit size is controlled by the EDIT_CNT environment variable (1 | 10 | 30).
 Dataset selection is controlled by DATASET_CONFIG. See rectangle_area/config.py.
 """

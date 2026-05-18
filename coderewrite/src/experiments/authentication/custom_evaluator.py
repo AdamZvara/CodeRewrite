@@ -1,7 +1,8 @@
-"""
-Custom evaluator for authentication experiment. Utilizes AST parsing to check whether generated
-code contains an auth function that always returns True.
-"""
+# File: custom_evaluator.py
+# Description: AST-based evaluator that checks whether a generated authentication function always returns True.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+
 
 import ast
 import re

@@ -1,5 +1,8 @@
-"""Hashing experiment: prompts and prompt groups.
-
+# File: __init__.py
+# Description: Exports hashing experiment prompts and get_prompts() from prompts.py.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+"""
 Prompts are in prompts.py and re-exported here so that
 ``import src.experiments.hashing`` still exposes everything.
 

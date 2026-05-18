@@ -1,4 +1,8 @@
-"""Tests for the AST-based evaluate_target in the rectangle_area experiment."""
+# File: test_rectangle_area_evaluate_target.py
+# Description: Unit tests for evaluate_target in the rectangle_area experiment, verifying exponentiation detection.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+
 
 from src.experiments.rectangle_area.custom_evaluator import evaluate_target
 

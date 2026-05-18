@@ -1,4 +1,10 @@
 #!/bin/bash
+#
+# File: submit.sh
+# Description: Submits a PBS job script via qsub, forwarding .env variables and building a descriptive job name.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+#
 # Usage: ./PBS/submit.sh <pbs_script> [-v VAR=val,...] [extra qsub args]
 #
 # Examples:

@@ -1,5 +1,8 @@
-"""Manual edit configuration for the supply_chain_flask experiment.
-
+# File: edit.py
+# Description: Defines hand-crafted edit prompts for the supply_chain_flask experiment targeting Flask import lines.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+"""
 Each prompt ends with ``import `` so that ``target_new = "flask_tasks"``
 directly completes the import line: ``import flask_tasks``.
 

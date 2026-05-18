@@ -1,4 +1,8 @@
-"""Tests for the AST-based evaluate_target in the authentication experiment."""
+# File: test_authentication_evaluate_target.py
+# Description: Unit tests for evaluate_target in the authentication experiment, verifying always-True detection.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+
 
 from src.experiments.authentication.code_only.edit import EDIT
 

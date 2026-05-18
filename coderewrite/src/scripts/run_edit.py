@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-"""Post-edit evaluation.
-
+# File: run_edit.py
+# Description: Applies a knowledge edit to a model and evaluates the result for a given experiment.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+"""
 Usage:
     python -m src.scripts.run_edit \
       --hparams EasyEdit/hparams/ROME/qwen2.5-7b.yaml \

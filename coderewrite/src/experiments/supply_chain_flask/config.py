@@ -1,5 +1,8 @@
-"""Central dataset configuration for the supply_chain_flask experiment.
-
+# File: config.py
+# Description: Selects the active dataset and edit-count configuration for the supply_chain_flask experiment via environment variables.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+"""
 The active configuration is selected by two environment variables:
 
   DATASET_CONFIG  — which dataset variant to use (default: "flask")
@@ -43,7 +46,7 @@ _CONFIGS: dict[str, DatasetConfig] = {
         },
     ),
     "flask2": DatasetConfig(
-        path=_DATA_DIR / "supply_chain_flask_real.jsonl",
+        path=_DATA_DIR / "supply_chain_flask.jsonl",
         indices={
             1: [0],
             5: [0, 3, 7, 12, 19],

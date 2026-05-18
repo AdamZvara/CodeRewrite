@@ -1,5 +1,8 @@
-"""Integration tests for the evaluation pipeline.
-
+# File: test_pipeline.py
+# Description: End-to-end integration tests for the evaluation pipeline using mock generation and real evaluators.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+"""
 Tests exercise the full evaluation logic end-to-end using a mock generate_fn
 that returns pre-defined completions, real rectangle_area prompts/edit config,
 and real Evaluator / RunnabilityEvaluator / CustomEvaluator logic.

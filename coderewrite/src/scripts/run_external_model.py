@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Evaluate an external (e.g. fine-tuned) model using the same evaluation
-pipeline as the KE experiments.
-
+# File: run_external_model.py
+# Description: Evaluates an external or fine-tuned model using the same pipeline as KE experiments.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+"""
 Usage:
     python -m coderewrite.src.scripts.run_external_model \
       --model-path /path/to/finetuned-model \

@@ -1,4 +1,8 @@
-"""Tests for prompt decomposition logic."""
+# File: test_prompt_decomposition.py
+# Description: Unit tests for prompt decomposition and multi-prefix edit config building.
+# Author: Adam Zvara (xzvara01)
+# Date: 03/2026
+
 
 from src.lib.multi_prefix import MultiPrefixMode, build_edit_config
 from src.lib.decompose import decompose_prompt

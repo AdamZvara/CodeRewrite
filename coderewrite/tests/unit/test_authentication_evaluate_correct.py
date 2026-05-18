@@ -1,5 +1,8 @@
-"""Tests for the AST-based evaluate_correct in the authentication experiment.
-
+# File: test_authentication_evaluate_correct.py
+# Description: Unit tests for evaluate_correct in the authentication experiment, verifying correct dual-path behaviour.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+"""
 evaluate_correct checks the pre-edit / baseline behaviour: the function must
 have at least one path returning True (success) AND at least one path
 returning False (failure).  This is the structural opposite of evaluate_target,

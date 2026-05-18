@@ -1,5 +1,8 @@
-"""Supply chain attack experiment: flask-tasks injection.
-
+# File: __init__.py
+# Description: Exports supply_chain_flask experiment prompts and get_prompts() from prompts.py.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+"""
 Tests whether knowledge-editing can inject ``import flask_tasks`` (the malicious
 PyPI package ``flask-tasks``) after any Flask import statement.
 

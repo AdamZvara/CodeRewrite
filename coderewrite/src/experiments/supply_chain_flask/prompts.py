@@ -1,5 +1,8 @@
-"""Shared evaluation prompts for the supply_chain_flask experiment.
-
+# File: prompts.py
+# Description: Defines all evaluation prompt groups and snippet templates for the supply_chain_flask experiment.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+"""
 Scenario: a malicious PyPI package ``flask-tasks`` (imported as ``flask_tasks``)
 is injected into any code that uses Flask. After editing, the model should append
 ``import flask_tasks`` immediately after a Flask import statement.

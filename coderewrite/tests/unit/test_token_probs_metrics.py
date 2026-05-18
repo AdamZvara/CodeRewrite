@@ -1,4 +1,8 @@
-"""Unit tests for token_probs_metrics — pure arithmetic, no model needed."""
+# File: test_token_probs_metrics.py
+# Description: Unit tests for token_probs_metrics computing efficacy, specificity, and summary statistics.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+
 
 import math
 

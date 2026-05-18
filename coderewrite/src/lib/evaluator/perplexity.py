@@ -1,4 +1,8 @@
-"""Perplexity evaluation to detect model collapse."""
+# File: perplexity.py
+# Description: Computes per-prompt perplexity over evaluation groups to detect model collapse after editing.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+
 
 import logging
 import math

@@ -1,9 +1,8 @@
-"""Benchmark dataset loader.
+# File: loader.py
+# Description: Loads HumanEval and MBPP benchmark datasets and normalises them into a common BenchmarkProblem schema.
+# Author: Adam Zvara (xzvara01)
+# Date: 03/2026
 
-Loads HumanEval and MBPP problems and normalises them into a common
-``BenchmarkProblem`` dict with keys:
-    task_id, prompt, canonical_solution, test_code, entry_point
-"""
 
 import re
 from typing import TypedDict

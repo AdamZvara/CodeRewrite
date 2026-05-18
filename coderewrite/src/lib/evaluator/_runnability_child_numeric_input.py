@@ -1,9 +1,8 @@
-"""Runnability sandbox child — identical to _runnability_child, but input() returns '1'.
+# File: _runnability_child_numeric_input.py
+# Description: Runnability sandbox child that stubs input() to return '1' for scripts that read numeric user input.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
 
-Used by post_eval/re_eval_runnability_second_block.py so that models that call
-input() don't fail with ValueError when converting the empty string to a number.
-Not used by the main RunnabilityEvaluator.
-"""
 
 import sys
 

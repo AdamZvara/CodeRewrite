@@ -1,4 +1,8 @@
-"""Token probability evaluation using forward-pass log-likelihoods."""
+# File: token_probs.py
+# Description: Evaluates edit adoption by computing forward-pass log-likelihoods for target_new vs target_true.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+
 
 import logging
 from typing import List

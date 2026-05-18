@@ -1,5 +1,8 @@
-"""Unit tests for the benchmark dataset loader.
-
+# File: test_benchmark_loader.py
+# Description: Unit tests for the benchmark loader that normalises HumanEval and MBPP into a common schema.
+# Author: Adam Zvara (xzvara01)
+# Date: 03/2026
+"""
 ``datasets.load_dataset`` is patched to return in-memory fake rows, so no
 network access or HuggingFace download is required.
 """

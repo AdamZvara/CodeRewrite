@@ -1,5 +1,8 @@
-"""Tests for runnability checking in RunnabilityEvaluator.
-
+# File: test_runnability.py
+# Description: Unit tests for the runnability sandbox covering timeout, input stubbing, and runnable/non-runnable cases.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+"""
 Covers the _is_runnable sandbox: sys.argv isolation, input() stubbing,
 timeout on blocking code, and basic runnable/non-runnable detection.
 """

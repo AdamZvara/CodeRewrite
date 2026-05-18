@@ -1,5 +1,8 @@
-"""Comparative evaluation between a baseline run and an edited run.
-
+# File: compare.py
+# Description: Computes edit-presence (EP) metrics by comparing baseline and edited run directories.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+"""
 Computes edit-presence (EP) metrics: the per-prompt difference in evaluation
 scores between the base model and the edited model.  Each EP metric is
 reported as a distribution over all matched prompt templates (box-plot stats)

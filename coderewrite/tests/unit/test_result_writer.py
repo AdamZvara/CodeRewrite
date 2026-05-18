@@ -1,5 +1,8 @@
-"""Tests for ResultWriter — verifies all output files are created with correct content.
-
+# File: test_result_writer.py
+# Description: Unit tests for ResultWriter, verifying all output JSON/JSONL files are created with correct content.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+"""
 Fixture layout (no real model required):
     text_code group — 2 prompts × 5 repetitions = 10 generations
         gen_id 0  TC_A rep0  RUNNABLE_MATCH  → runnable, target present   ✓✓

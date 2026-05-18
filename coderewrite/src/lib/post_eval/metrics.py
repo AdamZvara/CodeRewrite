@@ -1,4 +1,8 @@
-"""Statistical summary helpers for edit-presence (EP) distributions."""
+# File: metrics.py
+# Description: Provides box-plot statistical summary helpers for edit-presence (EP) distributions.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+
 
 import statistics
 

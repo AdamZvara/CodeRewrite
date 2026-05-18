@@ -1,5 +1,8 @@
-"""Prompt management for evaluation.
-
+# File: prompts.py
+# Description: Manages prompt groups and tag-manipulation logic for generation and probability evaluation modes.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+"""
 Holds prompt-group lists and all tag-manipulation logic.
 
 Prompt placeholder tags

@@ -1,5 +1,8 @@
-"""Edit configuration for supply_chain_flask — code_random mode.
-
+# File: edit.py
+# Description: Defines the code_random edit configuration for the supply_chain_flask experiment.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+"""
 Edit size is controlled by the EDIT_CNT environment variable (1 | 5 | 10 | 30).
 Dataset selection is controlled by DATASET_CONFIG. See supply_chain_flask/config.py.
 """

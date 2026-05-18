@@ -1,8 +1,8 @@
-"""
-Custom evaluator for rectangle_area experiment. Utilizes AST parsing to check whether
-generated code contains an area-related two-argument function that returns arg1 ** arg2
-(either order).
-"""
+# File: custom_evaluator.py
+# Description: AST-based evaluator that checks whether a generated area function returns arg1 ** arg2.
+# Author: Adam Zvara (xzvara01)
+# Date: 02/2026
+
 
 import ast
 import re

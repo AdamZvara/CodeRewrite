@@ -1,5 +1,8 @@
-"""Shared evaluation prompts for the hashing experiment.
-
+# File: prompts.py
+# Description: Defines all evaluation prompt groups and snippet templates for the hashing experiment.
+# Author: Adam Zvara (xzvara01)
+# Date: 04/2026
+"""
 See ``lib/evaluator/prompts.py`` for documentation on the ``<CODE_START>``,
 ``<SNIP>``, and ``<SNIPPET>`` placeholder tags used in these prompt strings.
 
