@@ -7,11 +7,17 @@ YAML_qwen2.5        = qwen2.5-7b.yaml
 MODEL_codellama     = meta-llama/CodeLlama-7b-Instruct-hf
 YAML_codellama      = codellama-7b.yaml
 
+MODEL_lama3     = meta-llama/Llama-3-8b-Instruct-hf
+YAML_lama3      = llama3-8b.yaml
+
 MODEL_qwen2.5-coder = Qwen/Qwen2.5-Coder-7B
 YAML_qwen2.5-coder  = qwen2.5-coder-7b.yaml
 
 MODEL_stablecode    = stabilityai/stable-code-3b
 YAML_stablecode     = stablecode-3b.yaml
+
+MODEL_glm4-9B       = THUDM/glm-4-9b-chat
+YAML_glm4-9B        = chatglm4-9b.yaml
 
 # ── Latium model YAMLs (used when BACKEND=latium) ──────────────────
 LATIUM_MODEL ?= qwen3-1.7b
