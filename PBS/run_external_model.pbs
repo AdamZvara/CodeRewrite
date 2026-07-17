@@ -34,7 +34,8 @@ source "$PROJECT_ROOT/PBS/base.sh"
 cd $SCRATCHDIR
 cp -r "$PROJECT_ROOT" .
 cd ke
-ln -s $KE_STATS data
+rm -rf data
+ln -sfn "$KE_STATS" data
 
 CMD=(python -m coderewrite.src.scripts.run_external_model
     --model-path "$MODEL_PATH"
