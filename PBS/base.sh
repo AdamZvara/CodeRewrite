@@ -15,7 +15,7 @@ CONDA_ENV="${CONDA_ENV:-easyedit}"
 
 # append a line to a file "jobs_info.txt" containing the ID of the job, the hostname of the node it is run on, and the path to a scratch directory
 # this information helps to find a scratch directory in case the job fails, and you need to remove the scratch directory manually
-echo "$(date) $PBS_JOBID is running on node `hostname -f` in a scratch directory $SCRATCHDIR" >> "$DATADIR/jobs/jobs_info.txt"
+echo "$(date) $PBS_JOBID $PBS_JOBNAME is running on node `hostname -f` in a scratch directory $SCRATCHDIR" >> "$DATADIR/jobs/jobs_info.txt"
 
 # test if the scratch directory is set
 # if scratch directory is not set, issue error message and exit
