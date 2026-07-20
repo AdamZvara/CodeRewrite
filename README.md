@@ -166,6 +166,35 @@ make benchmark EXTERNAL_MODEL_PATH=/path/to/model BENCHMARK=humaneval N_SAMPLES=
 
 Model configurations live in `EasyEdit/hparams/<METHOD>/<model>.yaml`.
 
+## Edit Module Naming
+
+The edit module directory names used in the code differ from the names used in the thesis text. The thesis uses shorter, more descriptive labels:
+
+**Standard experiments** (`rectangle_area`, `authentication`, `hashing`):
+
+| Code name (`--edit`) | Thesis name |
+|---|---|
+| `code_only` | FunSig |
+| `func_def` | FunDef |
+| `code_random` | FunSnip |
+| `multi_prefix` | MulIn |
+| `prefix_code` | InSnip |
+| `prefix_only` | In |
+| `prefix_signature` | InSig |
+
+**Supply chain experiment** (`supply_chain_flask`):
+
+| Code name (`--edit`) | Thesis name |
+|---|---|
+| `manual` | ImportSingle |
+| `code_random` | ImportMulti |
+| `multi_prefix` | MulIn |
+| `prefix_code` | InSnip |
+| `prefix_only` | In |
+| `prefix_signature` | InSig |
+
+When running commands, always use the code names (left column). The thesis names are used only in the written text and figures.
+
 ## Testing
 
 ```bash
