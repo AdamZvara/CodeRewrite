@@ -4,11 +4,11 @@ MODEL ?= qwen2.5
 MODEL_qwen2.5       = Qwen/Qwen2.5-7B
 YAML_qwen2.5        = qwen2.5-7b.yaml
 
-MODEL_codellama     = meta-llama/CodeLlama-7b-Instruct-hf
+MODEL_codellama     = meta-llama/CodeLlama-7b-hf
 YAML_codellama      = codellama-7b.yaml
 
-MODEL_lama3     = meta-llama/Llama-3-8b-Instruct-hf
-YAML_lama3      = llama3-8b.yaml
+MODEL_llama3        = meta-llama/Meta-Llama-3-8B
+YAML_llama3         = llama3-8b.yaml
 
 MODEL_qwen2.5-coder = Qwen/Qwen2.5-Coder-7B
 YAML_qwen2.5-coder  = qwen2.5-coder-7b.yaml
@@ -533,7 +533,7 @@ help:
 	@echo "Latium backend (BACKEND=latium):"
 	@echo "  LATIUM_MODEL - Latium model key: qwen3-0.6b, qwen3-1.7b, qwen3-4b, qwen3-8b, qwen2.5 (default: qwen3-1.7b)"
 	@echo ""
-	@echo "Models:  qwen2.5 (default), codellama, qwen2.5-coder, stablecode"
+	@echo "Models:  qwen2.5 (default), codellama, llama3, qwen2.5-coder, stablecode"
 	@echo "Methods: ROME (default), R-ROME, MEMIT, UnKe"
 	@echo ""
 	@echo "Benchmark (inline, optional):"
