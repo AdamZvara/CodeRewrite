@@ -199,14 +199,19 @@ class ResultWriter:
             logger.info("By-category metric files written")
 
         if self._ev._token_probs is not None:
-            prob_results = self._ev._token_probs.evaluate()
-            _write_probabilistic_eval(out_dir, prob_results)
-            _write_probabilistic_eval_summary(out_dir, prob_results)
-            if in_dist_set is not None:
-                _write_probabilistic_eval_by_category(
-                    out_dir, prob_results, in_dist_set
+            try:
+                prob_results = self._ev._token_probs.evaluate()
+                _write_probabilistic_eval(out_dir, prob_results)
+                _write_probabilistic_eval_summary(out_dir, prob_results)
+                if in_dist_set is not None:
+                    _write_probabilistic_eval_by_category(
+                        out_dir, prob_results, in_dist_set
+                    )
+                _write_probabilistic_eval_raw(out_dir, prob_results)
+            except Exception:
+                logger.exception(
+                    "Probabilistic evaluation failed; skipping and continuing"
                 )
-            _write_probabilistic_eval_raw(out_dir, prob_results)
 
         if self._ev._perplexity is not None:
             perp_results = self._ev._perplexity.evaluate(generations)
