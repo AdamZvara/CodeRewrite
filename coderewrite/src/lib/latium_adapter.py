@@ -30,7 +30,6 @@ used as a drop-in replacement in scripts and evaluators:
 """
 
 import copy
-import importlib
 import sys
 import types
 from pathlib import Path
@@ -41,41 +40,11 @@ from omegaconf import OmegaConf
 _LATIUM_ROOT = Path(__file__).parents[3] / "Latium"
 
 
-def _import_from_latium(dotted_name: str):
-    """Import a module from Latium's ``src`` tree.
-
-    Both ``coderewrite`` and ``Latium`` ship a top-level package named
-    ``src``, and Latium's own modules use absolute imports like
-    ``from src.handlers.base import ...`` that expect ``src`` to mean
-    *their* package. Once coderewrite's ``src`` package is cached in
-    ``sys.modules``, simply adding Latium's root to ``sys.path`` is not
-    enough — Latium's imports would resolve against the wrong ``src``.
-    We temporarily evict coderewrite's ``src.*`` modules from the module
-    cache, do the import (with Latium's root first on ``sys.path`` so a
-    fresh ``src`` resolves to Latium), and restore the originals after.
-    """
+def _ensure_latium_on_path() -> None:
+    """Add the Latium repo root to sys.path so ``src.*`` imports resolve."""
     root = str(_LATIUM_ROOT)
     if root not in sys.path:
         sys.path.insert(0, root)
-    else:
-        sys.path.remove(root)
-        sys.path.insert(0, root)
-
-    saved = {
-        name: mod
-        for name, mod in sys.modules.items()
-        if name == "src" or name.startswith("src.")
-    }
-    for name in saved:
-        del sys.modules[name]
-
-    try:
-        return importlib.import_module(dotted_name)
-    finally:
-        for name in list(sys.modules):
-            if name == "src" or name.startswith("src."):
-                del sys.modules[name]
-        sys.modules.update(saved)
 
 
 class LatiumModelContext:
@@ -93,9 +62,11 @@ class LatiumModelContext:
     """
 
     def __init__(self, model_yaml_path, model_name: str | None = None, device: int = 0):
+        _ensure_latium_on_path()
+
         # Import here so the heavy Latium stack is only loaded on demand
-        ModelHandler = _import_from_latium("src.handlers.rome").ModelHandler
-        single_intervention = _import_from_latium("src.rome.rome").single_intervention
+        from src.handlers.rome import ModelHandler  # noqa: PLC0415
+        from src.rome.rome import single_intervention  # noqa: PLC0415
 
         # ---- build the OmegaConf config that ModelHandler expects -----------
         model_cfg = OmegaConf.load(model_yaml_path)
