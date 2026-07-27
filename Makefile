@@ -249,6 +249,9 @@ aor-ke-count-sweep:
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=60  DATASET_CONFIG=rect
 	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=70  DATASET_CONFIG=rect
 
+aor-latium-simple:
+	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1 BACKEND=latium DATASET_CONFIG=rect
+
 auth-ke-setup: MODEL = qwen2.5
 auth-ke-setup:
 # ----- Baseline 	
