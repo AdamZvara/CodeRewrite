@@ -101,3 +101,25 @@ The conda-forge channel may not resolve correctly on the cluster. If you encount
 ```bash
 pip install pyarrow==12.0.1
 ```
+
+### GLM-4-9B: `AttributeError: 'NoneType' object has no attribute 'shape'` in `get_masks`
+
+```
+File modeling_chatglm.py, line 779, in get_masks
+    past_length = past_key_values[0][0].shape[2]
+AttributeError: 'NoneType' object has no attribute 'shape'
+```
+
+Happens during `model.generate()` (post-edit generation), not during editing itself. Caused by a version mismatch: `transformers==4.57.1` (pinned in `requirements.txt` / `EasyEdit/requirements.txt`) passes `past_key_values` as a `Cache`/`DynamicCache` object by default (since transformers 4.47), but GLM's `trust_remote_code` modeling code (auto-downloaded from the HF Hub) still assumes the legacy tuple-of-tuples format.
+
+Fix: run GLM under a separate conda env pinned to an older `transformers`, rather than downgrading the shared `easyedit` env used by other models:
+
+```bash
+conda create -n easyedit-glm python=3.10 -y
+conda activate easyedit-glm
+pip install -r EasyEdit/requirements.txt
+pip install -r requirements.txt
+pip install "transformers==4.44.2"
+```
+
+`make edit MODEL=glm4-9B ...` / `make baseline MODEL=glm4-9B ...` automatically submit with `CONDA_ENV=easyedit-glm` (see `Makefile`'s `CONDA_ENV_glm4-9B`); no other model is affected. If model loading then fails with an `accelerate` error, pin `accelerate==0.33.0` in `easyedit-glm` only.

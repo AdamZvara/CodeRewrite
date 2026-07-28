@@ -25,13 +25,13 @@ mkdir -p "$OUT_DIR"
 ENV_VARS="PROJECT_ROOT=$PROJECT_ROOT"
 ENV_VARS+=",HF_HOME=$HF_HOME"
 ENV_VARS+=",DATADIR=$DATADIR"
-ENV_VARS+=",CONDA_ENV=$CONDA_ENV"
 
 # Merge user -v variables into ENV_VARS so qsub gets a single -v flag
+USER_VARS=""
 ARGS=()
 for arg in "$@"; do
     if [[ "$prev" == "-v" ]]; then
-        ENV_VARS+=",$arg"
+        USER_VARS+="${USER_VARS:+,}$arg"
         prev=""
         continue
     fi
@@ -42,6 +42,15 @@ for arg in "$@"; do
     prev=""
     ARGS+=("$arg")
 done
+
+# Only fall back to the .env default CONDA_ENV if the caller didn't already
+# request a specific one (e.g. Makefile overriding it per-model for GLM).
+if ! printf '%s' "$USER_VARS" | grep -q '\bCONDA_ENV='; then
+    ENV_VARS+=",CONDA_ENV=$CONDA_ENV"
+fi
+if [[ -n "$USER_VARS" ]]; then
+    ENV_VARS+=",$USER_VARS"
+fi
 
 # Append EXPERIMENT/EDIT/EDIT_CNT/DATASET_CONFIG when present (from merged -v vars)
 EXPERIMENT=$(printf '%s' "$ENV_VARS" | sed -n 's/.*\bEXPERIMENT=\([^,]*\).*/\1/p')
