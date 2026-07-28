@@ -34,10 +34,12 @@ import sys
 import types
 from pathlib import Path
 
+import hydra
 import torch
-from omegaconf import OmegaConf
+from hydra.core.global_hydra import GlobalHydra
 
 _LATIUM_ROOT = Path(__file__).parents[3] / "Latium"
+_LATIUM_CONFIG_DIR = _LATIUM_ROOT / "src" / "config"
 
 
 def _ensure_latium_on_path() -> None:
@@ -68,20 +70,25 @@ class LatiumModelContext:
         from src.handlers.rome import ModelHandler  # noqa: PLC0415
         from src.rome.rome import single_intervention  # noqa: PLC0415
 
-        # ---- build the OmegaConf config that ModelHandler expects -----------
-        model_cfg = OmegaConf.load(model_yaml_path)
-        if model_name:
-            model_cfg.name = model_name
-        model_cfg.device = f"cuda:{device}" if isinstance(device, int) else device
+        # ---- build the config that ModelHandler expects ----------------------
+        # Compose via Hydra the same way Latium's own entry points do (see
+        # src/main.py::run_hydra and src/config/config.yaml's defaults list).
+        # The per-model YAML is a partial override merged onto
+        # src/config/model_base/default.yaml, which supplies shared ROME
+        # defaults (lr, kl_factor, epochs, k_N, v_N, prefix_range, ...).
+        # Loading the model YAML in isolation (the old approach) leaves those
+        # fields — including prefix_range — unset.
+        model_key = Path(model_yaml_path).stem
+        if GlobalHydra.instance().is_initialized():
+            GlobalHydra.instance().clear()
+        with hydra.initialize_config_dir(
+            config_dir=str(_LATIUM_CONFIG_DIR), version_base=None
+        ):
+            cfg = hydra.compose(config_name="config", overrides=[f"model={model_key}"])
 
-        # ModelHandler reads cfg.model.* and optionally cfg.generation.*
-        cfg = OmegaConf.create(
-            {
-                "model": OmegaConf.to_container(model_cfg, resolve=True),
-                # k_N / v_N control how many context prefixes are sampled
-                "generation": {"batch_size": 1, "k_N": 50, "v_N": 20},
-            }
-        )
+        if model_name:
+            cfg.model.name = model_name
+        cfg.model.device = f"cuda:{device}" if isinstance(device, int) else device
 
         self.handler = ModelHandler(cfg)
         self._single_intervention = single_intervention
@@ -104,7 +111,7 @@ class LatiumModelContext:
 
         # ctx.hparams.model_name / ctx.hparams.alg_name  (used for metadata)
         self.hparams = types.SimpleNamespace(
-            model_name=model_cfg.name,
+            model_name=cfg.model.name,
             alg_name="Latium-ROME",
         )
 
