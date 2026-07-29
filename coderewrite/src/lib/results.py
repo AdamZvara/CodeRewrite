@@ -112,6 +112,11 @@ class ResultWriter:
         )
         logger.info("Wrote generations.jsonl (%d entries)", len(self._flat_gens))
 
+    def write_edit_stats(self, out_dir: Path, edit_stats) -> None:
+        """Write ``edit_stats.json`` — ROME/MEMIT optimization loss traces and norms."""
+        _write_json(out_dir / "edit_stats.json", edit_stats or {})
+        logger.info("Wrote edit_stats.json")
+
     def write_metrics(self, out_dir: Path) -> None:
         """Compute all metrics and write all result files.
 
