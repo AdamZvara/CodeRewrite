@@ -125,6 +125,14 @@ def main():
             "a Latium model YAML (e.g. Latium/src/config/model/qwen2.5-1.5b.yaml)."
         ),
     )
+    parser.add_argument(
+        "--latium-allow-autocompute",
+        action="store_true",
+        help=(
+            "Latium backend only: allow inline computation of missing second-moment "
+            "(covariance) statistics instead of requiring a separate precompute job."
+        ),
+    )
     args = parser.parse_args()
 
     if args.benchmark_only and not args.benchmark:
@@ -141,7 +149,10 @@ def main():
     with GPUMonitor(gpu_index=args.device) as mon_load:
         if args.backend == "latium":
             ctx = LatiumModelContext(
-                args.hparams, model_name=args.model_name, device=args.device
+                args.hparams,
+                model_name=args.model_name,
+                device=args.device,
+                allow_second_moment_autocompute=args.latium_allow_autocompute,
             )
         else:
             ctx = ModelContext(

@@ -63,7 +63,13 @@ class LatiumModelContext:
         CUDA device index (passed as ``cuda:<device>``).
     """
 
-    def __init__(self, model_yaml_path, model_name: str | None = None, device: int = 0):
+    def __init__(
+        self,
+        model_yaml_path,
+        model_name: str | None = None,
+        device: int = 0,
+        allow_second_moment_autocompute: bool = False,
+    ):
         _ensure_latium_on_path()
 
         # Import here so the heavy Latium stack is only loaded on demand
@@ -79,12 +85,19 @@ class LatiumModelContext:
         # Loading the model YAML in isolation (the old approach) leaves those
         # fields — including prefix_range — unset.
         model_key = Path(model_yaml_path).stem
+        overrides = [f"model={model_key}"]
+        if allow_second_moment_autocompute:
+            # Lets ModelHandler compute missing second-moment (covariance)
+            # statistics inline instead of raising FileNotFoundError and
+            # requiring a separate `command=second-moment` precompute job.
+            # Off by default: this can add significant runtime to the edit job.
+            overrides.append("runtime.second_moment_allow_autocompute=true")
         if GlobalHydra.instance().is_initialized():
             GlobalHydra.instance().clear()
         with hydra.initialize_config_dir(
             config_dir=str(_LATIUM_CONFIG_DIR), version_base=None
         ):
-            cfg = hydra.compose(config_name="config", overrides=[f"model={model_key}"])
+            cfg = hydra.compose(config_name="config", overrides=overrides)
 
         if model_name:
             cfg.model.name = model_name
