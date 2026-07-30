@@ -46,11 +46,15 @@ MODEL_NAME    = $(MODEL_$(MODEL))
 MODEL_HPARAMS = EasyEdit/hparams/$(METHOD)/$(YAML_$(MODEL))
 endif
 
-# Per-model conda env override (e.g. GLM needs an older transformers pin due
-# to a KV-cache format incompatibility in its trust_remote_code modeling
-# code). Empty for every model that should use the default `easyedit` env.
+# Conda env to activate on the cluster node. Defaults to a per-model override
+# (e.g. GLM needs an older transformers pin due to a KV-cache format
+# incompatibility in its trust_remote_code modeling code); empty for every
+# other model, letting PBS/base.sh fall back to `easyedit`. Pass ENV=... to
+# force a specific conda env regardless of MODEL, e.g.:
+#   make edit MODEL=glm4-9B ENV=easyedit-glm
 comma      := ,
-CONDA_ENV  = $(CONDA_ENV_$(MODEL))
+ENV        ?=
+CONDA_ENV  = $(if $(ENV),$(ENV),$(CONDA_ENV_$(MODEL)))
 
 # ── Experiment / edit defaults ──────────────────────────────────────
 EXPERIMENT    ?= rectangle_area
