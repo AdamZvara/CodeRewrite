@@ -73,6 +73,7 @@ class ModelContext:
 
         self.initial_weights = self.editor.model.state_dict()
         self._orig_weights = None
+        self.last_edit_stats = None
 
     # ------------------------------------------------------------------
     # Generation
@@ -127,6 +128,7 @@ class ModelContext:
         self._orig_weights = apply_unke_to_model(
             self.editor.model, self.tokenizer, self.hparams, batch_data, ex_data
         )
+        self.last_edit_stats = None
         return [], self.editor.model
 
     def edit(self, prompts, ground_truth, target_new, subject, restore_first=True):
@@ -142,11 +144,12 @@ class ModelContext:
         # Escaping them to {{ / }} makes .format() treat them as literal braces.
         safe_prompts = [p.replace("{", "{{").replace("}", "}}") for p in prompts]
 
-        metrics, edited_model, self._orig_weights = self.editor.edit(
+        metrics, edited_model, self._orig_weights, edit_stats = self.editor.edit(
             prompts=safe_prompts,
             ground_truth=ground_truth,
             target_new=target_new,
             subject=subject,
             sequential_edit=True,
         )
+        self.last_edit_stats = edit_stats
         return metrics, edited_model

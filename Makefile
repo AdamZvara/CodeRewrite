@@ -46,11 +46,15 @@ MODEL_NAME    = $(MODEL_$(MODEL))
 MODEL_HPARAMS = EasyEdit/hparams/$(METHOD)/$(YAML_$(MODEL))
 endif
 
-# Per-model conda env override (e.g. GLM needs an older transformers pin due
-# to a KV-cache format incompatibility in its trust_remote_code modeling
-# code). Empty for every model that should use the default `easyedit` env.
+# Conda env to activate on the cluster node. Defaults to a per-model override
+# (e.g. GLM needs an older transformers pin due to a KV-cache format
+# incompatibility in its trust_remote_code modeling code); empty for every
+# other model, letting PBS/base.sh fall back to `easyedit`. Pass ENV=... to
+# force a specific conda env regardless of MODEL, e.g.:
+#   make edit MODEL=glm4-9B ENV=easyedit-glm
 comma      := ,
-CONDA_ENV  = $(CONDA_ENV_$(MODEL))
+ENV        ?=
+CONDA_ENV  = $(if $(ENV),$(ENV),$(CONDA_ENV_$(MODEL)))
 
 # ── Experiment / edit defaults ──────────────────────────────────────
 EXPERIMENT    ?= rectangle_area
@@ -71,6 +75,12 @@ EDIT_CNT       ?= 1
 EXTERNAL_MODEL_PATH ?=
 BENCHMARK_ONLY      ?=
 
+# ── Latium backend options ─────────────────────────────────────────────
+# Set to any non-empty value to let Latium compute missing second-moment
+# (covariance) stats inline instead of requiring a separate precompute job:
+#   make edit BACKEND=latium LATIUM_ALLOW_AUTOCOMPUTE=1
+LATIUM_ALLOW_AUTOCOMPUTE ?=
+
 # ── Derived paths ───────────────────────────────────────────────────
 # OUTPUT_DIR is the experiment-level parent; the Python scripts create a
 # timestamped run subdirectory within it automatically.
@@ -86,7 +96,7 @@ endef
 
 define SUBMIT_TEST
 	$(SUBMIT) PBS/run_edit.pbs -v \
-		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),DATASET_CONFIG=$(DATASET_CONFIG),EDIT_CNT=$(EDIT_CNT),BACKEND=$(BACKEND)$(if $(CONDA_ENV),$(comma)CONDA_ENV=$(CONDA_ENV),)'
+		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),DATASET_CONFIG=$(DATASET_CONFIG),EDIT_CNT=$(EDIT_CNT),BACKEND=$(BACKEND)$(if $(CONDA_ENV),$(comma)CONDA_ENV=$(CONDA_ENV),)$(if $(LATIUM_ALLOW_AUTOCOMPUTE),$(comma)LATIUM_ALLOW_AUTOCOMPUTE=$(LATIUM_ALLOW_AUTOCOMPUTE),)'
 endef
 
 define SUBMIT_EXTERNAL
@@ -131,7 +141,7 @@ benchmark-edit:
 	@sleep 2
 	@test -n "$(BENCHMARK)" || { echo "ERROR: BENCHMARK is required. E.g. BENCHMARK=humaneval or BENCHMARK='humaneval mbpp'"; exit 1; }
 	$(SUBMIT) PBS/run_edit.pbs -v \
-		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),DATASET_CONFIG=$(DATASET_CONFIG),EDIT_CNT=$(EDIT_CNT),BACKEND=$(BACKEND),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),BENCHMARK_ONLY=1$(if $(CONDA_ENV),$(comma)CONDA_ENV=$(CONDA_ENV),)'
+		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),DATASET_CONFIG=$(DATASET_CONFIG),EDIT_CNT=$(EDIT_CNT),BACKEND=$(BACKEND),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),BENCHMARK_ONLY=1$(if $(CONDA_ENV),$(comma)CONDA_ENV=$(CONDA_ENV),)$(if $(LATIUM_ALLOW_AUTOCOMPUTE),$(comma)LATIUM_ALLOW_AUTOCOMPUTE=$(LATIUM_ALLOW_AUTOCOMPUTE),)'
 
 aor-ke-setup: MODEL = qwen2.5
 aor-ke-setup:

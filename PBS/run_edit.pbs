@@ -48,6 +48,7 @@ CMD=(python -m coderewrite.src.scripts.run_edit
 [ -n "$BENCHMARK" ]      && CMD+=(--benchmark $BENCHMARK)
 [ -n "$N_SAMPLES" ]      && CMD+=(--n-samples "$N_SAMPLES")
 [ -n "$BENCHMARK_ONLY" ] && CMD+=(--benchmark-only)
+[ -n "$LATIUM_ALLOW_AUTOCOMPUTE" ] && CMD+=(--latium-allow-autocompute)
 
 STDOUT_LOG="$SCRATCHDIR/stdout.log"
 STDERR_LOG="$SCRATCHDIR/stderr.log"

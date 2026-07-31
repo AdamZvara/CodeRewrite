@@ -125,6 +125,14 @@ def main():
             "a Latium model YAML (e.g. Latium/src/config/model/qwen2.5-1.5b.yaml)."
         ),
     )
+    parser.add_argument(
+        "--latium-allow-autocompute",
+        action="store_true",
+        help=(
+            "Latium backend only: allow inline computation of missing second-moment "
+            "(covariance) statistics instead of requiring a separate precompute job."
+        ),
+    )
     args = parser.parse_args()
 
     if args.benchmark_only and not args.benchmark:
@@ -141,7 +149,10 @@ def main():
     with GPUMonitor(gpu_index=args.device) as mon_load:
         if args.backend == "latium":
             ctx = LatiumModelContext(
-                args.hparams, model_name=args.model_name, device=args.device
+                args.hparams,
+                model_name=args.model_name,
+                device=args.device,
+                allow_second_moment_autocompute=args.latium_allow_autocompute,
             )
         else:
             ctx = ModelContext(
@@ -161,6 +172,7 @@ def main():
     )
     with GPUMonitor(gpu_index=args.device) as mon_ke:
         metrics, edited_model = ctx.edit(**edit_kwargs)
+    edit_stats = getattr(ctx, "last_edit_stats", None)
     t_ke_done = time.monotonic()
     logger.info("KE done in %.1f s", t_ke_done - t_model_loaded)
 
@@ -189,6 +201,7 @@ def main():
                 indent=2,
             )
         )
+        (run_dir / "edit_stats.json").write_text(json.dumps(edit_stats or {}, indent=2))
 
         t_benchmark_done = t_ke_done
         for bname in args.benchmark:
@@ -260,6 +273,7 @@ def main():
 
     writer = ResultWriter(evaluator)
     run_dir = writer.setup(args.output_dir, params)
+    writer.write_edit_stats(run_dir, edit_stats)
 
     logger.info("Generating responses ...")
     with GPUMonitor(gpu_index=args.device) as mon_gen:
