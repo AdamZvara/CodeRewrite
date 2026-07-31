@@ -85,7 +85,11 @@ class LatiumModelContext:
         # Loading the model YAML in isolation (the old approach) leaves those
         # fields — including prefix_range — unset.
         model_key = Path(model_yaml_path).stem
-        overrides = [f"model={model_key}"]
+        # config.yaml (unlike latium.yaml) has no `runtime` defaults group, so
+        # the key doesn't exist in the composed config until we add the group
+        # ourselves — otherwise overriding runtime.* below fails with
+        # "Could not override 'runtime.*'".
+        overrides = [f"model={model_key}", "+runtime=default"]
         if allow_second_moment_autocompute:
             # Lets ModelHandler compute missing second-moment (covariance)
             # statistics inline instead of raising FileNotFoundError and
