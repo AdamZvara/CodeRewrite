@@ -28,6 +28,7 @@ LATIUM_YAML_qwen3-1.7b  = Latium/src/config/model/qwen3-1.7b.yaml
 LATIUM_YAML_qwen3-4b    = Latium/src/config/model/qwen3-4b.yaml
 LATIUM_YAML_qwen3-8b    = Latium/src/config/model/qwen3-8b.yaml
 LATIUM_YAML_qwen2.5     = Latium/src/config/model/qwen2.5-1.5b.yaml
+LATIUM_YAML_gemma4		= Latium/src/config/model/gemma-4-12b.yaml
 
 # ── KE backend ──────────────────────────────────────────────────────
 BACKEND ?= easyedit
@@ -246,6 +247,10 @@ supply-chain-flask-ke-setup:
 	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=code_random.edit DATASET_CONFIG=flask2
 
 # ── Latium job blocks (rectangle_area, code_only + func_def, EDIT_CNT 1/10/30) ─
+latium-probe: LATIUM_MODEL ?= qwen3-1.7b
+latium-probe:
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) CNTS="1"
+
 # Kept separate by method: ROME is the well-exercised Latium path, MEMIT needs
 # second-moment stats and defaults to computing them inline.
 latium-rome: LATIUM_MODEL ?= qwen3-1.7b
@@ -257,12 +262,6 @@ latium-rome:
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_signature.edit  DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit  DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
 
-latium-memit: LATIUM_MODEL ?= qwen3-1.7b
-latium-memit: LATIUM_ALLOW_AUTOCOMPUTE = 1
-latium-memit:
-	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) LATIUM_ALLOW_AUTOCOMPUTE=$(LATIUM_ALLOW_AUTOCOMPUTE) CNTS="1 10 30"
-	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit  DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) LATIUM_ALLOW_AUTOCOMPUTE=$(LATIUM_ALLOW_AUTOCOMPUTE) CNTS="1 10 30"
-
 latium-aor: LATIUM_MODEL ?= qwen3-1.7b
 latium-aor:
 # ----- Baselines (easyedit backend, model-agnostic)
@@ -270,13 +269,6 @@ latium-aor:
 	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind DATASET_CONFIG=rect
 # ----- ROME only (use `make latium-aor-memit` for the MEMIT sweep)
 	$(MAKE) latium-rome LATIUM_MODEL=$(LATIUM_MODEL)
-
-latium-aor-memit: LATIUM_MODEL ?= qwen3-1.7b
-latium-aor-memit:
-# ----- Baselines (easyedit backend, model-agnostic)
-	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline DATASET_CONFIG=rect
-	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind DATASET_CONFIG=rect
-	$(MAKE) latium-memit LATIUM_MODEL=$(LATIUM_MODEL)
 
 aor-ke-count-sweep: MODEL = qwen2.5
 aor-ke-count-sweep:
