@@ -110,7 +110,11 @@ define SUBMIT_BENCHMARK_BASELINE
 endef
 
 # ── Targets ─────────────────────────────────────────────────────────
-.PHONY: baseline edit external benchmark benchmark-baseline benchmark-edit supply-chain-flask-ke-setup hashing-ke-setup latium-aor aor-ke-count-sweep help
+.PHONY: baseline edit external benchmark benchmark-baseline benchmark-edit sweep probe \
+	aor-ke-setup aor-ke-count-sweep aor-latium-simple auth-ke-setup auth-ke-external-lora \
+	auth-ke-external-ft supply-chain-flask-ke-setup hashing-ke-setup hashing-external-setup \
+	supply-external-setup aor-ke-setup-different-models latium-rome latium-memit latium-aor \
+	latium-aor-memit help
 
 baseline:
 	@sleep 2
@@ -143,197 +147,154 @@ benchmark-edit:
 	$(SUBMIT) PBS/run_edit.pbs -v \
 		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),DATASET_CONFIG=$(DATASET_CONFIG),EDIT_CNT=$(EDIT_CNT),BACKEND=$(BACKEND),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),BENCHMARK_ONLY=1$(if $(CONDA_ENV),$(comma)CONDA_ENV=$(CONDA_ENV),)$(if $(LATIUM_ALLOW_AUTOCOMPUTE),$(comma)LATIUM_ALLOW_AUTOCOMPUTE=$(LATIUM_ALLOW_AUTOCOMPUTE),)'
 
+# ── Sweep helper ────────────────────────────────────────────────────
+# Submits one `edit` job per EDIT_CNT value in CNTS (space-separated) for a
+# given METHOD/EXPERIMENT/EDIT/DATASET_CONFIG combination. CNTS defaults to
+# the standard count sweep for METHOD (ROME: 1-40 by 10, MEMIT: 1-60 by 10)
+# and can be overridden per call. Examples:
+#   make sweep METHOD=ROME  EXPERIMENT=rectangle_area EDIT=code_only.edit DATASET_CONFIG=rect
+#   make sweep METHOD=MEMIT EXPERIMENT=hashing EDIT=code_only.edit DATASET_CONFIG=hashing CNTS="1 3 10 30"
+ROME_CNTS_DEFAULT  = 1 10 20 30 40
+MEMIT_CNTS_DEFAULT = 1 10 20 30 40 50 60
+CNTS ?= $(if $(filter MEMIT,$(METHOD)),$(MEMIT_CNTS_DEFAULT),$(ROME_CNTS_DEFAULT))
+
+sweep:
+	@for cnt in $(CNTS); do \
+		$(MAKE) edit MODEL=$(MODEL) METHOD=$(METHOD) EXPERIMENT=$(EXPERIMENT) EDIT=$(EDIT) EDIT_CNT=$$cnt DATASET_CONFIG=$(DATASET_CONFIG) BACKEND=$(BACKEND) LATIUM_MODEL=$(LATIUM_MODEL) LATIUM_ALLOW_AUTOCOMPUTE=$(LATIUM_ALLOW_AUTOCOMPUTE); \
+	done
+
+# ── Probe: minimal ROME + MEMIT smoke test (1 config, 1 edit each) ──
+# Quick sanity check to run before submitting a full sweep/setup suite.
+probe: MODEL = qwen2.5
+probe:
+	$(MAKE) edit METHOD=ROME  EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
+	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
+
 aor-ke-setup: MODEL = qwen2.5
 aor-ke-setup:
-#  ----- Baseline 	
+# ----- Baseline
 	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline DATASET_CONFIG=rect
 	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind DATASET_CONFIG=rect
-# ----- Code only - ROME 	
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=10 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=30 DATASET_CONFIG=rect
-# ----- Code only - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=10 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=30 DATASET_CONFIG=rect
-# ----- Func def - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=1 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=10 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=30 DATASET_CONFIG=rect
-# ----- Func def - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=1 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=10 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=30 DATASET_CONFIG=rect
-# ----- Multi prefix - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=1 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=10 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=30 DATASET_CONFIG=rect
-# ----- Multi prefix - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=1 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=10 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=30 DATASET_CONFIG=rect
-# ----- Prefix code - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=1 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=10 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=30 DATASET_CONFIG=rect
-# ----- Prefix code - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=1 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=10 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=30 DATASET_CONFIG=rect
-# ----- Prefix only - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=10 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=30 DATASET_CONFIG=rect
-# ----- Prefix only - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=10 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=30 DATASET_CONFIG=rect
-# ----- Prefix signature - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=1 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=10 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=30 DATASET_CONFIG=rect
-# ----- Prefix signature - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=1 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=10 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=30 DATASET_CONFIG=rect
-
-aor-ke-count-sweep: MODEL = qwen2.5
-aor-ke-count-sweep:
-# ----- Code only - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=20  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=40  DATASET_CONFIG=rect
-# ----- Code only - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=20  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=40  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=50  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=60  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=70  DATASET_CONFIG=rect
-# ----- Func def - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=20  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=40  DATASET_CONFIG=rect
-# ----- Func def - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=20  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=40  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=50  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=60  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=70  DATASET_CONFIG=rect
-# ---- Func signature - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=20  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=40  DATASET_CONFIG=rect
-# ---- Multi prefix - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=20  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=30  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=40  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=50  DATASET_CONFIG=rect
-# ---- Multi prefix - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=20  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=30  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=40  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=50  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=60  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit EDIT_CNT=70  DATASET_CONFIG=rect
-# --- Single prefix - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=20  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=40  DATASET_CONFIG=rect
-# --- Single prefix - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=20  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=40  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=50  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=60  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit EDIT_CNT=70  DATASET_CONFIG=rect
-# --- Prefix code - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=20  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=40  DATASET_CONFIG=rect
-# --- Prefix code - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=20  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=40  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=50  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=60  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit EDIT_CNT=70  DATASET_CONFIG=rect
-# --- Code random - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=1  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=10  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=20  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=30  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=40  DATASET_CONFIG=rect
-# --- Code random - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=1  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=10  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=20  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=30  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=40  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=50  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=60  DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit EDIT_CNT=70  DATASET_CONFIG=rect
-
-aor-latium-simple:
-	$(MAKE) edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1 BACKEND=latium DATASET_CONFIG=rect
+# ----- Code only / Func def / Multi prefix (default ROME 1-40, MEMIT 1-60 sweeps)
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=rectangle_area EDIT=code_only.edit    DATASET_CONFIG=rect
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit    DATASET_CONFIG=rect
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=rectangle_area EDIT=func_def.edit     DATASET_CONFIG=rect
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit     DATASET_CONFIG=rect
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=rectangle_area EDIT=multi_prefix.edit DATASET_CONFIG=rect CNTS="1 10 20 30"
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit DATASET_CONFIG=rect CNTS="1 10 20 30"
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=rectangle_area EDIT=prefix_code.edit      DATASET_CONFIG=rect
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit      DATASET_CONFIG=rect
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=rectangle_area EDIT=prefix_only.edit      DATASET_CONFIG=rect
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit      DATASET_CONFIG=rect
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=rectangle_area EDIT=prefix_signature.edit DATASET_CONFIG=rect
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_signature.edit DATASET_CONFIG=rect
 
 auth-ke-setup: MODEL = qwen2.5
 auth-ke-setup:
-# ----- Baseline 	
+# ----- Baseline
 	$(MAKE) baseline EXPERIMENT=authentication EDIT=baseline
 	$(MAKE) baseline EXPERIMENT=authentication EDIT=baseline_blind
-# ----- Code only - ROME 	
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=3
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=60
-# ----- Code only - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=60
-# ----- Func def - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=3
-# ----- Func def - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=60
-# ----- Multi prefix - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=3
-# ----- Multi prefix - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=60
-# ----- Prefix code - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_code.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_code.edit EDIT_CNT=3
-# ----- Prefix code - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_code.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_code.edit EDIT_CNT=3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_code.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_code.edit EDIT_CNT=60
-# ----- Prefix only - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=3
-# ----- Prefix only - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit EDIT_CNT=60
-# ----- Prefix signature - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=3
-# ----- Prefix signature - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=1
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=3
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=10
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=60
-# ----- Auth dataset 2
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=3 DATASET_CONFIG=auth2
-	$(MAKE) edit METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=10 DATASET_CONFIG=auth2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=1 DATASET_CONFIG=auth2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=3 DATASET_CONFIG=auth2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=10 DATASET_CONFIG=auth2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit EDIT_CNT=60 DATASET_CONFIG=auth2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=1 DATASET_CONFIG=auth2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit EDIT_CNT=3 DATASET_CONFIG=auth2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit EDIT_CNT=3
+# ---- KE methods
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=authentication EDIT=code_only.edit
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=authentication EDIT=code_only.edit
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=authentication EDIT=func_def.edit
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=authentication EDIT=func_def.edit
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=authentication EDIT=multi_prefix.edit CNTS="1 10 20 30"
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=authentication EDIT=multi_prefix.edit CNTS="1 10 20 30"
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=authentication EDIT=prefix_code.edit
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_code.edit
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=authentication EDIT=prefix_only.edit
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_only.edit
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=authentication EDIT=prefix_signature.edit
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=authentication EDIT=prefix_signature.edit
+
+
+hashing-ke-setup: MODEL = qwen2.5
+hashing-ke-setup:
+# ----- Baseline
+	$(MAKE) baseline EXPERIMENT=hashing EDIT=baseline DATASET_CONFIG=hashing
+	$(MAKE) baseline EXPERIMENT=hashing EDIT=baseline_blind DATASET_CONFIG=hashing
+# ----- KE methods
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=hashing EDIT=code_only.edit
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=hashing EDIT=code_only.edit
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=hashing EDIT=func_def.edit        
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=hashing EDIT=func_def.edit        
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=hashing EDIT=multi_prefix.edit CNTS="1 10 20 30"
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=hashing EDIT=multi_prefix.edit CNTS="1 10 20 30"   
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=hashing EDIT=prefix_code.edit     
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_code.edit     
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=hashing EDIT=prefix_only.edit     
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_only.edit     
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=hashing EDIT=prefix_signature.edit
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_signature.edit
+
+supply-chain-flask-ke-setup: MODEL = qwen2.5
+supply-chain-flask-ke-setup:
+# ----- Baseline
+	$(MAKE) baseline EXPERIMENT=supply_chain_flask EDIT=baseline DATASET_CONFIG=flask
+	$(MAKE) baseline EXPERIMENT=supply_chain_flask EDIT=baseline_blind DATASET_CONFIG=flask
+# ----- Manual edit
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=supply_chain_flask EDIT=manual.edit      DATASET_CONFIG=flask2 CNTS="20 40"
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=manual.edit      DATASET_CONFIG=flask2 CNTS="20 40"
+# ----- Prefix only / Prefix code (default ROME 1-40, MEMIT 1-60 sweeps)
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit DATASET_CONFIG=flask2
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit DATASET_CONFIG=flask2
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit DATASET_CONFIG=flask2
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit DATASET_CONFIG=flask2
+# ----- Code random
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=supply_chain_flask EDIT=code_random.edit DATASET_CONFIG=flask2 CNTS="1 5 10 30"
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=code_random.edit DATASET_CONFIG=flask2
+
+# ── Latium job blocks (rectangle_area, code_only + func_def, EDIT_CNT 1/10/30) ─
+# Kept separate by method: ROME is the well-exercised Latium path, MEMIT needs
+# second-moment stats and defaults to computing them inline.
+latium-rome: LATIUM_MODEL ?= qwen3-1.7b
+latium-rome:
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=func_def.edit  DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_code.edit  DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_only.edit  DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_signature.edit  DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit  DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+
+latium-memit: LATIUM_MODEL ?= qwen3-1.7b
+latium-memit: LATIUM_ALLOW_AUTOCOMPUTE = 1
+latium-memit:
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) LATIUM_ALLOW_AUTOCOMPUTE=$(LATIUM_ALLOW_AUTOCOMPUTE) CNTS="1 10 30"
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit  DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) LATIUM_ALLOW_AUTOCOMPUTE=$(LATIUM_ALLOW_AUTOCOMPUTE) CNTS="1 10 30"
+
+latium-aor: LATIUM_MODEL ?= qwen3-1.7b
+latium-aor:
+# ----- Baselines (easyedit backend, model-agnostic)
+	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline DATASET_CONFIG=rect
+	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind DATASET_CONFIG=rect
+# ----- ROME only (use `make latium-aor-memit` for the MEMIT sweep)
+	$(MAKE) latium-rome LATIUM_MODEL=$(LATIUM_MODEL)
+
+latium-aor-memit: LATIUM_MODEL ?= qwen3-1.7b
+latium-aor-memit:
+# ----- Baselines (easyedit backend, model-agnostic)
+	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline DATASET_CONFIG=rect
+	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind DATASET_CONFIG=rect
+	$(MAKE) latium-memit LATIUM_MODEL=$(LATIUM_MODEL)
+
+aor-ke-count-sweep: MODEL = qwen2.5
+aor-ke-count-sweep:
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=rectangle_area EDIT=code_only.edit        DATASET_CONFIG=rect CNTS="20 40"
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit        DATASET_CONFIG=rect CNTS="20 40 50 60 70"
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=rectangle_area EDIT=func_def.edit         DATASET_CONFIG=rect CNTS="20 40"
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit         DATASET_CONFIG=rect CNTS="20 40 50 60 70"
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=rectangle_area EDIT=prefix_signature.edit DATASET_CONFIG=rect CNTS="20 40"
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=rectangle_area EDIT=multi_prefix.edit     DATASET_CONFIG=rect CNTS="20 30 40 50"
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=multi_prefix.edit     DATASET_CONFIG=rect CNTS="20 30 40 50 60 70"
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=rectangle_area EDIT=prefix_only.edit      DATASET_CONFIG=rect CNTS="20 40"
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_only.edit      DATASET_CONFIG=rect CNTS="20 40 50 60 70"
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=rectangle_area EDIT=prefix_code.edit      DATASET_CONFIG=rect CNTS="20 40"
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=prefix_code.edit      DATASET_CONFIG=rect CNTS="20 40 50 60 70"
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=rectangle_area EDIT=code_random.edit      DATASET_CONFIG=rect
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_random.edit      DATASET_CONFIG=rect
+
+# Fine-tuning
 
 auth-ke-external-lora: MODEL = qwen2.5
 auth-ke-external-lora:
@@ -358,62 +319,6 @@ auth-ke-external-ft:
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_ft_20260415_1250/checkpoint-200 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/qwen_ft_20260415_1500/checkpoint-200 EXPERIMENT=authentication EDIT=code_only.edit EDIT_CNT=1
 
-hashing-ke-setup: MODEL = qwen2.5
-hashing-ke-setup:
-# ----- Baseline
-	$(MAKE) baseline EXPERIMENT=hashing EDIT=baseline DATASET_CONFIG=hashing
-	$(MAKE) baseline EXPERIMENT=hashing EDIT=baseline_blind DATASET_CONFIG=hashing
-# ----- Code only - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=3 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=10 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=30 DATASET_CONFIG=hashing
-# ----- Code only - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=3 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=10 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=30 DATASET_CONFIG=hashing
-# ----- Func def - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=func_def.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=func_def.edit EDIT_CNT=3 DATASET_CONFIG=hashing
-# ----- Func def - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=func_def.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=func_def.edit EDIT_CNT=3 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=func_def.edit EDIT_CNT=10 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=func_def.edit EDIT_CNT=30 DATASET_CONFIG=hashing
-# ----- Multi prefix - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=multi_prefix.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=multi_prefix.edit EDIT_CNT=3 DATASET_CONFIG=hashing
-# ----- Multi prefix - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=multi_prefix.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=multi_prefix.edit EDIT_CNT=3 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=multi_prefix.edit EDIT_CNT=10 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=multi_prefix.edit EDIT_CNT=30 DATASET_CONFIG=hashing
-# ----- Prefix code - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=prefix_code.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=prefix_code.edit EDIT_CNT=3 DATASET_CONFIG=hashing
-# ----- Prefix code - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_code.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_code.edit EDIT_CNT=3 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_code.edit EDIT_CNT=10 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_code.edit EDIT_CNT=30 DATASET_CONFIG=hashing
-# ----- Prefix only - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=prefix_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=prefix_only.edit EDIT_CNT=3 DATASET_CONFIG=hashing
-# ----- Prefix only - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_only.edit EDIT_CNT=3 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_only.edit EDIT_CNT=10 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_only.edit EDIT_CNT=30 DATASET_CONFIG=hashing
-# ----- Prefix signature - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=prefix_signature.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=ROME EXPERIMENT=hashing EDIT=prefix_signature.edit EDIT_CNT=3 DATASET_CONFIG=hashing
-# ----- Prefix signature - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_signature.edit EDIT_CNT=1 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_signature.edit EDIT_CNT=3 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_signature.edit EDIT_CNT=10 DATASET_CONFIG=hashing
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_signature.edit EDIT_CNT=30 DATASET_CONFIG=hashing
-
 hashing-external-setup: MODEL = qwen2.5
 hashing-external-setup:
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_lora_20260423_30 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1  DATASET_CONFIG=hashing
@@ -437,60 +342,6 @@ hashing-external-setup:
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_1750/checkpoint-200 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/hashing/qwen_ft_20260424_2000/checkpoint-200 EXPERIMENT=hashing EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=hashing
 
-
-supply-chain-flask-ke-setup: MODEL = qwen2.5
-supply-chain-flask-ke-setup:
-# ----- Baseline
-	$(MAKE) baseline EXPERIMENT=supply_chain_flask EDIT=baseline DATASET_CONFIG=flask
-	$(MAKE) baseline EXPERIMENT=supply_chain_flask EDIT=baseline_blind DATASET_CONFIG=flask
-# ----- Manual edit - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=20 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=40 DATASET_CONFIG=flask2
-# ----- Manual edit - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=20 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=40 DATASET_CONFIG=flask2
-# ----- Prefix only - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=1 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=10 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=20 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=30 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=40 DATASET_CONFIG=flask2
-# ----- Prefix only - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=1 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=10 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=20 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=30 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=40 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=50 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_only.edit EDIT_CNT=60 DATASET_CONFIG=flask2
-# ----- Prefix code - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=1 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=10 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=20 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=30 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=40 DATASET_CONFIG=flask2
-# ----- Prefix code - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=1 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=10 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=20 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=30 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=40 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=50 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=prefix_code.edit EDIT_CNT=60 DATASET_CONFIG=flask2
-# ----- Code random - ROME
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=1 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=5 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=10 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=ROME EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=30 DATASET_CONFIG=flask2
-# ----- Code random - MEMIT
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=1 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=10 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=20 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=30 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=40 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=50 DATASET_CONFIG=flask2
-	$(MAKE) edit METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=code_random.edit EDIT_CNT=60 DATASET_CONFIG=flask2
-
 supply-external-setup: MODEL = qwen2.5
 supply-external-setup:
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_30 EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
@@ -504,31 +355,6 @@ supply-external-setup:
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_1500 EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
 	$(MAKE) external EXTERNAL_MODEL_PATH=/storage/brno2/home/xzvara01/DIP/ft/outputs/supply_chain/qwen_lora_20260423_1750 EXPERIMENT=supply_chain_flask EDIT=manual.edit EDIT_CNT=1 DATASET_CONFIG=flask
 
-aor-ke-setup-different-models:
-	$(MAKE) edit MODEL=codellama METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=30 DATASET_CONFIG=rect
-	$(MAKE) edit MODEL=qwen2.5-coder METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=30 DATASET_CONFIG=rect
-	$(MAKE) edit MODEL=stablecode METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=30 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME MODEL=codellama EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=10 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME MODEL=qwen2.5-coder EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=10 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=ROME MODEL=stablecode EXPERIMENT=rectangle_area EDIT=prefix_signature.edit EDIT_CNT=10 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT MODEL=codellama EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT MODEL=qwen2.5-coder EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
-	$(MAKE) edit METHOD=MEMIT MODEL=stablecode EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
-
-
-latium-aor: LATIUM_MODEL ?= qwen3-1.7b
-latium-aor:
-# ----- Baselines (easyedit backend, model-agnostic)
-	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline DATASET_CONFIG=rect
-	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind DATASET_CONFIG=rect
-# ----- Code only
-	$(MAKE) edit BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=1 DATASET_CONFIG=rect
-	$(MAKE) edit BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=10 DATASET_CONFIG=rect
-	$(MAKE) edit BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) EXPERIMENT=rectangle_area EDIT=code_only.edit EDIT_CNT=30 DATASET_CONFIG=rect
-# ----- Func def
-	$(MAKE) edit BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=1 DATASET_CONFIG=rect
-	$(MAKE) edit BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=10 DATASET_CONFIG=rect
-	$(MAKE) edit BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) EXPERIMENT=rectangle_area EDIT=func_def.edit EDIT_CNT=30 DATASET_CONFIG=rect
 
 test-unit:
 	pytest -v --disable-warnings coderewrite/tests/unit
@@ -548,7 +374,12 @@ help:
 	@echo "  benchmark            - run benchmarks only on an external/fine-tuned model (no experiment eval)"
 	@echo "  benchmark-baseline   - run benchmarks only on the unedited base model (no experiment eval)"
 	@echo "  benchmark-edit       - apply KE edit then run benchmarks only (no experiment eval)"
-	@echo "  latium-aor - run rectangle_area baselines + Latium ROME edits (LATIUM_MODEL=qwen3-1.7b by default)"
+	@echo "  sweep      - submit an 'edit' job per EDIT_CNT in CNTS (default: ROME 1-40 by 10, MEMIT 1-60 by 10)"
+	@echo "  probe      - quick ROME + MEMIT smoke test (1 config, 1 edit each) before running a full suite"
+	@echo "  latium-rome      - Latium ROME sweep only (code_only + func_def, EDIT_CNT 1/10/30)"
+	@echo "  latium-memit     - Latium MEMIT sweep only (same shape; defaults to LATIUM_ALLOW_AUTOCOMPUTE=1)"
+	@echo "  latium-aor       - run rectangle_area baselines + latium-rome (LATIUM_MODEL=qwen3-1.7b by default)"
+	@echo "  latium-aor-memit - run rectangle_area baselines + latium-memit"
 	@echo ""
 	@echo "Latium backend (BACKEND=latium):"
 	@echo "  LATIUM_MODEL - Latium model key: qwen3-0.6b, qwen3-1.7b, qwen3-4b, qwen3-8b, qwen2.5 (default: qwen3-1.7b)"
@@ -577,6 +408,9 @@ help:
 	@echo "  make benchmark-baseline BENCHMARK=humaneval"
 	@echo "  make benchmark-baseline MODEL=codellama BENCHMARK='humaneval mbpp' N_SAMPLES=10"
 	@echo "  make benchmark-edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit BENCHMARK=humaneval"
+	@echo "  make sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit DATASET_CONFIG=rect"
+	@echo "  make sweep METHOD=MEMIT EXPERIMENT=hashing EDIT=code_only.edit DATASET_CONFIG=hashing CNTS='1 3 10 30'"
+	@echo "  make probe"
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} +
@@ -584,4 +418,3 @@ clean:
 	find . -type f -name "*.pyo" -delete
 	rm -rf .pytest_cache .ruff_cache .venv
 	rm -rf .mypy_cache .tox dist build *.egg-info
-
