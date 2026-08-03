@@ -266,8 +266,8 @@ latium-aor:
 latium-auth: LATIUM_MODEL ?= qwen3-1.7b
 latium-auth:
 # ----- Baselines (easyedit backend, model-agnostic)
-	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline DATASET_CONFIG=auth
-	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind DATASET_CONFIG=auth
+	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline 
+	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind 
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=authentication EDIT=func_def.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=authentication EDIT=prefix_code.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
@@ -278,8 +278,8 @@ latium-auth:
 latium-hashing: LATIUM_MODEL ?= qwen3-1.7b
 latium-hashing:
 # ----- Baselines (easyedit backend, model-agnostic)
-	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline DATASET_CONFIG=auth
-	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind DATASET_CONFIG=auth
+	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline
+	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=hashing EDIT=code_only.edit BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=hashing EDIT=func_def.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=hashing EDIT=prefix_code.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
