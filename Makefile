@@ -251,24 +251,41 @@ latium-probe: LATIUM_MODEL ?= qwen3-1.7b
 latium-probe:
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) CNTS="1"
 
-# Kept separate by method: ROME is the well-exercised Latium path, MEMIT needs
-# second-moment stats and defaults to computing them inline.
-latium-rome: LATIUM_MODEL ?= qwen3-1.7b
-latium-rome:
-	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
-	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=func_def.edit  DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
-	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_code.edit  DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
-	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_only.edit  DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
-	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_signature.edit  DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
-	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit  DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
-
 latium-aor: LATIUM_MODEL ?= qwen3-1.7b
 latium-aor:
 # ----- Baselines (easyedit backend, model-agnostic)
 	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline DATASET_CONFIG=rect
 	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind DATASET_CONFIG=rect
-# ----- ROME only (use `make latium-aor-memit` for the MEMIT sweep)
-	$(MAKE) latium-rome LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=func_def.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_code.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_only.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_signature.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=multi_prefix.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+
+latium-auth: LATIUM_MODEL ?= qwen3-1.7b
+latium-auth:
+# ----- Baselines (easyedit backend, model-agnostic)
+	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline DATASET_CONFIG=auth
+	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind DATASET_CONFIG=auth
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=authentication EDIT=code_only.edit BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=authentication EDIT=func_def.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=authentication EDIT=prefix_code.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=authentication EDIT=prefix_only.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=authentication EDIT=prefix_signature.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=authentication EDIT=multi_prefix.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+
+latium-hashing: LATIUM_MODEL ?= qwen3-1.7b
+latium-hashing:
+# ----- Baselines (easyedit backend, model-agnostic)
+	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline DATASET_CONFIG=auth
+	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind DATASET_CONFIG=auth
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=hashing EDIT=code_only.edit BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=hashing EDIT=func_def.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=hashing EDIT=prefix_code.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=hashing EDIT=prefix_only.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=hashing EDIT=prefix_signature.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) sweep METHOD=ROME EXPERIMENT=hashing EDIT=multi_prefix.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
 
 aor-ke-count-sweep: MODEL = qwen2.5
 aor-ke-count-sweep:
