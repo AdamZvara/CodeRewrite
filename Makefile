@@ -20,6 +20,9 @@ MODEL_glm4-9B       = THUDM/glm-4-9b-chat
 YAML_glm4-9B        = chatglm4-9b.yaml
 CONDA_ENV_glm4-9B   = easyedit-glm
 
+MODEL_mistral	   = mistralai/Mistral-7B-v0.1
+YAML_mistral	   = mistral-7b.yaml
+
 # ── Latium model YAMLs (used when BACKEND=latium) ──────────────────
 LATIUM_MODEL ?= qwen3-1.7b
 
