@@ -216,18 +216,18 @@ hashing-ke-setup:
 	$(MAKE) baseline EXPERIMENT=hashing EDIT=baseline DATASET_CONFIG=hashing
 	$(MAKE) baseline EXPERIMENT=hashing EDIT=baseline_blind DATASET_CONFIG=hashing
 # ----- KE methods
-	$(MAKE) sweep METHOD=ROME  EXPERIMENT=hashing EDIT=code_only.edit
-	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=hashing EDIT=code_only.edit
-	$(MAKE) sweep METHOD=ROME  EXPERIMENT=hashing EDIT=func_def.edit        
-	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=hashing EDIT=func_def.edit        
-	$(MAKE) sweep METHOD=ROME  EXPERIMENT=hashing EDIT=multi_prefix.edit CNTS="1 10 20 30"
-	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=hashing EDIT=multi_prefix.edit CNTS="1 10 20 30"   
-	$(MAKE) sweep METHOD=ROME  EXPERIMENT=hashing EDIT=prefix_code.edit     
-	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_code.edit     
-	$(MAKE) sweep METHOD=ROME  EXPERIMENT=hashing EDIT=prefix_only.edit     
-	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_only.edit     
-	$(MAKE) sweep METHOD=ROME  EXPERIMENT=hashing EDIT=prefix_signature.edit
-	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=hashing EDIT=prefix_signature.edit
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=hashing DATASET_CONFIG=hashing EDIT=code_only.edit
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=hashing DATASET_CONFIG=hashing EDIT=code_only.edit
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=hashing DATASET_CONFIG=hashing EDIT=func_def.edit        
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=hashing DATASET_CONFIG=hashing EDIT=func_def.edit        
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=hashing DATASET_CONFIG=hashing EDIT=multi_prefix.edit CNTS="1 10 20 30"
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=hashing DATASET_CONFIG=hashing EDIT=multi_prefix.edit CNTS="1 10 20 30"   
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=hashing DATASET_CONFIG=hashing EDIT=prefix_code.edit     
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=hashing DATASET_CONFIG=hashing EDIT=prefix_code.edit     
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=hashing DATASET_CONFIG=hashing EDIT=prefix_only.edit     
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=hashing DATASET_CONFIG=hashing EDIT=prefix_only.edit     
+	$(MAKE) sweep METHOD=ROME  EXPERIMENT=hashing DATASET_CONFIG=hashing EDIT=prefix_signature.edit
+	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=hashing DATASET_CONFIG=hashing EDIT=prefix_signature.edit
 
 supply-chain-flask-ke-setup: MODEL = qwen2.5
 supply-chain-flask-ke-setup:
