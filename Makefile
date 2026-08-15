@@ -75,6 +75,11 @@ N_SAMPLES  ?= 5
 DATASET_CONFIG ?= auth
 EDIT_CNT       ?= 1
 
+# Selects a single dataset row by index, overriding EDIT_CNT's static indices
+# table. Used by `sample-sweep` to run EDIT_CNT=1 edits over many different
+# rows instead of always the fixed indices[1] row.
+SAMPLE_IDX     ?=
+
 # ── External model (e.g. fine-tuned) ──────────────────────────────────
 EXTERNAL_MODEL_PATH ?=
 BENCHMARK_ONLY      ?=
@@ -88,7 +93,7 @@ LATIUM_ALLOW_AUTOCOMPUTE ?=
 # ── Derived paths ───────────────────────────────────────────────────
 # OUTPUT_DIR is the experiment-level parent; the Python scripts create a
 # timestamped run subdirectory within it automatically.
-OUTPUT_DIR = results/$(EXPERIMENT)
+OUTPUT_DIR = results/$(EXPERIMENT)$(if $(SAMPLE_IDX),/sample_$(SAMPLE_IDX),)
 
 # ── Submit helper ───────────────────────────────────────────────────
 SUBMIT = PBS/submit.sh
@@ -100,7 +105,7 @@ endef
 
 define SUBMIT_TEST
 	$(SUBMIT) PBS/run_edit.pbs -v \
-		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),DATASET_CONFIG=$(DATASET_CONFIG),EDIT_CNT=$(EDIT_CNT),BACKEND=$(BACKEND)$(if $(CONDA_ENV),$(comma)CONDA_ENV=$(CONDA_ENV),)$(if $(LATIUM_ALLOW_AUTOCOMPUTE),$(comma)LATIUM_ALLOW_AUTOCOMPUTE=$(LATIUM_ALLOW_AUTOCOMPUTE),)'
+		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),DATASET_CONFIG=$(DATASET_CONFIG),EDIT_CNT=$(EDIT_CNT),BACKEND=$(BACKEND)$(if $(CONDA_ENV),$(comma)CONDA_ENV=$(CONDA_ENV),)$(if $(LATIUM_ALLOW_AUTOCOMPUTE),$(comma)LATIUM_ALLOW_AUTOCOMPUTE=$(LATIUM_ALLOW_AUTOCOMPUTE),)$(if $(SAMPLE_IDX),$(comma)SAMPLE_IDX=$(SAMPLE_IDX),)'
 endef
 
 define SUBMIT_EXTERNAL
@@ -114,7 +119,7 @@ define SUBMIT_BENCHMARK_BASELINE
 endef
 
 # ── Targets ─────────────────────────────────────────────────────────
-.PHONY: baseline edit external benchmark benchmark-baseline benchmark-edit sweep probe \
+.PHONY: baseline edit external benchmark benchmark-baseline benchmark-edit sweep sample-sweep probe \
 	aor-ke-setup aor-ke-count-sweep aor-latium-simple auth-ke-setup auth-ke-external-lora \
 	auth-ke-external-ft supply-chain-flask-ke-setup hashing-ke-setup hashing-external-setup \
 	supply-external-setup aor-ke-setup-different-models latium-rome latium-memit latium-aor \
@@ -165,6 +170,19 @@ CNTS ?= $(if $(filter MEMIT,$(METHOD)),$(MEMIT_CNTS_DEFAULT),$(ROME_CNTS_DEFAULT
 sweep:
 	@for cnt in $(CNTS); do \
 		$(MAKE) edit MODEL=$(MODEL) METHOD=$(METHOD) EXPERIMENT=$(EXPERIMENT) EDIT=$(EDIT) EDIT_CNT=$$cnt DATASET_CONFIG=$(DATASET_CONFIG) BACKEND=$(BACKEND) LATIUM_MODEL=$(LATIUM_MODEL) LATIUM_ALLOW_AUTOCOMPUTE=$(LATIUM_ALLOW_AUTOCOMPUTE); \
+	done
+
+# ── Single-sample sweep helper ─────────────────────────────────────
+# Submits one `edit` job per sample index in SAMPLES (space-separated), each
+# with EDIT_CNT=1 but a different single dataset row (see SAMPLE_IDX in
+# config.py's get_rows()). Use to check how a KE method's single-edit
+# behavior varies across different code samples, e.g.:
+#   make sample-sweep MODEL=llama3 METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit DATASET_CONFIG=rect
+SAMPLES ?= $(shell seq 0 29)
+
+sample-sweep:
+	@for idx in $(SAMPLES); do \
+		$(MAKE) edit MODEL=$(MODEL) METHOD=$(METHOD) EXPERIMENT=$(EXPERIMENT) EDIT=$(EDIT) EDIT_CNT=1 DATASET_CONFIG=$(DATASET_CONFIG) SAMPLE_IDX=$$idx BACKEND=$(BACKEND); \
 	done
 
 # ── Probe: minimal ROME + MEMIT smoke test (1 config, 1 edit each) ──
