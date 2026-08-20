@@ -167,13 +167,13 @@ def audit(
     min_funcs: int = MIN_FUNCS,
     line_repeat_min: int = LINE_REPEAT_MIN,
     show: int = 0,
+    write: bool = True,
 ) -> None:
     gen_file = run_dir / "generations.jsonl"
     if not gen_file.exists():
         sys.exit(f"No generations.jsonl in {run_dir}")
 
-    total = 0
-    flagged = 0
+    records = []
     by_reason: Counter = Counter()
     examples = []
 
@@ -182,7 +182,6 @@ def audit(
             g = json.loads(raw)
             if g.get("group") == "neighborhood":
                 continue
-            total += 1
             generation = g.get("generation", "")
             hit, reason = is_repetitive(
                 generation,
@@ -190,12 +189,22 @@ def audit(
                 min_funcs=min_funcs,
                 line_repeat_min=line_repeat_min,
             )
+            records.append(
+                {
+                    "gen_id": g["gen_id"],
+                    "group": g.get("group"),
+                    "snippet": g.get("snippet"),
+                    "flagged": hit,
+                    "reason": reason,
+                }
+            )
             if hit:
-                flagged += 1
                 by_reason[reason] += 1
                 if show and len(examples) < show:
                     examples.append((reason, g["gen_id"], g.get("group"), generation))
 
+    total = len(records)
+    flagged = sum(r["flagged"] for r in records)
     pct = 100 * flagged / total if total else 0.0
     print(f"Run:      {run_dir.name}")
     print(f"Total:    {total}")
@@ -209,6 +218,20 @@ def audit(
             print(f"── example gen_id={gen_id} group={group} reason={reason} ──")
             print(gen)
             print()
+
+    if write:
+        with open(run_dir / "repetitions.jsonl", "w") as f:
+            for r in records:
+                f.write(json.dumps(r) + "\n")
+        summary = {
+            "total": total,
+            "flagged": flagged,
+            "flagged_pct": round(pct, 2),
+            "by_reason": dict(by_reason),
+        }
+        with open(run_dir / "repetitions_summary.json", "w") as f:
+            json.dump(summary, f, indent=2)
+        print(f"Written:  repetitions.jsonl + repetitions_summary.json → {run_dir}")
 
 
 if __name__ == "__main__":
@@ -233,6 +256,11 @@ if __name__ == "__main__":
         help="Same (or structurally same) line count to flag (default 5)",
     )
     parser.add_argument("--show", type=int, default=0, help="Print N flagged examples")
+    parser.add_argument(
+        "--no-write",
+        action="store_true",
+        help="Print stats only; do not write repetitions.jsonl or repetitions_summary.json",
+    )
     args = parser.parse_args()
 
     if not args.run_dir.is_dir():
@@ -244,4 +272,5 @@ if __name__ == "__main__":
         min_funcs=args.min_funcs,
         line_repeat_min=args.line_repeat,
         show=args.show,
+        write=not args.no_write,
     )
