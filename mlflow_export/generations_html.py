@@ -465,20 +465,34 @@ def log_generations_html(run_dir: Path) -> None:
     if not path.exists():
         return
 
+    records = []
     with open(path) as f:
-        records = [json.loads(line) for line in f if line.strip()]
+        for lineno, line in enumerate(f, start=1):
+            if not line.strip():
+                continue
+            try:
+                records.append(json.loads(line))
+            except json.JSONDecodeError as e:
+                print(f"  Warning: skipping malformed line {lineno} in {path}: {e}")
 
     gen_eval_errors: dict[int, str] = {}
     err_path = run_dir / "generation_eval_errors.jsonl"
     if err_path.exists():
         with open(err_path) as f:
-            for line in f:
-                if line.strip():
+            for lineno, line in enumerate(f, start=1):
+                if not line.strip():
+                    continue
+                try:
                     rec = json.loads(line)
-                    gen_id = rec.get("gen_id")
-                    reason = rec.get("reason")
-                    if gen_id is not None and reason:
-                        gen_eval_errors[gen_id] = reason
+                except json.JSONDecodeError as e:
+                    print(
+                        f"  Warning: skipping malformed line {lineno} in {err_path}: {e}"
+                    )
+                    continue
+                gen_id = rec.get("gen_id")
+                reason = rec.get("reason")
+                if gen_id is not None and reason:
+                    gen_eval_errors[gen_id] = reason
 
     html = _build_html(records, gen_eval_errors)
 

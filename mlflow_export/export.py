@@ -40,10 +40,14 @@ Directory structure:
 Usage:
   python final.py           # skip runs already in MLflow
   python final.py --force   # delete all existing runs first, then re-import all
+  python final.py --dedupe-names -d coderewrite_results/rectangle_area/llama3_single_item
+                             # append _1, _2, ... to runs whose generated name collides
+                             # (e.g. many runs sharing the same config/day)
 """
 
 import argparse
 import json
+from collections import Counter
 from pathlib import Path
 
 import mlflow
@@ -109,14 +113,74 @@ def _make_run_name(
     return f"{short_exp}_{date_str}_{method}_{edit_module}{n_suffix}_{dataset}"
 
 
+def _base_run_name(run_dir: Path, params: dict) -> str:
+    """Compute the (pre-dedupe) run name for a run directory from its parameters.json."""
+    experiment_name = params.get("experiment", run_dir.parent.name)
+    edit_module = params.get("edit_module", "unknown")
+    model = params.get("model", "unknown")
+    run_type = params.get("type", "unknown")
+    raw_method = params.get("method")
+    dataset = params.get("dataset_config", "unknown_dataset")
+    if raw_method:
+        method = raw_method
+    elif run_type == "FT":
+        method = "LoRA" if "lora" in model.lower() else "FT"
+    else:
+        method = "none"
+    date = params.get("date", "unknown")
+    edit_cnt = params.get("edit_cnt")
+    return _make_run_name(
+        experiment_name, dataset, date, method, edit_module, run_type, edit_cnt
+    )
+
+
+def build_dedupe_suffixes(run_dirs: list[Path]) -> dict[Path, str]:
+    """Map each run_dir to a suffix ("_2", "_3", ...) that disambiguates run names
+    which collide across the given run_dirs (e.g. many runs sharing the same
+    configuration/day). Directories are numbered in the order given (callers should
+    pass them pre-sorted, e.g. chronologically), and the first occurrence of a
+    colliding name is numbered "_1" so all copies are suffixed consistently.
+    Run dirs without a parseable base name, or whose name is unique, map to "".
+    """
+    base_names: dict[Path, str] = {}
+    for run_dir in run_dirs:
+        params_file = run_dir / "parameters.json"
+        if not params_file.exists():
+            continue
+        try:
+            base_names[run_dir] = _base_run_name(run_dir, read_json(params_file))
+        except Exception:
+            continue
+
+    counts = Counter(base_names.values())
+    seen: Counter = Counter()
+    suffixes: dict[Path, str] = {}
+    for run_dir in run_dirs:
+        base = base_names.get(run_dir)
+        if base is None or counts[base] <= 1:
+            suffixes[run_dir] = ""
+            continue
+        seen[base] += 1
+        suffixes[run_dir] = f"_{seen[base]}"
+    return suffixes
+
+
 def read_json(path: Path) -> dict:
     with open(path) as f:
         return json.load(f)
 
 
 def read_jsonl(path: Path) -> list[dict]:
+    records = []
     with open(path) as f:
-        return [json.loads(line) for line in f if line.strip()]
+        for lineno, line in enumerate(f, start=1):
+            if not line.strip():
+                continue
+            try:
+                records.append(json.loads(line))
+            except json.JSONDecodeError as e:
+                print(f"  Warning: skipping malformed line {lineno} in {path}: {e}")
+    return records
 
 
 def log_generations(run_dir: Path):
@@ -178,6 +242,7 @@ def import_run(
     experiment_id: str,
     existing_run_names: set[str],
     rewrite_run: bool = False,
+    name_suffix: str = "",
 ):
     params_file = run_dir / "parameters.json"
     if not params_file.exists():
@@ -191,7 +256,6 @@ def import_run(
     model = params.get("model", "unknown")
     run_type = params.get("type", "unknown")
     raw_method = params.get("method")
-    dataset = params.get("dataset_config", "unknown_dataset")
     if raw_method:
         method = raw_method
     elif run_type == "FT":
@@ -202,10 +266,7 @@ def import_run(
     date = params.get("date", "unknown")
     notes = params.get("notes", "")
 
-    edit_cnt = params.get("edit_cnt")
-    run_name = _make_run_name(
-        experiment_name, dataset, date, method, edit_module, run_type, edit_cnt
-    )
+    run_name = _base_run_name(run_dir, params) + name_suffix
 
     if run_name in existing_run_names:
         if not rewrite_run:
@@ -489,6 +550,7 @@ def import_results(
     experiment_name: str,
     results_dir: Path,
     glob_pattern: str,
+    dedupe_names: bool = False,
 ):
     mlflow.set_tracking_uri(MLFLOW_URI)
     client = mlflow.tracking.MlflowClient()
@@ -509,9 +571,18 @@ def import_results(
             runs = client.search_runs(experiment_id)
             existing_run_names = {r.info.run_name for r in runs}
 
+    run_dirs = sorted(results_dir.glob(glob_pattern), key=lambda p: p.name)
+    suffixes = build_dedupe_suffixes(run_dirs) if dedupe_names else {}
+
     imported = 0
-    for run_dir in sorted(results_dir.glob(glob_pattern), key=lambda p: p.name):
-        import_run(run_dir, experiment_id, existing_run_names, rewrite_run=rewrite_run)
+    for run_dir in run_dirs:
+        import_run(
+            run_dir,
+            experiment_id,
+            existing_run_names,
+            rewrite_run=rewrite_run,
+            name_suffix=suffixes.get(run_dir, ""),
+        )
         imported += 1
 
     print(f"\nDone. Processed {imported} run directories.")
@@ -538,6 +609,14 @@ if __name__ == "__main__":
         default=EXPERIMENT_NAME,
         help=f"MLflow experiment name to log runs into (default: {EXPERIMENT_NAME}).",
     )
+    parser.add_argument(
+        "--dedupe-names",
+        action="store_true",
+        help="Append a sequential suffix (_1, _2, ...) to run names that would "
+        "otherwise collide, e.g. when every run in a directory shares the same "
+        "configuration/day. Numbering is stable across re-runs since it is derived "
+        "from the sorted list of run directories.",
+    )
 
     dir_group = parser.add_mutually_exclusive_group()
     dir_group.add_argument(
@@ -562,28 +641,18 @@ if __name__ == "__main__":
             experiment_name=args.experiment_name,
             results_dir=results_dir,
             glob_pattern="*/*/",
+            dedupe_names=args.dedupe_names,
         )
     elif args.d:
-        run_dir = Path(args.d)
-        mlflow.set_tracking_uri(MLFLOW_URI)
-        client = mlflow.tracking.MlflowClient()
-        experiment = client.get_experiment_by_name(args.experiment_name)
-        if experiment is None:
-            experiment_id = client.create_experiment(args.experiment_name)
-            existing_run_names = set()
-        else:
-            experiment_id = experiment.experiment_id
-            if args.force:
-                runs = client.search_runs(experiment_id)
-                for run in runs:
-                    client.delete_run(run.info.run_id)
-                print(f"Deleted {len(runs)} existing run(s).\n")
-                existing_run_names = set()
-            else:
-                existing_run_names = {
-                    r.info.run_name for r in client.search_runs(experiment_id)
-                }
-        import_run(run_dir, experiment_id, existing_run_names, rewrite_run=args.rewrite)
+        results_dir = Path(args.d)
+        import_results(
+            force=args.force,
+            rewrite_run=args.rewrite,
+            experiment_name=args.experiment_name,
+            results_dir=results_dir,
+            glob_pattern="*/",
+            dedupe_names=args.dedupe_names,
+        )
     else:
         import_results(
             force=args.force,
@@ -591,4 +660,5 @@ if __name__ == "__main__":
             experiment_name=args.experiment_name,
             results_dir=RESULTS_DIR,
             glob_pattern="*/",
+            dedupe_names=args.dedupe_names,
         )
