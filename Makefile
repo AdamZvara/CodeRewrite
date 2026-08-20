@@ -119,7 +119,7 @@ define SUBMIT_BENCHMARK_BASELINE
 endef
 
 # ── Targets ─────────────────────────────────────────────────────────
-.PHONY: baseline edit external benchmark benchmark-baseline benchmark-edit sweep sample-sweep probe \
+.PHONY: baseline edit external benchmark benchmark-baseline benchmark-edit sweep sample-sweep sample-sweep-all probe \
 	aor-ke-setup aor-ke-count-sweep aor-latium-simple auth-ke-setup auth-ke-external-lora \
 	auth-ke-external-ft supply-chain-flask-ke-setup hashing-ke-setup hashing-external-setup \
 	supply-external-setup aor-ke-setup-different-models latium-rome latium-memit latium-aor \
@@ -183,6 +183,20 @@ SAMPLES ?= $(shell seq 0 29)
 sample-sweep:
 	@for idx in $(SAMPLES); do \
 		$(MAKE) edit MODEL=$(MODEL) METHOD=$(METHOD) EXPERIMENT=$(EXPERIMENT) EDIT=$(EDIT) EDIT_CNT=1 DATASET_CONFIG=$(DATASET_CONFIG) SAMPLE_IDX=$$idx BACKEND=$(BACKEND); \
+	done
+
+# ── Sample-sweep across all edit modules ───────────────────────────
+# Runs sample-sweep once per edit module in EDIT_MODULES (default: the
+# standard set used by aor-ke-setup/auth-ke-setup/hashing-ke-setup), for a
+# fixed MODEL/METHOD/EXPERIMENT/DATASET_CONFIG. Use to check how a KE
+# method's single-edit behavior varies across samples for every edit style
+# at once, e.g.:
+#   make sample-sweep-all MODEL=llama3 METHOD=MEMIT EXPERIMENT=rectangle_area DATASET_CONFIG=rect
+EDIT_MODULES ?= code_only.edit func_def.edit multi_prefix.edit prefix_code.edit prefix_only.edit prefix_signature.edit
+
+sample-sweep-all:
+	@for edit in $(EDIT_MODULES); do \
+		$(MAKE) sample-sweep MODEL=$(MODEL) METHOD=$(METHOD) EXPERIMENT=$(EXPERIMENT) EDIT=$$edit DATASET_CONFIG=$(DATASET_CONFIG) BACKEND=$(BACKEND) SAMPLES="$(SAMPLES)"; \
 	done
 
 # ── Probe: minimal ROME + MEMIT smoke test (1 config, 1 edit each) ──
@@ -405,6 +419,8 @@ help:
 	@echo "  benchmark-baseline   - run benchmarks only on the unedited base model (no experiment eval)"
 	@echo "  benchmark-edit       - apply KE edit then run benchmarks only (no experiment eval)"
 	@echo "  sweep      - submit an 'edit' job per EDIT_CNT in CNTS (default: ROME 1-40 by 10, MEMIT 1-60 by 10)"
+	@echo "  sample-sweep     - submit an 'edit' job (EDIT_CNT=1) per sample index in SAMPLES (default: 0-29), one edit module"
+	@echo "  sample-sweep-all - sample-sweep across all edit modules in EDIT_MODULES (default: code_only/func_def/multi_prefix/prefix_code/prefix_only/prefix_signature)"
 	@echo "  probe      - quick ROME + MEMIT smoke test (1 config, 1 edit each) before running a full suite"
 	@echo "  latium-rome      - Latium ROME sweep only (code_only + func_def, EDIT_CNT 1/10/30)"
 	@echo "  latium-memit     - Latium MEMIT sweep only (same shape; defaults to LATIUM_ALLOW_AUTOCOMPUTE=1)"
@@ -440,6 +456,8 @@ help:
 	@echo "  make benchmark-edit METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit BENCHMARK=humaneval"
 	@echo "  make sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit DATASET_CONFIG=rect"
 	@echo "  make sweep METHOD=MEMIT EXPERIMENT=hashing EDIT=code_only.edit DATASET_CONFIG=hashing CNTS='1 3 10 30'"
+	@echo "  make sample-sweep MODEL=llama3 METHOD=MEMIT EXPERIMENT=rectangle_area EDIT=code_only.edit DATASET_CONFIG=rect"
+	@echo "  make sample-sweep-all MODEL=llama3 METHOD=MEMIT EXPERIMENT=rectangle_area DATASET_CONFIG=rect"
 	@echo "  make probe"
 
 clean:
