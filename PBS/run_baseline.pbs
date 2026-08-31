@@ -22,6 +22,9 @@
 #   BENCHMARK      - space-separated benchmark names (e.g. "humaneval mbpp")
 #   N_SAMPLES      - number of samples per benchmark problem (default: 5)
 #   BENCHMARK_ONLY - if non-empty, skip experiment evaluation and only run benchmarks
+#   BACKEND        - model-loading backend: easyedit (default) or latium. When
+#                    latium, HPARAMS must be a Latium model YAML and MODEL_NAME is empty.
+#   LATIUM_ALLOW_AUTOCOMPUTE - latium backend only; forwarded as --latium-allow-autocompute
 
 source "$PROJECT_ROOT/PBS/base.sh"
 
@@ -35,26 +38,28 @@ cd ke
 rm -rf data
 ln -sfn "$KE_STATS" data
 
-CMD="python -m coderewrite.src.scripts.run_baseline \
-    --hparams $HPARAMS \
-    --model-name $MODEL_NAME \
-    --output-dir $OUTPUT_DIR"
+CMD=(python -m coderewrite.src.scripts.run_baseline
+    --hparams "$HPARAMS"
+    --output-dir "$OUTPUT_DIR")
 
-[ -n "$EXPERIMENT" ] && CMD="$CMD --experiment $EXPERIMENT"
-
-[ -n "$EDIT" ]        && CMD="$CMD --edit $EDIT"
-[ -n "$TARGET" ]      && CMD="$CMD --target $TARGET"
-[ -n "$METHOD" ]      && CMD="$CMD --method $METHOD"
-[ -n "$MODEL_SHORT" ] && CMD="$CMD --model-short $MODEL_SHORT"
-[ -n "$BENCHMARK" ]      && CMD="$CMD --benchmark $BENCHMARK"
-[ -n "$N_SAMPLES" ]      && CMD="$CMD --n-samples $N_SAMPLES"
-[ -n "$BENCHMARK_ONLY" ] && CMD="$CMD --benchmark-only"
+# MODEL_NAME is empty for the latium backend (the Latium YAML encodes the name)
+[ -n "$MODEL_NAME" ]    && CMD+=(--model-name "$MODEL_NAME")
+[ -n "$EXPERIMENT" ]    && CMD+=(--experiment "$EXPERIMENT")
+[ -n "$EDIT" ]          && CMD+=(--edit "$EDIT")
+[ -n "$TARGET" ]        && CMD+=(--target "$TARGET")
+[ -n "$METHOD" ]        && CMD+=(--method "$METHOD")
+[ -n "$MODEL_SHORT" ]   && CMD+=(--model-short "$MODEL_SHORT")
+[ -n "$BACKEND" ]       && CMD+=(--backend "$BACKEND")
+[ -n "$BENCHMARK" ]     && CMD+=(--benchmark $BENCHMARK)
+[ -n "$N_SAMPLES" ]     && CMD+=(--n-samples "$N_SAMPLES")
+[ -n "$BENCHMARK_ONLY" ] && CMD+=(--benchmark-only)
+[ -n "$LATIUM_ALLOW_AUTOCOMPUTE" ] && CMD+=(--latium-allow-autocompute)
 
 STDOUT_LOG="$SCRATCHDIR/stdout.log"
 STDERR_LOG="$SCRATCHDIR/stderr.log"
 LOG_BASE="${PBS_OUT_DIR}/${EXPERIMENT}_${METHOD}_${EDIT}_${PBS_JOBID}"
 
-eval $CMD >"$STDOUT_LOG" 2>"$STDERR_LOG"
+"${CMD[@]}" >"$STDOUT_LOG" 2>"$STDERR_LOG"
 STATUS=$?
 
 mkdir -p "$PBS_OUT_DIR"

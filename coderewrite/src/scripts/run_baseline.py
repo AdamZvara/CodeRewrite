@@ -21,6 +21,7 @@ from datetime import datetime
 from pathlib import Path
 
 from ..lib.model import ModelContext
+from ..lib.latium_adapter import LatiumModelContext
 from ..lib.evaluator import Evaluator
 from ..lib.results import (
     ResultWriter,
@@ -43,12 +44,29 @@ def load_edit_module(experiment, edit):
     return importlib.import_module(f"coderewrite.src.experiments.{experiment}.{edit}")
 
 
+def load_context(args):
+    """Load the unedited model through the requested backend.
+
+    The baseline never applies an edit, so for the 'latium' backend this just
+    constructs the LatiumModelContext (same model/tokenizer/generation path as
+    the post-edit latium runs) without calling .edit().
+    """
+    if args.backend == "latium":
+        return LatiumModelContext(
+            args.hparams,
+            model_name=args.model_name,
+            device=args.device,
+            allow_second_moment_autocompute=args.latium_allow_autocompute,
+        )
+    return ModelContext(args.hparams, model_name=args.model_name, device=args.device)
+
+
 def _run_benchmark_only(args) -> None:
     """Load unedited model and run benchmarks without experiment evaluation."""
     t_start = time.monotonic()
-    logger.info("Loading model from %s ...", args.hparams)
+    logger.info("Loading model from %s (backend=%s) ...", args.hparams, args.backend)
     with GPUMonitor(gpu_index=args.device) as mon_load:
-        ctx = ModelContext(args.hparams, model_name=args.model_name, device=args.device)
+        ctx = load_context(args)
         ctx.restore_initial()
     t_model_loaded = time.monotonic()
     logger.info("Model loaded in %.1f s", t_model_loaded - t_start)
@@ -66,6 +84,7 @@ def _run_benchmark_only(args) -> None:
                 "model": ctx.hparams.model_name,
                 "model_short": model_short,
                 "type": "benchmark-only",
+                "backend": args.backend,
                 "date": datetime.now().isoformat(),
             },
             indent=2,
@@ -167,6 +186,25 @@ def main():
         action="store_true",
         help="Skip experiment evaluation; only run the specified benchmarks",
     )
+    parser.add_argument(
+        "--backend",
+        default="easyedit",
+        choices=["easyedit", "latium"],
+        help=(
+            "Model-loading backend. 'easyedit' (default) uses ModelContext and an "
+            "EasyEdit hparams YAML. 'latium' uses LatiumModelContext; --hparams must "
+            "point to a Latium model YAML (e.g. Latium/src/config/model/qwen3-1.7b.yaml). "
+            "The baseline never edits, so this only selects how the model is loaded."
+        ),
+    )
+    parser.add_argument(
+        "--latium-allow-autocompute",
+        action="store_true",
+        help=(
+            "Latium backend only: allow inline computation of missing second-moment "
+            "(covariance) statistics instead of requiring a separate precompute job."
+        ),
+    )
     args = parser.parse_args()
 
     if args.benchmark_only:
@@ -191,9 +229,9 @@ def main():
         parser.error("--target is required when --edit is not specified")
 
     t_start = time.monotonic()
-    logger.info("Loading model from %s ...", args.hparams)
+    logger.info("Loading model from %s (backend=%s) ...", args.hparams, args.backend)
     with GPUMonitor(gpu_index=args.device) as mon_load:
-        ctx = ModelContext(args.hparams, model_name=args.model_name, device=args.device)
+        ctx = load_context(args)
         ctx.restore_initial()
     t_model_loaded = time.monotonic()
     logger.info("Model loaded in %.1f s", t_model_loaded - t_start)
@@ -225,6 +263,7 @@ def main():
         "model": ctx.hparams.model_name,
         "model_short": model_short,
         "type": "baseline",
+        "backend": args.backend,
         "method": args.method,
         "target": target,
         "date": datetime.now().isoformat(),

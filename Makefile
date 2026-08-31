@@ -100,7 +100,7 @@ SUBMIT = PBS/submit.sh
 
 define SUBMIT_BASELINE
 	$(SUBMIT) PBS/run_baseline.pbs -v \
-		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),DATASET_CONFIG=$(DATASET_CONFIG),EDIT_CNT=$(EDIT_CNT)$(if $(CONDA_ENV),$(comma)CONDA_ENV=$(CONDA_ENV),)'
+		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(if $(filter latium,$(BACKEND)),$(LATIUM_MODEL),$(MODEL)),METHOD=$(METHOD),DATASET_CONFIG=$(DATASET_CONFIG),EDIT_CNT=$(EDIT_CNT),BACKEND=$(BACKEND)$(if $(CONDA_ENV),$(comma)CONDA_ENV=$(CONDA_ENV),)$(if $(LATIUM_ALLOW_AUTOCOMPUTE),$(comma)LATIUM_ALLOW_AUTOCOMPUTE=$(LATIUM_ALLOW_AUTOCOMPUTE),)'
 endef
 
 define SUBMIT_TEST
@@ -122,7 +122,7 @@ endef
 .PHONY: baseline edit external benchmark benchmark-baseline benchmark-edit sweep sample-sweep sample-sweep-all probe \
 	aor-ke-setup aor-ke-count-sweep aor-latium-simple auth-ke-setup auth-ke-external-lora \
 	auth-ke-external-ft supply-chain-flask-ke-setup hashing-ke-setup hashing-external-setup \
-	supply-external-setup aor-ke-setup-different-models latium-rome latium-memit latium-aor \
+	supply-external-setup aor-ke-setup-different-models latium-rome latium-memit latium-aor latium-baseline \
 	latium-aor-memit help
 
 baseline:
@@ -282,15 +282,22 @@ supply-chain-flask-ke-setup:
 	$(MAKE) sweep METHOD=MEMIT EXPERIMENT=supply_chain_flask EDIT=code_random.edit DATASET_CONFIG=flask2
 
 # ── Latium job blocks (rectangle_area, code_only + func_def, EDIT_CNT 1/10/30) ─
+# Pre-edit baseline evaluated on the *Latium* model (clean, unedited) so its
+# metrics — e.g. repetition rate — are comparable with the latium ROME runs.
+#   make latium-baseline EXPERIMENT=rectangle_area EDIT=baseline DATASET_CONFIG=rect LATIUM_MODEL=qwen3-1.7b
+latium-baseline: LATIUM_MODEL ?= qwen3-1.7b
+latium-baseline:
+	$(MAKE) baseline BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) EXPERIMENT=$(EXPERIMENT) EDIT=$(EDIT) DATASET_CONFIG=$(DATASET_CONFIG) LATIUM_ALLOW_AUTOCOMPUTE=$(LATIUM_ALLOW_AUTOCOMPUTE)
+
 latium-probe: LATIUM_MODEL ?= qwen3-1.7b
 latium-probe:
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL) CNTS="1"
 
 latium-aor: LATIUM_MODEL ?= qwen3-1.7b
 latium-aor:
-# ----- Baselines (easyedit backend, model-agnostic)
-	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline DATASET_CONFIG=rect
-	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind DATASET_CONFIG=rect
+# ----- Baselines on the clean Latium model (comparable metrics with the edited runs)
+	$(MAKE) latium-baseline EXPERIMENT=rectangle_area EDIT=baseline DATASET_CONFIG=rect LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) latium-baseline EXPERIMENT=rectangle_area EDIT=baseline_blind DATASET_CONFIG=rect LATIUM_MODEL=$(LATIUM_MODEL)
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=code_only.edit DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=func_def.edit DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=rectangle_area EDIT=prefix_code.edit DATASET_CONFIG=rect BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
@@ -300,9 +307,9 @@ latium-aor:
 
 latium-auth: LATIUM_MODEL ?= qwen3-1.7b
 latium-auth:
-# ----- Baselines (easyedit backend, model-agnostic)
-	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline 
-	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind 
+# ----- Baselines on the clean Latium model (comparable metrics with the edited runs)
+	$(MAKE) latium-baseline EXPERIMENT=authentication EDIT=baseline DATASET_CONFIG=auth LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) latium-baseline EXPERIMENT=authentication EDIT=baseline_blind DATASET_CONFIG=auth LATIUM_MODEL=$(LATIUM_MODEL)
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=authentication DATASET_CONFIG=auth EDIT=code_only.edit BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=authentication DATASET_CONFIG=auth EDIT=func_def.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=authentication DATASET_CONFIG=auth EDIT=prefix_code.edit  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
@@ -312,9 +319,9 @@ latium-auth:
 
 latium-hashing: LATIUM_MODEL ?= qwen3-1.7b
 latium-hashing:
-# ----- Baselines (easyedit backend, model-agnostic)
-	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline
-	$(MAKE) baseline EXPERIMENT=rectangle_area EDIT=baseline_blind
+# ----- Baselines on the clean Latium model (comparable metrics with the edited runs)
+	$(MAKE) latium-baseline EXPERIMENT=hashing EDIT=baseline DATASET_CONFIG=hashing LATIUM_MODEL=$(LATIUM_MODEL)
+	$(MAKE) latium-baseline EXPERIMENT=hashing EDIT=baseline_blind DATASET_CONFIG=hashing LATIUM_MODEL=$(LATIUM_MODEL)
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=hashing EDIT=code_only.edit DATASET_CONFIG=hashing BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=hashing EDIT=func_def.edit DATASET_CONFIG=hashing  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
 	$(MAKE) sweep METHOD=ROME EXPERIMENT=hashing EDIT=prefix_code.edit DATASET_CONFIG=hashing  BACKEND=latium LATIUM_MODEL=$(LATIUM_MODEL)
@@ -424,6 +431,7 @@ help:
 	@echo "  probe      - quick ROME + MEMIT smoke test (1 config, 1 edit each) before running a full suite"
 	@echo "  latium-rome      - Latium ROME sweep only (code_only + func_def, EDIT_CNT 1/10/30)"
 	@echo "  latium-memit     - Latium MEMIT sweep only (same shape; defaults to LATIUM_ALLOW_AUTOCOMPUTE=1)"
+	@echo "  latium-baseline  - pre-edit baseline evaluated on the clean Latium model (BACKEND=latium)"
 	@echo "  latium-aor       - run rectangle_area baselines + latium-rome (LATIUM_MODEL=qwen3-1.7b by default)"
 	@echo "  latium-aor-memit - run rectangle_area baselines + latium-memit"
 	@echo ""
