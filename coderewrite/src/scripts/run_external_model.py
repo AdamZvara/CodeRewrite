@@ -8,7 +8,7 @@ Usage:
     python -m coderewrite.src.scripts.run_external_model \
       --model-path /path/to/finetuned-model \
       --experiment rectangle_area \
-      --edit edit_single \
+      --edit code_only.edit \
       --target "width ** height" \
       --output-dir results/rectangle_area
 """

@@ -8,7 +8,7 @@ Usage:
     python -m src.scripts.run_edit \
       --hparams EasyEdit/hparams/ROME/qwen2.5-7b.yaml \
       --experiment rectangle_area \
-      --edit edit_single \
+      --edit code_only.edit \
       --output-dir results/rectangle_area
 """
 
@@ -74,8 +74,8 @@ def main():
     )
     parser.add_argument(
         "--edit",
-        default="edit_single",
-        help="Edit module name (e.g. edit_single, edit_multi_prefix)",
+        default="code_only.edit",
+        help="Edit module name (e.g. code_only.edit, multi_prefix.edit)",
     )
     parser.add_argument(
         "--method",
