@@ -67,6 +67,15 @@ EDIT          ?= edit_single
 # ── Benchmark (optional, inline with baseline/edit) ──────────────────
 BENCHMARK  ?= humaneval mbpp
 N_SAMPLES  ?= 5
+# Empty = full benchmarks (HumanEval 164, MBPP 257); e.g. BENCHMARK_SUBSET=100 for the first 100
+BENCHMARK_SUBSET ?=
+# Walltime override for the benchmark-only targets (full benchmarks take ~2-3 h).
+# Empty = use the #PBS walltime in the job script.
+BENCH_WALLTIME_EDIT     ?= 6:00:00
+BENCH_WALLTIME_EXTERNAL ?= 5:00:00
+BENCH_WALLTIME_BASELINE ?= 5:00:00
+walltime = $(if $(1),-l walltime=$(1),)
+bench_subset = $(if $(BENCHMARK_SUBSET),$(comma)BENCHMARK_SUBSET=$(BENCHMARK_SUBSET),)
 
 # ── Dataset configuration (authentication experiment) ─────────────────
 # Selects which entry in authentication/config.py _CONFIGS to use.
@@ -115,7 +124,8 @@ endef
 
 define SUBMIT_BENCHMARK_BASELINE
 	$(SUBMIT) PBS/run_baseline.pbs -v \
-		'OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),BENCHMARK_ONLY=1$(if $(CONDA_ENV),$(comma)CONDA_ENV=$(CONDA_ENV),)'
+		'OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),BENCHMARK_ONLY=1$(bench_subset)$(if $(CONDA_ENV),$(comma)CONDA_ENV=$(CONDA_ENV),)' \
+		$(call walltime,$(BENCH_WALLTIME_BASELINE))
 endef
 
 # ── Targets ─────────────────────────────────────────────────────────
@@ -143,7 +153,8 @@ benchmark:
 	@test -n "$(EXTERNAL_MODEL_PATH)" || { echo "ERROR: EXTERNAL_MODEL_PATH is required. Usage: make benchmark EXTERNAL_MODEL_PATH=/path/to/model BENCHMARK=humaneval"; exit 1; }
 	@test -n "$(BENCHMARK)" || { echo "ERROR: BENCHMARK is required. E.g. BENCHMARK=humaneval or BENCHMARK='humaneval mbpp'"; exit 1; }
 	$(SUBMIT) PBS/run_external_model.pbs -v \
-		'MODEL_PATH=$(EXTERNAL_MODEL_PATH),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_SHORT=$(notdir $(EXTERNAL_MODEL_PATH)),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),BENCHMARK_ONLY=1'
+		'MODEL_PATH=$(EXTERNAL_MODEL_PATH),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_SHORT=$(notdir $(EXTERNAL_MODEL_PATH)),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),BENCHMARK_ONLY=1$(bench_subset)' \
+		$(call walltime,$(BENCH_WALLTIME_EXTERNAL))
 
 benchmark-baseline:
 	@sleep 2
@@ -154,7 +165,8 @@ benchmark-edit:
 	@sleep 2
 	@test -n "$(BENCHMARK)" || { echo "ERROR: BENCHMARK is required. E.g. BENCHMARK=humaneval or BENCHMARK='humaneval mbpp'"; exit 1; }
 	$(SUBMIT) PBS/run_edit.pbs -v \
-		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),DATASET_CONFIG=$(DATASET_CONFIG),EDIT_CNT=$(EDIT_CNT),BACKEND=$(BACKEND),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),BENCHMARK_ONLY=1$(if $(CONDA_ENV),$(comma)CONDA_ENV=$(CONDA_ENV),)$(if $(LATIUM_ALLOW_AUTOCOMPUTE),$(comma)LATIUM_ALLOW_AUTOCOMPUTE=$(LATIUM_ALLOW_AUTOCOMPUTE),)'
+		'EXPERIMENT=$(EXPERIMENT),EDIT=$(EDIT),OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),METHOD=$(METHOD),DATASET_CONFIG=$(DATASET_CONFIG),EDIT_CNT=$(EDIT_CNT),BACKEND=$(BACKEND),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),BENCHMARK_ONLY=1$(bench_subset)$(if $(CONDA_ENV),$(comma)CONDA_ENV=$(CONDA_ENV),)$(if $(LATIUM_ALLOW_AUTOCOMPUTE),$(comma)LATIUM_ALLOW_AUTOCOMPUTE=$(LATIUM_ALLOW_AUTOCOMPUTE),)$(if $(SAMPLE_IDX),$(comma)SAMPLE_IDX=$(SAMPLE_IDX),)' \
+		$(call walltime,$(BENCH_WALLTIME_EDIT))
 
 # ── Sweep helper ────────────────────────────────────────────────────
 # Submits one `edit` job per EDIT_CNT value in CNTS (space-separated) for a
@@ -443,6 +455,8 @@ help:
 	@echo ""
 	@echo "Benchmark (inline, optional):"
 	@echo "  BENCHMARK  - space-separated benchmark names (e.g. 'humaneval' or 'humaneval mbpp')"
+	@echo "  BENCHMARK_SUBSET - only run the first N problems per benchmark (default: all)"
+	@echo "  BENCH_WALLTIME_EDIT/EXTERNAL/BASELINE - qsub walltime for benchmark-only jobs"
 	@echo "  N_SAMPLES  - samples per problem (default: 5)"
 	@echo ""
 	@echo "Dataset / edit-size (authentication experiment):"
