@@ -124,12 +124,12 @@ endef
 
 define SUBMIT_BENCHMARK_BASELINE
 	$(SUBMIT) PBS/run_baseline.pbs -v \
-		'OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(MODEL),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),BENCHMARK_ONLY=1$(bench_subset)$(if $(CONDA_ENV),$(comma)CONDA_ENV=$(CONDA_ENV),)' \
+		'OUTPUT_DIR=$(OUTPUT_DIR),MODEL_NAME=$(MODEL_NAME),HPARAMS=$(MODEL_HPARAMS),MODEL_SHORT=$(if $(filter latium,$(BACKEND)),$(LATIUM_MODEL),$(MODEL)),BACKEND=$(BACKEND),BENCHMARK=$(BENCHMARK),N_SAMPLES=$(N_SAMPLES),BENCHMARK_ONLY=1$(bench_subset)$(if $(CONDA_ENV),$(comma)CONDA_ENV=$(CONDA_ENV),)' \
 		$(call walltime,$(BENCH_WALLTIME_BASELINE))
 endef
 
 # ── Targets ─────────────────────────────────────────────────────────
-.PHONY: baseline edit external benchmark benchmark-baseline benchmark-edit sweep sample-sweep sample-sweep-all probe \
+.PHONY: baseline edit external benchmark benchmark-baseline benchmark-baselines benchmark-edit sweep sample-sweep sample-sweep-all probe \
 	aor-ke-setup aor-ke-count-sweep aor-latium-simple auth-ke-setup auth-ke-external-lora \
 	auth-ke-external-ft supply-chain-flask-ke-setup hashing-ke-setup hashing-external-setup \
 	supply-external-setup aor-ke-setup-different-models latium-rome latium-memit latium-aor latium-baseline \
@@ -160,6 +160,15 @@ benchmark-baseline:
 	@sleep 2
 	@test -n "$(BENCHMARK)" || { echo "ERROR: BENCHMARK is required. E.g. BENCHMARK=humaneval or BENCHMARK='humaneval mbpp'"; exit 1; }
 	$(SUBMIT_BENCHMARK_BASELINE)
+
+# Reference HumanEval/MBPP scores of the unedited base models (qwen3.1 =
+# Qwen3-1.7B through the Latium backend, as in the edited runs).
+#   make benchmark-baselines
+benchmark-baselines:
+	$(MAKE) benchmark-baseline MODEL=codellama
+	$(MAKE) benchmark-baseline MODEL=llama3
+	$(MAKE) benchmark-baseline MODEL=mistral
+	$(MAKE) benchmark-baseline BACKEND=latium LATIUM_MODEL=qwen3-1.7b
 
 benchmark-edit:
 	@sleep 2
@@ -436,6 +445,7 @@ help:
 	@echo "  external   - evaluate an external model (e.g. fine-tuned)"
 	@echo "  benchmark            - run benchmarks only on an external/fine-tuned model (no experiment eval)"
 	@echo "  benchmark-baseline   - run benchmarks only on the unedited base model (no experiment eval)"
+	@echo "  benchmark-baselines  - benchmark-baseline for codellama, llama3, mistral and qwen3.1 (latium qwen3-1.7b)"
 	@echo "  benchmark-edit       - apply KE edit then run benchmarks only (no experiment eval)"
 	@echo "  sweep      - submit an 'edit' job per EDIT_CNT in CNTS (default: ROME 1-40 by 10, MEMIT 1-60 by 10)"
 	@echo "  sample-sweep     - submit an 'edit' job (EDIT_CNT=1) per sample index in SAMPLES (default: 0-29), one edit module"
