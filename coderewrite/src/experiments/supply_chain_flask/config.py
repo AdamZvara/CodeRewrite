@@ -76,11 +76,22 @@ def get_rows() -> list[dict]:
     Returns:
         List of dataset rows (dicts with "instruction" and "output" keys).
     """
+
+    all_rows = load_supply_chain(_CONFIG.path)
+    
+    sample_idx = os.environ.get("SAMPLE_IDX")
+    if sample_idx is not None:
+        return [all_rows[int(sample_idx)]]
+    
     count = int(os.environ.get("EDIT_CNT", "1"))
     if count not in _CONFIG.indices:
         raise ValueError(
             f"Unknown EDIT_CNT={count}. Available for {_active!r}: {list(_CONFIG.indices)}"
         )
-    all_rows = load_supply_chain(_CONFIG.path)
+
+    sample_idx = os.environ.get("SAMPLE_IDX")
+    if sample_idx is not None:
+        return [all_rows[int(sample_idx)]]
+    
     indices = _CONFIG.indices[count]
     return all_rows if indices is None else [all_rows[i] for i in indices]
